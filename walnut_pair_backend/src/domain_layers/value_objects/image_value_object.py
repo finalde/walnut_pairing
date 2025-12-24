@@ -14,14 +14,15 @@ class ImageValueObject:
     hash: str  # optional, for image identity/checksum
 
     @classmethod
-    def from_path(cls, path: str, side: WalnutSideEnum):
+    def from_path(cls, path: str, side: WalnutSideEnum) -> "ImageValueObject":
         img = Image.open(path)
         img_hash = str(hash(img.tobytes()))
+        img_format = img.format or "UNKNOWN"
         return cls(
             side=side,
             path=path,
             width=img.width,
             height=img.height,
-            format=img.format,
+            format=img_format,
             hash=img_hash
         )

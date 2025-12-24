@@ -29,12 +29,12 @@ class WalnutEntity:
         self.down_embedding: Optional[np.ndarray] = None
 
         self.paired_walnut_id: Optional[str] = None
-        self.processing_status: dict = {
+        self.processing_status: dict[str, bool] = {
             "embedding_generated": False,
             "validated": False
         }
 
-    def set_embedding(self, side: str, embedding: np.ndarray):
+    def set_embedding(self, side: str, embedding: np.ndarray) -> None:
         if side not in ["front", "back", "left", "right", "top", "down"]:
             raise ValueError(f"Invalid side: {side}")
         setattr(self, f"{side}_embedding", embedding)
@@ -45,5 +45,5 @@ class WalnutEntity:
         )
         self.processing_status["embedding_generated"] = all_set
 
-    def pair_with(self, walnut_id: str):
+    def pair_with(self, walnut_id: str) -> None:
         self.paired_walnut_id = walnut_id

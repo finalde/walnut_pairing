@@ -7,14 +7,14 @@ from src.common.app_config import AppConfig  # pyright: ignore[reportMissingImpo
 
 class IWalnutBL(ABC):
     @abstractmethod
-    def run(self):
+    def run(self) -> None:
         pass
 
 class WalnutBL:
-    def __init__(self, image_embedding_service: IImageEmbeddingService, app_config: AppConfig):
+    def __init__(self, image_embedding_service: IImageEmbeddingService, app_config: AppConfig) -> None:
         self.image_embedding_service = image_embedding_service
         self.app_config = app_config
 
-    def generate_embeddings(self):
+    def generate_embeddings(self) -> None:
         image_path: str = "/home/dalu/images/walnut_B.jpg"
         pass

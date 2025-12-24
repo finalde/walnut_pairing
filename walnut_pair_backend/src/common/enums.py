@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import List
 
 class WalnutSideEnum(Enum):
     FRONT = "front"
@@ -9,6 +10,6 @@ class WalnutSideEnum(Enum):
     DOWN = "down"
 
     @classmethod
-    def list(cls):
+    def list(cls) -> List[str]:
         """Return all sides as a list of strings"""
         return [side.value for side in cls]
