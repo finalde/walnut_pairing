@@ -1,8 +1,8 @@
 # src/domain_layers/value_objects/image_value_object.py
 from dataclasses import dataclass
-from enum import Enum
 from PIL import Image
 from src.common.enums import WalnutSideEnum
+
 
 @dataclass(frozen=True)
 class ImageValueObject:

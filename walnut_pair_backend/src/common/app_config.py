@@ -2,6 +2,7 @@
 from pathlib import Path
 import yaml  # type: ignore[import-untyped]
 
+
 class AppConfig:
     def __init__(self, image_root: str) -> None:
         self.image_root: Path = Path(image_root)

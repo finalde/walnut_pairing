@@ -4,8 +4,9 @@ from torchvision import models, transforms
 from PIL import Image
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from typing import Optional, Union
 import numpy as np
+
 
 class IImageEmbeddingService(ABC):
     @abstractmethod
@@ -16,6 +17,7 @@ class IImageEmbeddingService(ABC):
         """
         pass
 
+
 class ImageEmbeddingService(IImageEmbeddingService):
     model: nn.Module
     preprocess: transforms.Compose
@@ -23,7 +25,7 @@ class ImageEmbeddingService(IImageEmbeddingService):
 
     def __init__(self, device: Optional[str] = None) -> None:
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        
+
         # Pretrained ResNet50 without classifier
         resnet = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
         self.model = nn.Sequential(*list(resnet.children())[:-1])  # remove final FC

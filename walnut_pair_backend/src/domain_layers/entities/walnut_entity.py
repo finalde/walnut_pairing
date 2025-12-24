@@ -3,6 +3,7 @@ from typing import Optional
 from domain_layers.value_objects.image_value_object import ImageValueObject
 import numpy as np
 
+
 class WalnutEntity:
     def __init__(
         self,

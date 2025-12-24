@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import List
 
+
 class WalnutSideEnum(Enum):
     FRONT = "front"
     BACK = "back"
