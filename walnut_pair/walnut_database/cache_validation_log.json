@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-12-24T13:37:52.106635",
+  "root_dir": "C:/Users/light/Desktop/walnut raw",
+  "database_dir": "C:\\Users\\light\\Desktop\\walnut programs\\walnut_pair\\walnut_database",
+  "cache_file": "C:\\Users\\light\\Desktop\\walnut programs\\walnut_pair\\walnut_database\\tensor_features_cache.pkl",
+  "cache_size": 27930798,
+  "walnut_count": 187,
+  "validation_result": "FAIL"
+}

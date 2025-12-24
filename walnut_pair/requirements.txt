@@ -1,0 +1,22 @@
+# Walnut Pair Matching Dependencies
+# Use conda yolov8-gpu environment, already includes these dependencies
+
+torch>=2.0.0
+torchvision>=0.15.0
+opencv-python>=4.7.0
+faiss-cpu>=1.7.0
+tqdm>=4.64.0
+scikit-learn>=1.2.0
+Pillow>=9.0.0
+numpy>=1.21.0
+
+# Optional: Use faiss-gpu instead of faiss-cpu for GPU support
+# faiss-gpu>=1.7.0
+
+# System dependencies (usually included)
+# tkinter (Python standard library)
+# threading (Python standard library)
+# queue (Python standard library)
+# json (Python standard library)
+# os (Python standard library)
+# sys (Python standard library)
