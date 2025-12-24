@@ -205,6 +205,5 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-cursor_camera/images
-walnut_pair/walnut_database/crop_images
 *.jpg
+**/images/
