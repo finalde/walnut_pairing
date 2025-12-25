@@ -6,8 +6,8 @@ from src.domain_layers.services.embedding_service import (
     IImageEmbeddingService,
 )
 from src.common.app_config import AppConfig
-from src.data_access_layers.db_readers import WalnutImageEmbeddingReader  # pyright: ignore[reportMissingImports]
-
+from src.data_access_layers.db_readers import WalnutImageEmbeddingReader, WalnutReader  # pyright: ignore[reportMissingImports]
+from src.data_access_layers.db_readers import WalnutReader
 
 class IWalnutBL(ABC):
     @abstractmethod
