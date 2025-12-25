@@ -8,11 +8,12 @@ from src.common.app_config import AppConfig  # pyright: ignore[reportMissingImpo
 
 class IWalnutBL(ABC):
     @abstractmethod
-    def run(self) -> None:
+    def generate_embeddings(self) -> None:
         pass
 
 
-class WalnutBL:
+
+class WalnutBL(IWalnutBL):
     def __init__(
         self,
         image_embedding_service: IImageEmbeddingService,
@@ -22,4 +23,8 @@ class WalnutBL:
         self.app_config = app_config
 
     def generate_embeddings(self) -> None:
-        pass
+        print(self.app_config.image_root)
+        image = f"{self.app_config.image_root}/0001/0001_B_1.jpg"
+        print (image)
+        embedding = self.image_embedding_service.generate(image)
+        print(embedding)
