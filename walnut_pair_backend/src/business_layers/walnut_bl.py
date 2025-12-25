@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Optional
-import psycopg2
+from typing import Optional, TYPE_CHECKING
 
 from src.domain_layers.services.embedding_service import (
     IImageEmbeddingService,
 )
-from src.common.app_config import AppConfig
+from src.common.interfaces import IAppConfig, IDatabaseConnection
 from src.data_access_layers.db_readers import WalnutImageEmbeddingReader, WalnutReader  # pyright: ignore[reportMissingImports]
 from src.data_access_layers.db_readers import WalnutReader
 
@@ -20,8 +19,8 @@ class WalnutBL(IWalnutBL):
     def __init__(
         self,
         image_embedding_service: IImageEmbeddingService,
-        app_config: AppConfig,
-        db_connection: psycopg2.extensions.connection
+        app_config: IAppConfig,
+        db_connection: IDatabaseConnection,
     ) -> None:  
         self.image_embedding_service = image_embedding_service
         self.app_config = app_config

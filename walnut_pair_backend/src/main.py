@@ -1,36 +1,33 @@
 from pathlib import Path
 import sys
-from typing import Optional
-
-import psycopg2
-from psycopg2.extensions import connection
 
 # Add parent directory to path to allow imports when running directly
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.common.app_config import AppConfig
-from src.domain_layers.services.embedding_service import ImageEmbeddingService
-from src.business_layers.walnut_bl import IWalnutBL, WalnutBL
+from src.common.di_container import Container
 
-db_connection: Optional[connection] = None
+
 def main() -> None:
-    try:
-        project_root : Path = Path(__file__).resolve().parent.parent
-        config_path : Path = project_root / "config.yml"
-        app_config : AppConfig = AppConfig.load_from_yaml(config_path)
-        db_connection : connection = psycopg2.connect(
-            host=app_config.database.host,
-            port=app_config.database.port,
-            database=app_config.database.database,
-            user=app_config.database.user,
-            password=app_config.database.password)
+    """Main entry point using dependency injection container."""
+    project_root: Path = Path(__file__).resolve().parent.parent
+    config_path: Path = project_root / "config.yml"
 
-        walnut_bl : IWalnutBL = WalnutBL(ImageEmbeddingService(), app_config, db_connection)
+    # Initialize dependency injection container
+    container = Container()
+    container.config_path.from_value(config_path)
+
+    try:
+        # Get business logic layer from container (all dependencies are auto-injected)
+        walnut_bl = container.walnut_bl()
         walnut_bl.generate_embeddings()
-    except psycopg2.Error as e:
-        print(f"Database connection error: {e}")
+    except Exception as e:
+        print(f"Error: {e}")
     finally:
+        # Clean up database connection
+        db_connection = container.db_connection()
         if db_connection:
             db_connection.close()
+
+
 if __name__ == "__main__":
     main()

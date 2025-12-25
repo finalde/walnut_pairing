@@ -5,6 +5,7 @@ import numpy as np
 from src.data_access_layers.data_access_objects.walnut_image_embedding_dao import (
     WalnutImageEmbeddingDAO,
 )
+from src.common.interfaces import IDatabaseConnection
 
 
 class IWalnutImageEmbeddingReader(ABC):
@@ -33,12 +34,12 @@ class IWalnutImageEmbeddingReader(ABC):
 class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
     """Implementation of IWalnutImageEmbeddingReader for reading embedding data from PostgreSQL."""
 
-    def __init__(self, db_connection) -> None:
+    def __init__(self, db_connection: IDatabaseConnection) -> None:
         """
         Initialize the reader with a database connection.
 
         Args:
-            db_connection: A database connection object (e.g., psycopg2 connection)
+            db_connection: IDatabaseConnection instance (injected via DI container)
         """
         self.db_connection = db_connection
 
