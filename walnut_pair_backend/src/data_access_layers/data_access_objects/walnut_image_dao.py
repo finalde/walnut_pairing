@@ -3,9 +3,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from walnut_image_embedding_dao import (
-    WalnutImageEmbeddingDAO,
-)
+if TYPE_CHECKING:
+    from .walnut_image_embedding_dao import (
+        WalnutImageEmbeddingDAO,
+    )
 
 
 @dataclass

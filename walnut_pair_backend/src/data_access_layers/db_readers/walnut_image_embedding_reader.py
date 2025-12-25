@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
 import numpy as np
-from ..data_access_objects import (
+from src.data_access_layers.data_access_objects.walnut_image_embedding_dao import (
     WalnutImageEmbeddingDAO,
 )
 

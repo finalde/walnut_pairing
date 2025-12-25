@@ -1,7 +1,7 @@
 # src/data_access_layers/db_readers/walnut_reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List
-from src.data_access_layers.data_access_objects.walnut_dao import WalnutDAO
+from ..data_access_objects import WalnutDAO
 
 
 class IWalnutReader(ABC):
@@ -88,7 +88,7 @@ class WalnutReader(IWalnutReader):
         self, walnut_id: str
     ) -> Optional[WalnutDAO]:
         """Get a walnut by ID with its related images loaded."""
-        from src.data_access_layers.db_readers.walnut_image_reader import (
+        from .walnut_image_reader import (
             WalnutImageReader,
         )
 

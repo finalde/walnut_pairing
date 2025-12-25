@@ -1,8 +1,7 @@
 # src/data_access_layers/db_readers/walnut_image_reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List
-from datetime import datetime
-from .. import (
+from ..data_access_objects import (
     WalnutImageDAO,
 )
 
@@ -112,7 +111,7 @@ class WalnutImageReader(IWalnutImageReader):
         self, walnut_id: str
     ) -> List[WalnutImageDAO]:
         """Get all images for a specific walnut with their embeddings loaded."""
-        from src.data_access_layers.db_readers.walnut_image_embedding_reader import (
+        from .walnut_image_embedding_reader import (
             WalnutImageEmbeddingReader,
         )
 
@@ -130,7 +129,7 @@ class WalnutImageReader(IWalnutImageReader):
         self, image_id: int
     ) -> Optional[WalnutImageDAO]:
         """Get a walnut image by ID with its embedding loaded."""
-        from src.data_access_layers.db_readers.walnut_image_embedding_reader import (
+        from .walnut_image_embedding_reader import (
             WalnutImageEmbeddingReader,
         )
 

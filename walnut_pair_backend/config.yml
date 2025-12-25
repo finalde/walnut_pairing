@@ -1,1 +1,8 @@
 image_root: "/home/dalu/workspace/walnut_pairing/walnut_pair_backend/images"
+
+database:
+  host: "localhost"
+  port: 5432
+  database: "walnut_pairing"
+  user: "postgres"
+  password: "sa"

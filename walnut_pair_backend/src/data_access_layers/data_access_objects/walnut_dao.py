@@ -2,7 +2,9 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional, List, TYPE_CHECKING
-from walnut_image_dao import WalnutImageDAO
+
+if TYPE_CHECKING:
+    from .walnut_image_dao import WalnutImageDAO
 
 
 @dataclass
