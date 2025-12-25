@@ -18,6 +18,7 @@ from src.data_access_layers.db_readers import (
     IWalnutImageEmbeddingReader,
     WalnutImageEmbeddingReader,
 )
+from src.business_layers.walnut_bl import IWalnutBL, WalnutBL
 
 T = TypeVar("T")
 
@@ -72,6 +73,8 @@ DIRegistry.register(IImageEmbeddingService, ImageEmbeddingService)
 DIRegistry.register(IWalnutImageEmbeddingReader, WalnutImageEmbeddingReader)
 DIRegistry.register(IWalnutImageReader, WalnutImageReader)
 DIRegistry.register(IWalnutReader, WalnutReader)
+# Note: IWalnutBL/WalnutBL is handled separately in di_container.py
+# since it's a business logic class, not just an interface implementation
 
 # Note: IDatabaseConnection is handled specially via factory function
 # since it requires AppConfig to create

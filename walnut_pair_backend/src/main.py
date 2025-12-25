@@ -1,11 +1,10 @@
 from pathlib import Path
 import sys
 
-from walnut_pair_backend.src.business_layers.walnut_bl import IWalnutBL
-
 # Add parent directory to path to allow imports when running directly
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.business_layers.walnut_bl import IWalnutBL
 from src.common.di_container import Container
 
 
