@@ -1,6 +1,8 @@
 from pathlib import Path
 import sys
 
+from walnut_pair_backend.src.business_layers.walnut_bl import IWalnutBL
+
 # Add parent directory to path to allow imports when running directly
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -18,7 +20,7 @@ def main() -> None:
 
     try:
         # Get business logic layer from container (all dependencies are auto-injected)
-        walnut_bl = container.walnut_bl()
+        walnut_bl : IWalnutBL = container.walnut_bl()
         walnut_bl.generate_embeddings()
     except Exception as e:
         print(f"Error: {e}")

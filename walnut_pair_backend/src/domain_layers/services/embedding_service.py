@@ -23,8 +23,8 @@ class ImageEmbeddingService(IImageEmbeddingService):
     preprocess: transforms.Compose
     device: str
 
-    def __init__(self, device: Optional[str] = None) -> None:
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    def __init__(self) -> None:
+        self.device = ("cuda" if torch.cuda.is_available() else "cpu")
 
         # Pretrained ResNet50 without classifier
         resnet = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
