@@ -26,7 +26,7 @@ from src.data_access_layers.db_writers import (
     IWalnutImageEmbeddingWriter,
     WalnutImageEmbeddingWriter,
 )
-from src.business_layers.walnut_bl import IWalnutBL, WalnutBL
+from src.application_layers.walnut_al import IWalnutAL, WalnutAL
 from src.application.application import IApplication, Application
 
 T = TypeVar("T")
@@ -85,7 +85,7 @@ DIRegistry.register(IWalnutReader, WalnutReader)
 DIRegistry.register(IWalnutImageEmbeddingWriter, WalnutImageEmbeddingWriter)
 DIRegistry.register(IWalnutImageWriter, WalnutImageWriter)
 DIRegistry.register(IWalnutWriter, WalnutWriter)
-DIRegistry.register(IWalnutBL, WalnutBL)
+DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IApplication, Application)
 
 # Note: IDatabaseConnection is handled specially via factory function

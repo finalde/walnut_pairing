@@ -1,3 +1,4 @@
+# src/application_layers/walnut_al.py
 from abc import ABC, abstractmethod
 from typing import Optional, TYPE_CHECKING
 import numpy as np
@@ -15,7 +16,7 @@ from src.data_access_layers.data_access_objects import (
 )
 
 
-class IWalnutBL(ABC):
+class IWalnutAL(ABC):
     @abstractmethod
     def generate_embeddings(self) -> None:
         pass
@@ -26,7 +27,7 @@ class IWalnutBL(ABC):
         pass
 
 
-class WalnutBL(IWalnutBL):
+class WalnutAL(IWalnutAL):
     def __init__(
         self,
         image_embedding_service: IImageEmbeddingService,
@@ -100,3 +101,4 @@ class WalnutBL(IWalnutBL):
         saved_walnut = self.walnut_writer.save_with_images(walnut)
         print(f"Successfully saved walnut {walnut_id} with {len(saved_walnut.images)} images")
         return saved_walnut
+
