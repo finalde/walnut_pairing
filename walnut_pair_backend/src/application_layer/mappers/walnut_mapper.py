@@ -1,8 +1,8 @@
-# src/infrastructure_layer/mappers/entity_to_dao_mapper.py
+# src/application_layer/mappers/walnut_mapper.py
 """
-Mapper to convert domain entities and value objects to DAOs.
+Mapper for walnut domain objects.
+Handles all mapping logic between walnut domain entities/value objects and other types (DAOs, etc.).
 """
-from datetime import datetime
 from typing import Optional
 import numpy as np
 
@@ -17,11 +17,11 @@ from src.common.enums import WalnutSideEnum
 from src.common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 
 
-class EntityToDAOMapper:
-    """Maps domain entities to data access objects."""
+class WalnutMapper:
+    """Maps walnut domain objects to and from other representations."""
 
     @staticmethod
-    def walnut_entity_to_dao(
+    def entity_to_dao(
         walnut_entity: WalnutEntity,
         walnut_id: str,
         description: str = "",
@@ -72,7 +72,7 @@ class EntityToDAOMapper:
 
         for side_enum, image_vo in side_mapping.items():
             side_name = side_enum.value
-            image_dao = EntityToDAOMapper.image_value_object_to_dao(
+            image_dao = WalnutMapper.image_value_object_to_dao(
                 image_vo,
                 walnut_id,
                 created_by=created_by,
@@ -80,7 +80,7 @@ class EntityToDAOMapper:
             )
 
             # Add embedding if available
-            embedding = embedding_mapping[side_name]
+            embedding = embedding_mapping[side_enum]
             if embedding is not None:
                 embedding_dao = WalnutImageEmbeddingDAO(
                     image_id=0,  # Will be set after image is saved
@@ -124,4 +124,10 @@ class EntityToDAOMapper:
             created_by=created_by,
             updated_by=updated_by,
         )
+
+    # Future mapping methods can be added here:
+    # - dao_to_entity()
+    # - dao_to_value_object()
+    # - entity_to_dto()
+    # - etc.
 
