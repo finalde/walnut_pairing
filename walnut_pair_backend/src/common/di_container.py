@@ -14,7 +14,6 @@ from typing import get_type_hints, get_origin, get_args, Dict, Type, Any
 from src.common.app_config import AppConfig
 from src.common.interfaces import IAppConfig, IDatabaseConnection
 from src.common.di_registry import DIRegistry
-from src.business_layers.walnut_bl import WalnutBL
 from src.data_access_layers.session_factory import SessionFactory
 from sqlalchemy.orm import Session
 
@@ -46,7 +45,12 @@ def _resolve_type_hints(func: Any) -> Dict[str, Any]:
     module = sys.modules.get(func.__module__) if hasattr(func, '__module__') else None
     namespace: Dict[str, Any] = {**module.__dict__} if module else {}
     namespace.update({iface.__name__: iface for iface in DIRegistry._registry.keys()})
-    namespace.update({'IAppConfig': IAppConfig, 'IDatabaseConnection': IDatabaseConnection})
+    namespace.update({
+        'IAppConfig': IAppConfig,
+        'IDatabaseConnection': IDatabaseConnection,
+        'SessionFactory': SessionFactory,
+        'Session': Session,
+    })
     try:
         return get_type_hints(func, globalns=namespace)
     except (NameError, TypeError):
@@ -128,20 +132,5 @@ for interface in DIRegistry._registry.keys():
         _providers[interface] = provider
         attr = interface.__name__[1:].lower() if interface.__name__.startswith("I") else interface.__name__.lower()
         setattr(Container, attr.replace("appconfig", "app_config").replace("databaseconnection", "db_connection"), provider)
-
-# Create business logic providers
-hints = _resolve_type_hints(WalnutBL.__init__)
-deps = {}
-for name, type_ in hints.items():
-    if name not in ("self", "return") and type_:
-        if get_origin(type_):
-            type_ = get_args(type_)[0] if get_args(type_) else type_
-        if type_ in _providers:
-            deps[name] = _providers[type_]
-Container.walnut_bl = providers.Factory(WalnutBL, **deps)
-
-# Add walnut_bl to providers dict for lookup
-from src.business_layers.walnut_bl import IWalnutBL
-_providers[IWalnutBL] = Container.walnut_bl
 
 # Note: get_provider method is now defined directly in the Container class above
