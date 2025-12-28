@@ -1,16 +1,16 @@
 # src/application_layer/services/walnut_image_loader.py
-"""Service to load walnut images from filesystem and create DTOs."""
+"""Service to load walnut images from filesystem and create file DAOs."""
 from pathlib import Path
 from typing import List, Optional
 from PIL import Image
 import hashlib
 
-from src.application_layer.dtos import WalnutDTO, WalnutImageDTO
+from src.infrastructure_layer.data_access_objects.walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
 from src.common.enums import WalnutSideEnum
 
 
 class WalnutImageLoader:
-    """Loads walnut images from filesystem and creates DTOs."""
+    """Loads walnut images from filesystem and creates file DAOs."""
 
     # Mapping from side enum to file name letter
     SIDE_TO_LETTER = {
@@ -50,21 +50,21 @@ class WalnutImageLoader:
     @classmethod
     def load_walnut_from_directory(
         cls, walnut_id: str, image_directory: Path
-    ) -> Optional[WalnutDTO]:
+    ) -> Optional[WalnutFileDAO]:
         """
-        Load a walnut's images from a directory and create a DTO.
+        Load a walnut's images from a directory and create a file DAO.
 
         Args:
             walnut_id: The ID of the walnut (e.g., "0001")
             image_directory: Path to the directory containing images
 
         Returns:
-            WalnutDTO with all images loaded, or None if directory doesn't exist
+            WalnutFileDAO with all images loaded, or None if directory doesn't exist
         """
         if not image_directory.exists() or not image_directory.is_dir():
             return None
 
-        images: List[WalnutImageDTO] = []
+        images: List[WalnutImageFileDAO] = []
 
         # Look for image files matching the pattern
         for file_path in image_directory.glob(f"{walnut_id}_*.jpg"):
@@ -83,7 +83,7 @@ class WalnutImageLoader:
                 # Calculate checksum
                 checksum = cls._calculate_checksum(file_path)
 
-                image_dto = WalnutImageDTO(
+                image_dao = WalnutImageFileDAO(
                     file_path=file_path,
                     side_letter=side_letter,
                     width=width,
@@ -91,7 +91,7 @@ class WalnutImageLoader:
                     file_size=file_size,
                     checksum=checksum,
                 )
-                images.append(image_dto)
+                images.append(image_dao)
             except Exception as e:
                 print(f"Error loading image {file_path}: {e}")
                 continue
@@ -99,7 +99,7 @@ class WalnutImageLoader:
         if not images:
             return None
 
-        return WalnutDTO(
+        return WalnutFileDAO(
             walnut_id=walnut_id,
             image_directory=image_directory,
             images=images,

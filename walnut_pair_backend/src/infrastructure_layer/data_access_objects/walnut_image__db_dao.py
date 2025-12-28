@@ -1,4 +1,4 @@
-# src/infrastructure_layer/data_access_objects/walnut_image__dao.py
+# src/infrastructure_layer/data_access_objects/walnut_image__db_dao.py
 """SQLAlchemy ORM model for walnut_image table."""
 from datetime import datetime
 from sqlalchemy import String, Integer, BigInteger, DateTime, ForeignKey, UniqueConstraint
@@ -9,11 +9,11 @@ from .base import Base
 from src.common.constants import CONSTRAINT_UQ_WALNUT_SIDE, TABLE_WALNUT
 
 if TYPE_CHECKING:
-    from .walnut__dao import WalnutDAO
-    from .walnut_image_embedding__dao import WalnutImageEmbeddingDAO
+    from .walnut__db_dao import WalnutDBDAO
+    from .walnut_image_embedding__db_dao import WalnutImageEmbeddingDBDAO
 
 
-class WalnutImageDAO(Base):
+class WalnutImageDBDAO(Base):
     """Data Access Object / ORM model for the walnut_image table."""
     __tablename__ = "walnut_image"
 
@@ -49,12 +49,12 @@ class WalnutImageDAO(Base):
 
     # Relationships
     # Using string literals - SQLAlchemy resolves them by class name at runtime
-    walnut: Mapped["WalnutDAO"] = relationship(
-        "WalnutDAO",
+    walnut: Mapped["WalnutDBDAO"] = relationship(
+        "WalnutDBDAO",
         back_populates="images"
     )
-    embedding: Mapped[Optional["WalnutImageEmbeddingDAO"]] = relationship(
-        "WalnutImageEmbeddingDAO",
+    embedding: Mapped[Optional["WalnutImageEmbeddingDBDAO"]] = relationship(
+        "WalnutImageEmbeddingDBDAO",
         back_populates="image",
         uselist=False,
         cascade="all, delete-orphan",

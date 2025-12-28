@@ -1,62 +1,62 @@
-# src/infrastructure_layer/db_readers/walnut_image__reader.py
+# src/infrastructure_layer/file_readers/walnut_image__file_reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List, TYPE_CHECKING
 from ..data_access_objects import (
-    WalnutImageDAO,
+    WalnutImageDBDAO,
 )
 from src.common.interfaces import IDatabaseConnection
 
 if TYPE_CHECKING:
-    from .walnut_image_embedding__reader import IWalnutImageEmbeddingReader
+    from ..db_readers.walnut_image_embedding__db_reader import IWalnutImageEmbeddingDBReader
 
 
-class IWalnutImageReader(ABC):
-    """Interface for reading walnut image data from the database."""
+class IWalnutImageFileReader(ABC):
+    """Interface for reading walnut image data from filesystem."""
 
     @abstractmethod
-    def get_by_id(self, image_id: int) -> Optional[WalnutImageDAO]:
+    def get_by_id(self, image_id: int) -> Optional[WalnutImageDBDAO]:
         """Get a walnut image by its ID."""
         pass
 
     @abstractmethod
-    def get_by_walnut_id(self, walnut_id: str) -> List[WalnutImageDAO]:
+    def get_by_walnut_id(self, walnut_id: str) -> List[WalnutImageDBDAO]:
         """Get all images for a specific walnut."""
         pass
 
     @abstractmethod
     def get_by_walnut_id_with_embeddings(
         self, walnut_id: str
-    ) -> List[WalnutImageDAO]:
+    ) -> List[WalnutImageDBDAO]:
         """Get all images for a specific walnut with their embeddings loaded."""
         pass
 
     @abstractmethod
     def get_by_id_with_embedding(
         self, image_id: int
-    ) -> Optional[WalnutImageDAO]:
+    ) -> Optional[WalnutImageDBDAO]:
         """Get a walnut image by ID with its embedding loaded."""
         pass
 
 
-class WalnutImageReader(IWalnutImageReader):
-    """Implementation of IWalnutImageReader for reading walnut image data from PostgreSQL."""
+class WalnutImageFileReader(IWalnutImageFileReader):
+    """Implementation of IWalnutImageFileReader for reading walnut image data from filesystem."""
 
     def __init__(
         self,
         db_connection: IDatabaseConnection,
-        embedding_reader: "IWalnutImageEmbeddingReader",
+        embedding_reader: "IWalnutImageEmbeddingDBReader",
     ) -> None:
         """
         Initialize the reader with a database connection and embedding reader.
 
         Args:
             db_connection: IDatabaseConnection instance (injected via DI container)
-            embedding_reader: IWalnutImageEmbeddingReader instance (injected via DI container).
+            embedding_reader: IWalnutImageEmbeddingDBReader instance (injected via DI container).
         """
         self.db_connection: IDatabaseConnection = db_connection
-        self.embedding_reader: "IWalnutImageEmbeddingReader" = embedding_reader
+        self.embedding_reader: "IWalnutImageEmbeddingDBReader" = embedding_reader
 
-    def get_by_id(self, image_id: int) -> Optional[WalnutImageDAO]:
+    def get_by_id(self, image_id: int) -> Optional[WalnutImageDBDAO]:
         """Get a walnut image by its ID without embedding."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -72,7 +72,7 @@ class WalnutImageReader(IWalnutImageReader):
             if row is None:
                 return None
 
-            return WalnutImageDAO(
+            return WalnutImageDBDAO(
                 id=row[0],
                 walnut_id=row[1],
                 side=row[2],
@@ -86,7 +86,7 @@ class WalnutImageReader(IWalnutImageReader):
                 updated_by=row[10],
             )
 
-    def get_by_walnut_id(self, walnut_id: str) -> List[WalnutImageDAO]:
+    def get_by_walnut_id(self, walnut_id: str) -> List[WalnutImageDBDAO]:
         """Get all images for a specific walnut without embeddings."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -101,7 +101,7 @@ class WalnutImageReader(IWalnutImageReader):
             )
             rows = cursor.fetchall()
             return [
-                WalnutImageDAO(
+                WalnutImageDBDAO(
                     id=row[0],
                     walnut_id=row[1],
                     side=row[2],
@@ -119,7 +119,7 @@ class WalnutImageReader(IWalnutImageReader):
 
     def get_by_walnut_id_with_embeddings(
         self, walnut_id: str
-    ) -> List[WalnutImageDAO]:
+    ) -> List[WalnutImageDBDAO]:
         """Get all images for a specific walnut with their embeddings loaded."""
         images = self.get_by_walnut_id(walnut_id)
 
@@ -132,7 +132,7 @@ class WalnutImageReader(IWalnutImageReader):
 
     def get_by_id_with_embedding(
         self, image_id: int
-    ) -> Optional[WalnutImageDAO]:
+    ) -> Optional[WalnutImageDBDAO]:
         """Get a walnut image by ID with its embedding loaded."""
         image = self.get_by_id(image_id)
         if image is None:

@@ -7,13 +7,13 @@ from typing import Optional, Dict
 import numpy as np
 from PIL import Image
 
-from src.application_layer.dtos import WalnutDTO, WalnutImageDTO
+from src.infrastructure_layer.data_access_objects.walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
 from src.domain_layer.entities.walnut__entity import WalnutEntity
 from src.domain_layer.value_objects.image__value_object import ImageValueObject
 from src.infrastructure_layer.data_access_objects import (
-    WalnutDAO,
-    WalnutImageDAO,
-    WalnutImageEmbeddingDAO,
+    WalnutDBDAO,
+    WalnutImageDBDAO,
+    WalnutImageEmbeddingDBDAO,
 )
 from src.common.enums import WalnutSideEnum
 from src.common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER, UNKNOWN_IMAGE_FORMAT
@@ -23,12 +23,12 @@ class WalnutMapper:
     """Maps walnut domain objects to and from other representations."""
 
     @staticmethod
-    def dto_to_entity(walnut_dto: WalnutDTO) -> WalnutEntity:
+    def file_dao_to_entity(walnut_file_dao: WalnutFileDAO) -> WalnutEntity:
         """
-        Convert a WalnutDTO to a WalnutEntity with domain validation.
+        Convert a WalnutFileDAO to a WalnutEntity with domain validation.
 
         Args:
-            walnut_dto: The DTO loaded from filesystem
+            walnut_file_dao: The file DAO loaded from filesystem
 
         Returns:
             WalnutEntity with all images as value objects
@@ -47,14 +47,14 @@ class WalnutMapper:
         }
 
         # Group images by side
-        images_by_side: Dict[WalnutSideEnum, WalnutImageDTO] = {}
-        for image_dto in walnut_dto.images:
-            side_enum = side_mapping.get(image_dto.side_letter.upper())
+        images_by_side: Dict[WalnutSideEnum, WalnutImageFileDAO] = {}
+        for image_file_dao in walnut_file_dao.images:
+            side_enum = side_mapping.get(image_file_dao.side_letter.upper())
             if side_enum is None:
                 raise ValueError(
-                    f"Invalid side letter '{image_dto.side_letter}' in file {image_dto.file_path.name}"
+                    f"Invalid side letter '{image_file_dao.side_letter}' in file {image_file_dao.file_path.name}"
                 )
-            images_by_side[side_enum] = image_dto
+            images_by_side[side_enum] = image_file_dao
 
         # Validate all required sides are present
         required_sides = set(WalnutSideEnum)
@@ -64,25 +64,25 @@ class WalnutMapper:
                 f"Missing required images for sides: {[s.value for s in missing_sides]}"
             )
 
-        # Convert each image DTO to ImageValueObject
+        # Convert each image file DAO to ImageValueObject
         image_value_objects: Dict[WalnutSideEnum, ImageValueObject] = {}
-        for side_enum, image_dto in images_by_side.items():
+        for side_enum, image_file_dao in images_by_side.items():
             # Load image to get format
             try:
-                with Image.open(image_dto.file_path) as img:
+                with Image.open(image_file_dao.file_path) as img:
                     img_format = img.format or UNKNOWN_IMAGE_FORMAT
             except Exception as e:
                 raise ValueError(
-                    f"Failed to load image {image_dto.file_path}: {e}"
+                    f"Failed to load image {image_file_dao.file_path}: {e}"
                 ) from e
 
             image_vo = ImageValueObject(
                 side=side_enum,
-                path=str(image_dto.file_path),
-                width=image_dto.width,
-                height=image_dto.height,
+                path=str(image_file_dao.file_path),
+                width=image_file_dao.width,
+                height=image_file_dao.height,
                 format=img_format,
-                hash=image_dto.checksum,
+                hash=image_file_dao.checksum,
             )
             image_value_objects[side_enum] = image_vo
 
@@ -104,9 +104,9 @@ class WalnutMapper:
         created_by: str = SYSTEM_USER,
         updated_by: str = SYSTEM_USER,
         model_name: str = DEFAULT_EMBEDDING_MODEL,
-    ) -> WalnutDAO:
+    ) -> WalnutDBDAO:
         """
-        Convert a WalnutEntity to a WalnutDAO with images and embeddings.
+        Convert a WalnutEntity to a WalnutDBDAO with images and embeddings.
 
         Args:
             walnut_entity: The domain entity to convert
@@ -117,10 +117,10 @@ class WalnutMapper:
             model_name: Model name for embeddings
 
         Returns:
-            WalnutDAO with all images and embeddings populated
+            WalnutDBDAO with all images and embeddings populated
         """
-        # Create walnut DAO
-        walnut_dao = WalnutDAO(
+        # Create walnut DB DAO
+        walnut_dao = WalnutDBDAO(
             id=walnut_id,
             description=description,
             created_by=created_by,
@@ -158,7 +158,7 @@ class WalnutMapper:
             # Add embedding if available
             embedding = embedding_mapping[side_enum]
             if embedding is not None:
-                embedding_dao = WalnutImageEmbeddingDAO(
+                embedding_dao = WalnutImageEmbeddingDBDAO(
                     image_id=0,  # Will be set after image is saved
                     model_name=model_name,
                     embedding=embedding,
@@ -177,9 +177,9 @@ class WalnutMapper:
         walnut_id: str,
         created_by: str = SYSTEM_USER,
         updated_by: str = SYSTEM_USER,
-    ) -> WalnutImageDAO:
+    ) -> WalnutImageDBDAO:
         """
-        Convert an ImageValueObject to a WalnutImageDAO.
+        Convert an ImageValueObject to a WalnutImageDBDAO.
 
         Args:
             image_vo: The image value object to convert
@@ -188,9 +188,9 @@ class WalnutMapper:
             updated_by: User who last updated the record
 
         Returns:
-            WalnutImageDAO
+            WalnutImageDBDAO
         """
-        return WalnutImageDAO(
+        return WalnutImageDBDAO(
             walnut_id=walnut_id,
             side=image_vo.side.value,  # Convert enum to string
             image_path=image_vo.path,

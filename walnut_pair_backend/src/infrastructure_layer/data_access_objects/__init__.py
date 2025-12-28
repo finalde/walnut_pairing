@@ -1,15 +1,18 @@
 # src/infrastructure_layer/data_access_objects/__init__.py
 from .base import Base
-from .walnut__dao import WalnutDAO
-from .walnut_image__dao import WalnutImageDAO
-from .walnut_image_embedding__dao import (
-    WalnutImageEmbeddingDAO,
+from .walnut__db_dao import WalnutDBDAO
+from .walnut_image__db_dao import WalnutImageDBDAO
+from .walnut_image_embedding__db_dao import (
+    WalnutImageEmbeddingDBDAO,
 )
+from .walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
 
 __all__ = [
     "Base",
-    "WalnutDAO",
-    "WalnutImageDAO",
-    "WalnutImageEmbeddingDAO",
+    "WalnutDBDAO",
+    "WalnutImageDBDAO",
+    "WalnutImageEmbeddingDBDAO",
+    "WalnutFileDAO",
+    "WalnutImageFileDAO",
 ]
 

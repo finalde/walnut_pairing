@@ -1,38 +1,38 @@
-# src/infrastructure_layer/db_readers/walnut_image_embedding__reader.py
+# src/infrastructure_layer/db_readers/walnut_image_embedding__db_reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List
 import numpy as np
-from src.infrastructure_layer.data_access_objects.walnut_image_embedding__dao import (
-    WalnutImageEmbeddingDAO,
+from src.infrastructure_layer.data_access_objects.walnut_image_embedding__db_dao import (
+    WalnutImageEmbeddingDBDAO,
 )
 from src.common.interfaces import IDatabaseConnection
 
 
-class IWalnutImageEmbeddingReader(ABC):
+class IWalnutImageEmbeddingDBReader(ABC):
     """Interface for reading walnut image embedding data from the database."""
 
     @abstractmethod
-    def get_by_id(self, embedding_id: int) -> Optional[WalnutImageEmbeddingDAO]:
+    def get_by_id(self, embedding_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by its ID."""
         pass
 
     @abstractmethod
     def get_by_image_id(
         self, image_id: int
-    ) -> Optional[WalnutImageEmbeddingDAO]:
+    ) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by image ID (one-to-one relationship)."""
         pass
 
     @abstractmethod
     def get_by_model_name(
         self, model_name: str
-    ) -> List[WalnutImageEmbeddingDAO]:
+    ) -> List[WalnutImageEmbeddingDBDAO]:
         """Get all embeddings for a specific model."""
         pass
 
 
-class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
-    """Implementation of IWalnutImageEmbeddingReader for reading embedding data from PostgreSQL."""
+class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
+    """Implementation of IWalnutImageEmbeddingDBReader for reading embedding data from PostgreSQL."""
 
     def __init__(self, db_connection: IDatabaseConnection) -> None:
         """
@@ -68,7 +68,7 @@ class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
 
     def get_by_id(
         self, embedding_id: int
-    ) -> Optional[WalnutImageEmbeddingDAO]:
+    ) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by its ID."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -86,7 +86,7 @@ class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
 
             embedding_vector = self._vector_to_numpy(row[3])
 
-            return WalnutImageEmbeddingDAO(
+            return WalnutImageEmbeddingDBDAO(
                 id=row[0],
                 image_id=row[1],
                 model_name=row[2],
@@ -99,7 +99,7 @@ class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
 
     def get_by_image_id(
         self, image_id: int
-    ) -> Optional[WalnutImageEmbeddingDAO]:
+    ) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by image ID (one-to-one relationship)."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -118,7 +118,7 @@ class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
 
             embedding_vector = self._vector_to_numpy(row[3])
 
-            return WalnutImageEmbeddingDAO(
+            return WalnutImageEmbeddingDBDAO(
                 id=row[0],
                 image_id=row[1],
                 model_name=row[2],
@@ -131,7 +131,7 @@ class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
 
     def get_by_model_name(
         self, model_name: str
-    ) -> List[WalnutImageEmbeddingDAO]:
+    ) -> List[WalnutImageEmbeddingDBDAO]:
         """Get all embeddings for a specific model."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -146,7 +146,7 @@ class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
             )
             rows = cursor.fetchall()
             return [
-                WalnutImageEmbeddingDAO(
+                WalnutImageEmbeddingDBDAO(
                     id=row[0],
                     image_id=row[1],
                     model_name=row[2],

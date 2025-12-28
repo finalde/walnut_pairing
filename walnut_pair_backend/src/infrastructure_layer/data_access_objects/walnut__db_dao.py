@@ -1,4 +1,4 @@
-# src/infrastructure_layer/data_access_objects/walnut__dao.py
+# src/infrastructure_layer/data_access_objects/walnut__db_dao.py
 """SQLAlchemy ORM model for walnut table."""
 from datetime import datetime
 from sqlalchemy import String, Text, DateTime
@@ -8,10 +8,10 @@ from typing import List, TYPE_CHECKING
 from .base import Base
 
 if TYPE_CHECKING:
-    from .walnut_image_dao import WalnutImageDAO
+    from .walnut_image__db_dao import WalnutImageDBDAO
 
 
-class WalnutDAO(Base):
+class WalnutDBDAO(Base):
     """Data Access Object / ORM model for the walnut table."""
     __tablename__ = "walnut"
 
@@ -24,8 +24,8 @@ class WalnutDAO(Base):
 
     # Relationships
     # Using string literal - SQLAlchemy resolves it by class name at runtime
-    images: Mapped[List["WalnutImageDAO"]] = relationship(
-        "WalnutImageDAO",
+    images: Mapped[List["WalnutImageDBDAO"]] = relationship(
+        "WalnutImageDBDAO",
         back_populates="walnut",
         cascade="all, delete-orphan",
         lazy="select"

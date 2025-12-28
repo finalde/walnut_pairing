@@ -95,8 +95,8 @@ def create_connection_pool(
 def example_usage():
     """Example of how to use the database connection with readers."""
     from src.infrastructure_layer.db_readers import (
-        WalnutReader,
-        WalnutImageReader,
+        WalnutDBReader,
+        WalnutImageFileReader,
     )
     
     # Create connection
@@ -110,7 +110,7 @@ def example_usage():
     
     try:
         # Use with readers
-        walnut_reader = WalnutReader(db_conn)
+        walnut_reader = WalnutDBReader(db_conn)
         walnut = walnut_reader.get_by_id("WALNUT-001")
         
         if walnut:
@@ -129,7 +129,7 @@ def example_usage():
 # Example with connection pool:
 def example_usage_with_pool():
     """Example using connection pool."""
-    from src.infrastructure_layer.db_readers import WalnutReader
+    from src.infrastructure_layer.db_readers import WalnutDBReader
     
     # Create connection pool
     pool = create_connection_pool(
@@ -147,7 +147,7 @@ def example_usage_with_pool():
         db_conn = pool.getconn()
         
         try:
-            walnut_reader = WalnutReader(db_conn)
+            walnut_reader = WalnutDBReader(db_conn)
             walnuts = walnut_reader.get_all()
             print(f"Found {len(walnuts)} walnuts")
         finally:

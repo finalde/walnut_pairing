@@ -11,20 +11,22 @@ from src.domain_layer.services.embedding__service import (
     ImageEmbeddingService,
 )
 from src.infrastructure_layer.db_readers import (
-    IWalnutReader,
-    WalnutReader,
-    IWalnutImageReader,
-    WalnutImageReader,
-    IWalnutImageEmbeddingReader,
-    WalnutImageEmbeddingReader,
+    IWalnutDBReader,
+    WalnutDBReader,
+    IWalnutImageEmbeddingDBReader,
+    WalnutImageEmbeddingDBReader,
+)
+from src.infrastructure_layer.file_readers import (
+    IWalnutImageFileReader,
+    WalnutImageFileReader,
 )
 from src.infrastructure_layer.db_writers import (
-    IWalnutWriter,
-    WalnutWriter,
-    IWalnutImageWriter,
-    WalnutImageWriter,
-    IWalnutImageEmbeddingWriter,
-    WalnutImageEmbeddingWriter,
+    IWalnutDBWriter,
+    WalnutDBWriter,
+    IWalnutImageDBWriter,
+    WalnutImageDBWriter,
+    IWalnutImageEmbeddingDBWriter,
+    WalnutImageEmbeddingDBWriter,
 )
 from src.application_layer.walnut__al import IWalnutAL, WalnutAL
 from src.application import IApplication, Application
@@ -79,12 +81,12 @@ class DIRegistry:
 # Add new mappings here when you create new interfaces
 DIRegistry.register(IAppConfig, AppConfig)
 DIRegistry.register(IImageEmbeddingService, ImageEmbeddingService)
-DIRegistry.register(IWalnutImageEmbeddingReader, WalnutImageEmbeddingReader)
-DIRegistry.register(IWalnutImageReader, WalnutImageReader)
-DIRegistry.register(IWalnutReader, WalnutReader)
-DIRegistry.register(IWalnutImageEmbeddingWriter, WalnutImageEmbeddingWriter)
-DIRegistry.register(IWalnutImageWriter, WalnutImageWriter)
-DIRegistry.register(IWalnutWriter, WalnutWriter)
+DIRegistry.register(IWalnutImageEmbeddingDBReader, WalnutImageEmbeddingDBReader)
+DIRegistry.register(IWalnutImageFileReader, WalnutImageFileReader)
+DIRegistry.register(IWalnutDBReader, WalnutDBReader)
+DIRegistry.register(IWalnutImageEmbeddingDBWriter, WalnutImageEmbeddingDBWriter)
+DIRegistry.register(IWalnutImageDBWriter, WalnutImageDBWriter)
+DIRegistry.register(IWalnutDBWriter, WalnutDBWriter)
 DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IApplication, Application)
 

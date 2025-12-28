@@ -1,30 +1,30 @@
 # src/infrastructure_layer/db_readers/walnut__reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List, TYPE_CHECKING
-from ..data_access_objects import WalnutDAO
+from ..data_access_objects import WalnutDBDAO
 from src.common.interfaces import IDatabaseConnection
 
 if TYPE_CHECKING:
-    from .walnut_image__reader import IWalnutImageReader
+    from ..file_readers.walnut_image__file_reader import IWalnutImageFileReader
 
 
-class IWalnutReader(ABC):
+class IWalnutDBReader(ABC):
     """Interface for reading walnut data from the database."""
 
     @abstractmethod
-    def get_by_id(self, walnut_id: str) -> Optional[WalnutDAO]:
+    def get_by_id(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by its ID with related images and embeddings loaded."""
         pass
 
     @abstractmethod
-    def get_all(self) -> List[WalnutDAO]:
+    def get_all(self) -> List[WalnutDBDAO]:
         """Get all walnuts from the database with related images and embeddings loaded."""
         pass
 
     @abstractmethod
     def get_by_id_with_images(
         self, walnut_id: str
-    ) -> Optional[WalnutDAO]:
+    ) -> Optional[WalnutDBDAO]:
         """Get a walnut by ID with its related images and embeddings loaded.
         
         Note: This method now delegates to get_by_id() which already loads
@@ -33,25 +33,25 @@ class IWalnutReader(ABC):
         pass
 
 
-class WalnutReader(IWalnutReader):
-    """Implementation of IWalnutReader for reading walnut data from PostgreSQL."""
+class WalnutDBReader(IWalnutDBReader):
+    """Implementation of IWalnutDBReader for reading walnut data from PostgreSQL."""
 
     def __init__(
         self,
         db_connection: IDatabaseConnection,
-        image_reader: "IWalnutImageReader",
+        image_reader: "IWalnutImageFileReader",
     ) -> None:
         """
         Initialize the reader with a database connection and image reader.
 
         Args:
             db_connection: IDatabaseConnection instance (injected via DI container)
-            image_reader: IWalnutImageReader instance (injected via DI container).
+            image_reader: IWalnutImageFileReader instance (injected via DI container).
         """
         self.db_connection: IDatabaseConnection = db_connection
-        self.image_reader: "IWalnutImageReader" = image_reader
+        self.image_reader: "IWalnutImageFileReader" = image_reader
 
-    def get_by_id(self, walnut_id: str) -> Optional[WalnutDAO]:
+    def get_by_id(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by its ID with related images and embeddings loaded."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -66,7 +66,7 @@ class WalnutReader(IWalnutReader):
             if row is None:
                 return None
 
-            walnut = WalnutDAO(
+            walnut = WalnutDBDAO(
                 id=row[0],
                 description=row[1],
                 created_at=row[2],
@@ -82,7 +82,7 @@ class WalnutReader(IWalnutReader):
 
             return walnut
 
-    def get_all(self) -> List[WalnutDAO]:
+    def get_all(self) -> List[WalnutDBDAO]:
         """Get all walnuts from the database with related images and embeddings loaded."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -94,7 +94,7 @@ class WalnutReader(IWalnutReader):
             )
             rows = cursor.fetchall()
             walnuts = [
-                WalnutDAO(
+                WalnutDBDAO(
                     id=row[0],
                     description=row[1],
                     created_at=row[2],
@@ -115,7 +115,7 @@ class WalnutReader(IWalnutReader):
 
     def get_by_id_with_images(
         self, walnut_id: str
-    ) -> Optional[WalnutDAO]:
+    ) -> Optional[WalnutDBDAO]:
         """Get a walnut by ID with its related images and embeddings loaded.
         
         Note: This method now delegates to get_by_id() which already loads

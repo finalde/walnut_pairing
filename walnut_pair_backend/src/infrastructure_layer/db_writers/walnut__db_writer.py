@@ -1,58 +1,58 @@
-# src/infrastructure_layer/db_writers/walnut__writer.py
+# src/infrastructure_layer/db_writers/walnut__db_writer.py
 from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
 from typing import TYPE_CHECKING
-from src.infrastructure_layer.data_access_objects import WalnutDAO
+from src.infrastructure_layer.data_access_objects import WalnutDBDAO
 
 if TYPE_CHECKING:
-    from .walnut_image__writer import IWalnutImageWriter
+    from .walnut_image__db_writer import IWalnutImageDBWriter
 
 
-class IWalnutWriter(ABC):
+class IWalnutDBWriter(ABC):
     """Interface for writing walnut data to the database."""
 
     @abstractmethod
-    def save(self, walnut: WalnutDAO) -> WalnutDAO:
+    def save(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save a walnut to the database. Returns walnut with timestamps."""
         pass
 
     @abstractmethod
-    def save_with_images(self, walnut: WalnutDAO) -> WalnutDAO:
+    def save_with_images(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save a walnut with all its images and embeddings. Returns walnut with IDs."""
         pass
 
     @abstractmethod
-    def save_or_update(self, walnut: WalnutDAO) -> WalnutDAO:
+    def save_or_update(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save or update a walnut. Returns walnut with timestamps."""
         pass
 
 
-class WalnutWriter(IWalnutWriter):
+class WalnutDBWriter(IWalnutDBWriter):
     """Implementation for writing walnut data using SQLAlchemy ORM."""
 
     def __init__(
         self,
         session: Session,
-        image_writer: "IWalnutImageWriter",
+        image_writer: "IWalnutImageDBWriter",
     ) -> None:
         """
         Initialize the writer with a SQLAlchemy session and image writer.
 
         Args:
             session: SQLAlchemy Session instance (injected via DI container)
-            image_writer: IWalnutImageWriter instance (injected via DI container)
+            image_writer: IWalnutImageDBWriter instance (injected via DI container)
         """
         self.session: Session = session
-        self.image_writer: "IWalnutImageWriter" = image_writer
+        self.image_writer: "IWalnutImageDBWriter" = image_writer
 
-    def save(self, walnut: WalnutDAO) -> WalnutDAO:
+    def save(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save a walnut to the database. Returns walnut with timestamps."""
         # Use merge for upsert (handles ON CONFLICT logic)
         walnut = self.session.merge(walnut)
         self.session.flush()  # Flush to get timestamps without committing
         return walnut
 
-    def save_with_images(self, walnut: WalnutDAO) -> WalnutDAO:
+    def save_with_images(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """
         Save a walnut with all its images and embeddings using SQLAlchemy ORM.
         This is the ORM-like save that cascades to images and embeddings.
@@ -68,7 +68,7 @@ class WalnutWriter(IWalnutWriter):
                 self.session.add(walnut)
             else:
                 # Check if walnut exists - if so, delete it first (CASCADE will delete images/embeddings)
-                existing = self.session.get(WalnutDAO, walnut_id)
+                existing = self.session.get(WalnutDBDAO, walnut_id)
                 if existing is not None:
                     # Delete existing walnut (CASCADE will delete images and embeddings)
                     self.session.delete(existing)
@@ -84,7 +84,7 @@ class WalnutWriter(IWalnutWriter):
             self.session.rollback()
             raise
 
-    def save_or_update(self, walnut: WalnutDAO) -> WalnutDAO:
+    def save_or_update(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save or update a walnut. Returns walnut with timestamps."""
         # The save method already handles upsert with merge
         return self.save(walnut)

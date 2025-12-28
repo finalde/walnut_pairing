@@ -1,23 +1,23 @@
 # src/infrastructure_layer/db_writers/__init__.py
-from .walnut__writer import (
-    IWalnutWriter,
-    WalnutWriter,
+from .walnut__db_writer import (
+    IWalnutDBWriter,
+    WalnutDBWriter,
 )
-from .walnut_image__writer import (
-    IWalnutImageWriter,
-    WalnutImageWriter,
+from .walnut_image__db_writer import (
+    IWalnutImageDBWriter,
+    WalnutImageDBWriter,
 )
-from .walnut_image_embedding__writer import (
-    IWalnutImageEmbeddingWriter,
-    WalnutImageEmbeddingWriter,
+from .walnut_image_embedding__db_writer import (
+    IWalnutImageEmbeddingDBWriter,
+    WalnutImageEmbeddingDBWriter,
 )
 
 __all__ = [
-    "IWalnutWriter",
-    "WalnutWriter",
-    "IWalnutImageWriter",
-    "WalnutImageWriter",
-    "IWalnutImageEmbeddingWriter",
-    "WalnutImageEmbeddingWriter",
+    "IWalnutDBWriter",
+    "WalnutDBWriter",
+    "IWalnutImageDBWriter",
+    "WalnutImageDBWriter",
+    "IWalnutImageEmbeddingDBWriter",
+    "WalnutImageEmbeddingDBWriter",
 ]
 

@@ -1,23 +1,17 @@
 # src/infrastructure_layer/db_readers/__init__.py
-from .walnut__reader import (
-    IWalnutReader,
-    WalnutReader,
+from .walnut__db_reader import (
+    IWalnutDBReader,
+    WalnutDBReader,
 )
-from .walnut_image__reader import (
-    IWalnutImageReader,
-    WalnutImageReader,
-)
-from .walnut_image_embedding__reader import (
-    IWalnutImageEmbeddingReader,
-    WalnutImageEmbeddingReader,
+from .walnut_image_embedding__db_reader import (
+    IWalnutImageEmbeddingDBReader,
+    WalnutImageEmbeddingDBReader,
 )
 
 __all__ = [
-    "IWalnutReader",
-    "WalnutReader",
-    "IWalnutImageReader",
-    "WalnutImageReader",
-    "IWalnutImageEmbeddingReader",
-    "WalnutImageEmbeddingReader",
+    "IWalnutDBReader",
+    "WalnutDBReader",
+    "IWalnutImageEmbeddingDBReader",
+    "WalnutImageEmbeddingDBReader",
 ]
 

@@ -1,54 +1,54 @@
-# src/infrastructure_layer/db_writers/walnut_image__writer.py
+# src/infrastructure_layer/db_writers/walnut_image__db_writer.py
 from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
 from typing import TYPE_CHECKING
-from src.infrastructure_layer.data_access_objects import WalnutImageDAO
+from src.infrastructure_layer.data_access_objects import WalnutImageDBDAO
 from src.common.constants import DEFAULT_EMBEDDING_MODEL
 
 if TYPE_CHECKING:
-    from .walnut_image_embedding__writer import IWalnutImageEmbeddingWriter
+    from .walnut_image_embedding__db_writer import IWalnutImageEmbeddingDBWriter
 
 
-class IWalnutImageWriter(ABC):
+class IWalnutImageDBWriter(ABC):
     """Interface for writing walnut image data to the database."""
 
     @abstractmethod
-    def save(self, image: WalnutImageDAO) -> WalnutImageDAO:
+    def save(self, image: WalnutImageDBDAO) -> WalnutImageDBDAO:
         """Save an image to the database. Returns image with generated ID."""
         pass
 
     @abstractmethod
-    def save_or_update(self, image: WalnutImageDAO) -> WalnutImageDAO:
+    def save_or_update(self, image: WalnutImageDBDAO) -> WalnutImageDBDAO:
         """Save or update an image. Returns image with ID."""
         pass
 
     @abstractmethod
     def save_with_embedding(
-        self, image: WalnutImageDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
-    ) -> WalnutImageDAO:
+        self, image: WalnutImageDBDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
+    ) -> WalnutImageDBDAO:
         """Save an image with its embedding. Returns image with IDs."""
         pass
 
 
-class WalnutImageWriter(IWalnutImageWriter):
+class WalnutImageDBWriter(IWalnutImageDBWriter):
     """Implementation for writing walnut image data using SQLAlchemy ORM."""
 
     def __init__(
         self,
         session: Session,
-        embedding_writer: "IWalnutImageEmbeddingWriter",
+        embedding_writer: "IWalnutImageEmbeddingDBWriter",
     ) -> None:
         """
         Initialize the writer with a SQLAlchemy session and embedding writer.
 
         Args:
             session: SQLAlchemy Session instance (injected via DI container)
-            embedding_writer: IWalnutImageEmbeddingWriter instance (injected via DI container)
+            embedding_writer: IWalnutImageEmbeddingDBWriter instance (injected via DI container)
         """
         self.session: Session = session
-        self.embedding_writer: "IWalnutImageEmbeddingWriter" = embedding_writer
+        self.embedding_writer: "IWalnutImageEmbeddingDBWriter" = embedding_writer
 
-    def save(self, image: WalnutImageDAO) -> WalnutImageDAO:
+    def save(self, image: WalnutImageDBDAO) -> WalnutImageDBDAO:
         """Save an image to the database. Returns image with generated ID."""
         try:
             # For new objects (without id or id is 0), use add() instead of merge()
@@ -66,11 +66,11 @@ class WalnutImageWriter(IWalnutImageWriter):
             self.session.rollback()
             raise
 
-    def save_or_update(self, image: WalnutImageDAO) -> WalnutImageDAO:
+    def save_or_update(self, image: WalnutImageDBDAO) -> WalnutImageDBDAO:
         """Save or update an image. Returns image with ID."""
         if image.id is not None:
             # Update existing - fetch from database
-            existing = self.session.get(WalnutImageDAO, image.id)
+            existing = self.session.get(WalnutImageDBDAO, image.id)
             if existing is None:
                 raise ValueError(f"Image with id {image.id} not found")
             
@@ -89,8 +89,8 @@ class WalnutImageWriter(IWalnutImageWriter):
             return self.save(image)
 
     def save_with_embedding(
-        self, image: WalnutImageDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
-    ) -> WalnutImageDAO:
+        self, image: WalnutImageDBDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
+    ) -> WalnutImageDBDAO:
         """Save an image with its embedding. Returns image with IDs."""
         try:
             # Save image first

@@ -1,25 +1,25 @@
-# src/infrastructure_layer/db_writers/walnut_image_embedding__writer.py
+# src/infrastructure_layer/db_writers/walnut_image_embedding__db_writer.py
 from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
-from src.infrastructure_layer.data_access_objects import WalnutImageEmbeddingDAO
+from src.infrastructure_layer.data_access_objects import WalnutImageEmbeddingDBDAO
 import numpy as np
 
 
-class IWalnutImageEmbeddingWriter(ABC):
+class IWalnutImageEmbeddingDBWriter(ABC):
     """Interface for writing walnut image embedding data to the database."""
 
     @abstractmethod
-    def save(self, embedding: WalnutImageEmbeddingDAO) -> WalnutImageEmbeddingDAO:
+    def save(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save an embedding to the database. Returns embedding with generated ID."""
         pass
 
     @abstractmethod
-    def save_or_update(self, embedding: WalnutImageEmbeddingDAO) -> WalnutImageEmbeddingDAO:
+    def save_or_update(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save or update an embedding. Returns embedding with ID."""
         pass
 
 
-class WalnutImageEmbeddingWriter(IWalnutImageEmbeddingWriter):
+class WalnutImageEmbeddingDBWriter(IWalnutImageEmbeddingDBWriter):
     """Implementation for writing walnut image embedding data using SQLAlchemy ORM."""
 
     def __init__(self, session: Session) -> None:
@@ -31,7 +31,7 @@ class WalnutImageEmbeddingWriter(IWalnutImageEmbeddingWriter):
         """
         self.session: Session = session
 
-    def save(self, embedding: WalnutImageEmbeddingDAO) -> WalnutImageEmbeddingDAO:
+    def save(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save an embedding to the database. Returns embedding with generated ID."""
         if embedding.embedding is None:
             raise ValueError("Embedding cannot be None")
@@ -49,12 +49,12 @@ class WalnutImageEmbeddingWriter(IWalnutImageEmbeddingWriter):
             self.session.rollback()
             raise
 
-    def save_or_update(self, embedding: WalnutImageEmbeddingDAO) -> WalnutImageEmbeddingDAO:
+    def save_or_update(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save or update an embedding. Returns embedding with ID."""
         try:
             if embedding.id is not None:
                 # Update existing - fetch from database
-                existing = self.session.get(WalnutImageEmbeddingDAO, embedding.id)
+                existing = self.session.get(WalnutImageEmbeddingDBDAO, embedding.id)
                 if existing is None:
                     raise ValueError(f"Embedding with id {embedding.id} not found")
                 
