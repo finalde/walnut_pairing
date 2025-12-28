@@ -23,6 +23,7 @@ class WalnutDAO(Base):
     updated_by: Mapped[str] = mapped_column(String, nullable=False)
 
     # Relationships
+    # Using string literal - SQLAlchemy resolves it by class name at runtime
     images: Mapped[List["WalnutImageDAO"]] = relationship(
         "WalnutImageDAO",
         back_populates="walnut",

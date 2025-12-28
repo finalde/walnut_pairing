@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
 from typing import TYPE_CHECKING
 from src.infrastructure_layer.data_access_objects import WalnutImageDAO
+from src.common.constants import DEFAULT_EMBEDDING_MODEL
 
 if TYPE_CHECKING:
     from .walnut_image_embedding_writer import IWalnutImageEmbeddingWriter
@@ -23,7 +24,7 @@ class IWalnutImageWriter(ABC):
 
     @abstractmethod
     def save_with_embedding(
-        self, image: WalnutImageDAO, model_name: str = "resnet50-imagenet"
+        self, image: WalnutImageDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
     ) -> WalnutImageDAO:
         """Save an image with its embedding. Returns image with IDs."""
         pass
@@ -88,7 +89,7 @@ class WalnutImageWriter(IWalnutImageWriter):
             return self.save(image)
 
     def save_with_embedding(
-        self, image: WalnutImageDAO, model_name: str = "resnet50-imagenet"
+        self, image: WalnutImageDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
     ) -> WalnutImageDAO:
         """Save an image with its embedding. Returns image with IDs."""
         try:

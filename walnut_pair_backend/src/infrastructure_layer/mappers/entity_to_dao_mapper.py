@@ -14,6 +14,7 @@ from src.infrastructure_layer.data_access_objects import (
     WalnutImageEmbeddingDAO,
 )
 from src.common.enums import WalnutSideEnum
+from src.common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 
 
 class EntityToDAOMapper:
@@ -24,9 +25,9 @@ class EntityToDAOMapper:
         walnut_entity: WalnutEntity,
         walnut_id: str,
         description: str = "",
-        created_by: str = "system",
-        updated_by: str = "system",
-        model_name: str = "resnet50-imagenet",
+        created_by: str = SYSTEM_USER,
+        updated_by: str = SYSTEM_USER,
+        model_name: str = DEFAULT_EMBEDDING_MODEL,
     ) -> WalnutDAO:
         """
         Convert a WalnutEntity to a WalnutDAO with images and embeddings.
@@ -50,26 +51,27 @@ class EntityToDAOMapper:
             updated_by=updated_by,
         )
 
-        # Map each side to an image DAO
+        # Map each side to an image DAO using enum
         side_mapping = {
-            "front": walnut_entity.front,
-            "back": walnut_entity.back,
-            "left": walnut_entity.left,
-            "right": walnut_entity.right,
-            "top": walnut_entity.top,
-            "down": walnut_entity.down,
+            WalnutSideEnum.FRONT: walnut_entity.front,
+            WalnutSideEnum.BACK: walnut_entity.back,
+            WalnutSideEnum.LEFT: walnut_entity.left,
+            WalnutSideEnum.RIGHT: walnut_entity.right,
+            WalnutSideEnum.TOP: walnut_entity.top,
+            WalnutSideEnum.DOWN: walnut_entity.down,
         }
 
         embedding_mapping = {
-            "front": walnut_entity.front_embedding,
-            "back": walnut_entity.back_embedding,
-            "left": walnut_entity.left_embedding,
-            "right": walnut_entity.right_embedding,
-            "top": walnut_entity.top_embedding,
-            "down": walnut_entity.down_embedding,
+            WalnutSideEnum.FRONT: walnut_entity.front_embedding,
+            WalnutSideEnum.BACK: walnut_entity.back_embedding,
+            WalnutSideEnum.LEFT: walnut_entity.left_embedding,
+            WalnutSideEnum.RIGHT: walnut_entity.right_embedding,
+            WalnutSideEnum.TOP: walnut_entity.top_embedding,
+            WalnutSideEnum.DOWN: walnut_entity.down_embedding,
         }
 
-        for side_name, image_vo in side_mapping.items():
+        for side_enum, image_vo in side_mapping.items():
+            side_name = side_enum.value
             image_dao = EntityToDAOMapper.image_value_object_to_dao(
                 image_vo,
                 walnut_id,
@@ -97,8 +99,8 @@ class EntityToDAOMapper:
     def image_value_object_to_dao(
         image_vo: ImageValueObject,
         walnut_id: str,
-        created_by: str = "system",
-        updated_by: str = "system",
+        created_by: str = SYSTEM_USER,
+        updated_by: str = SYSTEM_USER,
     ) -> WalnutImageDAO:
         """
         Convert an ImageValueObject to a WalnutImageDAO.

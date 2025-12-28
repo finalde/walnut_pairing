@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, TYPE_CHECKING
 
 from .base import Base
+from src.common.constants import CONSTRAINT_UQ_WALNUT_SIDE, TABLE_WALNUT
 
 if TYPE_CHECKING:
     from .walnut_dao import WalnutDAO
@@ -17,7 +18,11 @@ class WalnutImageDAO(Base):
     __tablename__ = "walnut_image"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    walnut_id: Mapped[str] = mapped_column(String, ForeignKey("walnut.id", ondelete="CASCADE"), nullable=False)
+    walnut_id: Mapped[str] = mapped_column(
+        String,
+        ForeignKey(f"{TABLE_WALNUT}.id", ondelete="CASCADE"),
+        nullable=False
+    )
     side: Mapped[str] = mapped_column(String, nullable=False)
     image_path: Mapped[str] = mapped_column(String, nullable=False)
     width: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -39,11 +44,15 @@ class WalnutImageDAO(Base):
 
     # Unique constraint
     __table_args__ = (
-        UniqueConstraint("walnut_id", "side", name="uq_walnut_side"),
+        UniqueConstraint("walnut_id", "side", name=CONSTRAINT_UQ_WALNUT_SIDE),
     )
 
     # Relationships
-    walnut: Mapped["WalnutDAO"] = relationship("WalnutDAO", back_populates="images")
+    # Using string literals - SQLAlchemy resolves them by class name at runtime
+    walnut: Mapped["WalnutDAO"] = relationship(
+        "WalnutDAO",
+        back_populates="images"
+    )
     embedding: Mapped[Optional["WalnutImageEmbeddingDAO"]] = relationship(
         "WalnutImageEmbeddingDAO",
         back_populates="image",

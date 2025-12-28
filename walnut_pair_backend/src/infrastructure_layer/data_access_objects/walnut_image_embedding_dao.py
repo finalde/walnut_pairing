@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
 from .base import Base
+from src.common.constants import TABLE_WALNUT_IMAGE
 
 if TYPE_CHECKING:
     from .walnut_image_dao import WalnutImageDAO
@@ -18,7 +19,11 @@ class WalnutImageEmbeddingDAO(Base):
     __tablename__ = "walnut_image_embedding"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    image_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("walnut_image.id", ondelete="CASCADE"), nullable=False)
+    image_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger,
+        ForeignKey(f"{TABLE_WALNUT_IMAGE}.id", ondelete="CASCADE"),
+        nullable=False
+    )
     model_name: Mapped[str] = mapped_column(String, nullable=False)
     embedding: Mapped[Any] = mapped_column(Vector(512), nullable=False)  # pgvector Vector type
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
@@ -37,4 +42,8 @@ class WalnutImageEmbeddingDAO(Base):
         super().__init__(**kwargs)
 
     # Relationships
-    image: Mapped["WalnutImageDAO"] = relationship("WalnutImageDAO", back_populates="embedding")
+    # Using string literal - SQLAlchemy resolves it by class name at runtime
+    image: Mapped["WalnutImageDAO"] = relationship(
+        "WalnutImageDAO",
+        back_populates="embedding"
+    )

@@ -1,6 +1,7 @@
 # src/domain_layer/entities/walnut_entity.py
 from typing import Optional
 from src.domain_layer.value_objects.image_value_object import ImageValueObject
+from src.common.enums import WalnutSideEnum
 import numpy as np
 
 
@@ -36,13 +37,15 @@ class WalnutEntity:
         }
 
     def set_embedding(self, side: str, embedding: np.ndarray) -> None:
-        if side not in ["front", "back", "left", "right", "top", "down"]:
-            raise ValueError(f"Invalid side: {side}")
+        # Validate side using enum
+        valid_sides = {side_enum.value for side_enum in WalnutSideEnum}
+        if side not in valid_sides:
+            raise ValueError(f"Invalid side: {side}. Must be one of {valid_sides}")
         setattr(self, f"{side}_embedding", embedding)
         # Check if all embeddings are set
         all_set = all(
-            getattr(self, f"{s}_embedding") is not None
-            for s in ["front", "back", "left", "right", "top", "down"]
+            getattr(self, f"{side_enum.value}_embedding") is not None
+            for side_enum in WalnutSideEnum
         )
         self.processing_status["embedding_generated"] = all_set
 
