@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Protocol, TYPE_CHECKING, runtime_checkable
 
 if TYPE_CHECKING:
-    from src.common.app_config import DatabaseConfig
+    from src.app_config import DatabaseConfig
 
 
 @runtime_checkable

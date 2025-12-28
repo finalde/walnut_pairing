@@ -1,4 +1,4 @@
-# src/config/config.py
+# src/app_config.py
 from pathlib import Path
 from dataclasses import dataclass
 import yaml  # type: ignore[import-untyped]

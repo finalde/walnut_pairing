@@ -1,4 +1,4 @@
-# src/application/application.py
+# src/application.py
 """Main application layer - orchestrates business logic."""
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING

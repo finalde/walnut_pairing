@@ -4,7 +4,7 @@ import sys
 # Add parent directory to path to allow imports when running directly
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.application.application import IApplication
+from src.application import IApplication
 from src.common.di_container import Container
 
 

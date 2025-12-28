@@ -11,7 +11,7 @@ from pathlib import Path
 import psycopg2
 from typing import get_type_hints, get_origin, get_args, Dict, Type, Any
 
-from src.common.app_config import AppConfig
+from src.app_config import AppConfig
 from src.common.interfaces import IAppConfig, IDatabaseConnection
 from src.common.di_registry import DIRegistry
 from src.infrastructure_layer.session_factory import SessionFactory
