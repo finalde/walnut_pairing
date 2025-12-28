@@ -1,4 +1,4 @@
-# src/application_layer/dtos/walnut_dto.py
+# src/application_layer/dtos/walnut__dto.py
 """Data Transfer Objects for walnut data - no domain knowledge."""
 from dataclasses import dataclass
 from typing import List

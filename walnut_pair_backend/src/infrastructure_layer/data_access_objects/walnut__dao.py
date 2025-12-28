@@ -1,4 +1,4 @@
-# src/infrastructure_layer/data_access_objects/walnut_dao.py
+# src/infrastructure_layer/data_access_objects/walnut__dao.py
 """SQLAlchemy ORM model for walnut table."""
 from datetime import datetime
 from sqlalchemy import String, Text, DateTime

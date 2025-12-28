@@ -1,8 +1,8 @@
-# src/infrastructure_layer/db_readers/walnut_image_embedding_reader.py
+# src/infrastructure_layer/db_readers/walnut_image_embedding__reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List
 import numpy as np
-from src.infrastructure_layer.data_access_objects.walnut_image_embedding_dao import (
+from src.infrastructure_layer.data_access_objects.walnut_image_embedding__dao import (
     WalnutImageEmbeddingDAO,
 )
 from src.common.interfaces import IDatabaseConnection

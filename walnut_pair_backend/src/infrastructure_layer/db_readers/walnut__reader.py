@@ -1,11 +1,11 @@
-# src/infrastructure_layer/db_readers/walnut_reader.py
+# src/infrastructure_layer/db_readers/walnut__reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List, TYPE_CHECKING
 from ..data_access_objects import WalnutDAO
 from src.common.interfaces import IDatabaseConnection
 
 if TYPE_CHECKING:
-    from .walnut_image_reader import IWalnutImageReader
+    from .walnut_image__reader import IWalnutImageReader
 
 
 class IWalnutReader(ABC):

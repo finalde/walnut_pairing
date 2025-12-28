@@ -1,4 +1,4 @@
-# src/infrastructure_layer/data_access_objects/walnut_image_embedding_dao.py
+# src/infrastructure_layer/data_access_objects/walnut_image_embedding__dao.py
 """SQLAlchemy ORM model for walnut_image_embedding table."""
 from datetime import datetime
 from sqlalchemy import String, BigInteger, DateTime, ForeignKey
@@ -11,7 +11,7 @@ from .base import Base
 from src.common.constants import TABLE_WALNUT_IMAGE
 
 if TYPE_CHECKING:
-    from .walnut_image_dao import WalnutImageDAO
+    from .walnut_image__dao import WalnutImageDAO
 
 
 class WalnutImageEmbeddingDAO(Base):

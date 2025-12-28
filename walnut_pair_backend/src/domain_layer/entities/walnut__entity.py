@@ -1,6 +1,6 @@
-# src/domain_layer/entities/walnut_entity.py
+# src/domain_layer/entities/walnut__entity.py
 from typing import Optional
-from src.domain_layer.value_objects.image_value_object import ImageValueObject
+from src.domain_layer.value_objects.image__value_object import ImageValueObject
 from src.common.enums import WalnutSideEnum
 import numpy as np
 

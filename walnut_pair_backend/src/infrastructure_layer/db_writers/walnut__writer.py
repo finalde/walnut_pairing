@@ -1,11 +1,11 @@
-# src/infrastructure_layer/db_writers/walnut_writer.py
+# src/infrastructure_layer/db_writers/walnut__writer.py
 from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
 from typing import TYPE_CHECKING
 from src.infrastructure_layer.data_access_objects import WalnutDAO
 
 if TYPE_CHECKING:
-    from .walnut_image_writer import IWalnutImageWriter
+    from .walnut_image__writer import IWalnutImageWriter
 
 
 class IWalnutWriter(ABC):

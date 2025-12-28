@@ -1,10 +1,10 @@
-# src/application_layer/walnut_al.py
+# src/application_layer/walnut__al.py
 from abc import ABC, abstractmethod
 from typing import Optional, TYPE_CHECKING
 import numpy as np
 
 from pathlib import Path
-from src.domain_layer.services.embedding_service import (
+from src.domain_layer.services.embedding__service import (
     IImageEmbeddingService,
 )
 from src.common.interfaces import IAppConfig, IDatabaseConnection
@@ -18,7 +18,7 @@ from src.infrastructure_layer.data_access_objects import (
     WalnutImageEmbeddingDAO,
 )
 from src.application_layer.services.walnut_image_loader import WalnutImageLoader
-from src.application_layer.mappers.walnut_mapper import WalnutMapper
+from src.application_layer.mappers.walnut__mapper import WalnutMapper
 
 
 class IWalnutAL(ABC):

@@ -6,7 +6,7 @@ Just register once, and dependencies are automatically resolved.
 from typing import Dict, Type, TypeVar, Any
 from src.common.interfaces import IAppConfig, IDatabaseConnection
 from src.app_config import AppConfig
-from src.domain_layer.services.embedding_service import (
+from src.domain_layer.services.embedding__service import (
     IImageEmbeddingService,
     ImageEmbeddingService,
 )
@@ -26,7 +26,7 @@ from src.infrastructure_layer.db_writers import (
     IWalnutImageEmbeddingWriter,
     WalnutImageEmbeddingWriter,
 )
-from src.application_layer.walnut_al import IWalnutAL, WalnutAL
+from src.application_layer.walnut__al import IWalnutAL, WalnutAL
 from src.application import IApplication, Application
 
 T = TypeVar("T")

@@ -1,4 +1,4 @@
-# src/infrastructure_layer/db_writers/walnut_image_embedding_writer.py
+# src/infrastructure_layer/db_writers/walnut_image_embedding__writer.py
 from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
 from src.infrastructure_layer.data_access_objects import WalnutImageEmbeddingDAO

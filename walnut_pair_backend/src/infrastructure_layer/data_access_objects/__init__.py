@@ -1,8 +1,8 @@
 # src/infrastructure_layer/data_access_objects/__init__.py
 from .base import Base
-from .walnut_dao import WalnutDAO
-from .walnut_image_dao import WalnutImageDAO
-from .walnut_image_embedding_dao import (
+from .walnut__dao import WalnutDAO
+from .walnut_image__dao import WalnutImageDAO
+from .walnut_image_embedding__dao import (
     WalnutImageEmbeddingDAO,
 )
 

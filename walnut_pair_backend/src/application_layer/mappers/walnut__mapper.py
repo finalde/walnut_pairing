@@ -1,4 +1,4 @@
-# src/application_layer/mappers/walnut_mapper.py
+# src/application_layer/mappers/walnut__mapper.py
 """
 Mapper for walnut domain objects.
 Handles all mapping logic between walnut domain entities/value objects and other types (DAOs, DTOs, etc.).
@@ -8,8 +8,8 @@ import numpy as np
 from PIL import Image
 
 from src.application_layer.dtos import WalnutDTO, WalnutImageDTO
-from src.domain_layer.entities.walnut_entity import WalnutEntity
-from src.domain_layer.value_objects.image_value_object import ImageValueObject
+from src.domain_layer.entities.walnut__entity import WalnutEntity
+from src.domain_layer.value_objects.image__value_object import ImageValueObject
 from src.infrastructure_layer.data_access_objects import (
     WalnutDAO,
     WalnutImageDAO,
