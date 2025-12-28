@@ -15,6 +15,8 @@ from src.common.app_config import AppConfig
 from src.common.interfaces import IAppConfig, IDatabaseConnection
 from src.common.di_registry import DIRegistry
 from src.business_layers.walnut_bl import WalnutBL
+from src.data_access_layers.session_factory import SessionFactory
+from sqlalchemy.orm import Session
 
 
 def create_app_config(config_path: Path) -> IAppConfig:
@@ -29,10 +31,20 @@ def create_db_connection(app_config: IAppConfig) -> IDatabaseConnection:
     )
 
 
-def _resolve_type_hints(func):
+def create_session_factory(app_config: IAppConfig) -> SessionFactory:
+    """Create a SQLAlchemy session factory."""
+    return SessionFactory(app_config)
+
+
+def create_session(session_factory: SessionFactory) -> Session:
+    """Create a new SQLAlchemy session."""
+    return session_factory.create_session()
+
+
+def _resolve_type_hints(func: Any) -> Dict[str, Any]:
     """Get type hints with forward references resolved."""
     module = sys.modules.get(func.__module__) if hasattr(func, '__module__') else None
-    namespace = {**module.__dict__} if module else {}
+    namespace: Dict[str, Any] = {**module.__dict__} if module else {}
     namespace.update({iface.__name__: iface for iface in DIRegistry._registry.keys()})
     namespace.update({'IAppConfig': IAppConfig, 'IDatabaseConnection': IDatabaseConnection})
     try:
@@ -45,7 +57,12 @@ def _resolve_type_hints(func):
                 and (isinstance(param.annotation, str) or not isinstance(param.annotation, str))}
 
 
-def _create_provider(interface: Type[Any], impl: Type[Any], providers_dict: Dict, visited: set):
+def _create_provider(
+    interface: Type[Any], 
+    impl: Type[Any], 
+    providers_dict: Dict[Type[Any], Any], 
+    visited: set[Type[Any]]
+) -> Any:
     """Create provider with auto-resolved dependencies."""
     if interface in visited:
         raise ValueError(f"Circular dependency: {interface.__name__}")
@@ -87,10 +104,24 @@ class Container(containers.DeclarativeContainer):
     config_path = providers.Configuration()
     app_config = providers.Singleton(create_app_config, config_path=config_path)
     db_connection = providers.Singleton(create_db_connection, app_config=app_config)
+    
+    # SQLAlchemy session management
+    session_factory = providers.Singleton(create_session_factory, app_config=app_config)
+    session = providers.Factory(create_session, session_factory=session_factory)
+    
+    def get_provider(self, interface_or_class: Type[Any]) -> Any:
+        """Get instance for an interface or class."""
+        provider = _providers.get(interface_or_class)
+        return provider() if provider else None
 
 
 # Auto-create providers for all registered interfaces
-_providers = {IAppConfig: Container.app_config, IDatabaseConnection: Container.db_connection}
+_providers = {
+    IAppConfig: Container.app_config,
+    IDatabaseConnection: Container.db_connection,
+    SessionFactory: Container.session_factory,
+    Session: Container.session,
+}
 for interface in DIRegistry._registry.keys():
     if interface not in _providers:
         provider = _create_provider(interface, DIRegistry.get(interface), _providers, set())
@@ -108,3 +139,9 @@ for name, type_ in hints.items():
         if type_ in _providers:
             deps[name] = _providers[type_]
 Container.walnut_bl = providers.Factory(WalnutBL, **deps)
+
+# Add walnut_bl to providers dict for lookup
+from src.business_layers.walnut_bl import IWalnutBL
+_providers[IWalnutBL] = Container.walnut_bl
+
+# Note: get_provider method is now defined directly in the Container class above

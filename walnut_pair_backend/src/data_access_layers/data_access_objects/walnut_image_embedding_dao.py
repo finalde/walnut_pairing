@@ -1,22 +1,40 @@
 # src/data_access_layers/data_access_objects/walnut_image_embedding_dao.py
-from dataclasses import dataclass
+"""SQLAlchemy ORM model for walnut_image_embedding table."""
 from datetime import datetime
-from typing import Optional
+from sqlalchemy import String, BigInteger, DateTime, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
+from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
+from .base import Base
 
-@dataclass
-class WalnutImageEmbeddingDAO:
-    """
-    Data Access Object for the walnut_image_embedding table.
-    Represents an embedding record for a walnut image in the database.
-    """
-    id: Optional[int] = None  # BIGSERIAL, auto-generated
-    image_id: int = 0
-    model_name: str = ""
-    embedding: Optional[np.ndarray] = None  # VECTOR(512)
-    created_at: Optional[datetime] = None  # NOT NULL in DB, set by DEFAULT NOW()
-    created_by: str = ""
-    updated_at: Optional[datetime] = None  # NOT NULL in DB, set by DEFAULT NOW()
-    updated_by: str = ""
+if TYPE_CHECKING:
+    from .walnut_image_dao import WalnutImageDAO
 
+
+class WalnutImageEmbeddingDAO(Base):
+    """Data Access Object / ORM model for the walnut_image_embedding table."""
+    __tablename__ = "walnut_image_embedding"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    image_id: Mapped[Optional[int]] = mapped_column(BigInteger, ForeignKey("walnut_image.id", ondelete="CASCADE"), nullable=False)
+    model_name: Mapped[str] = mapped_column(String, nullable=False)
+    embedding: Mapped[Any] = mapped_column(Vector(512), nullable=False)  # pgvector Vector type
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
+    created_by: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
+    updated_by: Mapped[str] = mapped_column(String, nullable=False)
+
+    def __init__(self, **kwargs):
+        # Remove id from kwargs if it's None (for new objects)
+        # SQLAlchemy will generate it automatically for autoincrement columns
+        if 'id' in kwargs and kwargs['id'] is None:
+            del kwargs['id']
+        # Remove image_id if it's 0 or None (will be set after image is saved)
+        if 'image_id' in kwargs and (kwargs['image_id'] == 0 or kwargs['image_id'] is None):
+            del kwargs['image_id']
+        super().__init__(**kwargs)
+
+    # Relationships
+    image: Mapped["WalnutImageDAO"] = relationship("WalnutImageDAO", back_populates="embedding")

@@ -18,6 +18,14 @@ from src.data_access_layers.db_readers import (
     IWalnutImageEmbeddingReader,
     WalnutImageEmbeddingReader,
 )
+from src.data_access_layers.db_writers import (
+    IWalnutWriter,
+    WalnutWriter,
+    IWalnutImageWriter,
+    WalnutImageWriter,
+    IWalnutImageEmbeddingWriter,
+    WalnutImageEmbeddingWriter,
+)
 from src.business_layers.walnut_bl import IWalnutBL, WalnutBL
 
 T = TypeVar("T")
@@ -73,6 +81,9 @@ DIRegistry.register(IImageEmbeddingService, ImageEmbeddingService)
 DIRegistry.register(IWalnutImageEmbeddingReader, WalnutImageEmbeddingReader)
 DIRegistry.register(IWalnutImageReader, WalnutImageReader)
 DIRegistry.register(IWalnutReader, WalnutReader)
+DIRegistry.register(IWalnutImageEmbeddingWriter, WalnutImageEmbeddingWriter)
+DIRegistry.register(IWalnutImageWriter, WalnutImageWriter)
+DIRegistry.register(IWalnutWriter, WalnutWriter)
 # Note: IWalnutBL/WalnutBL is handled separately in di_container.py
 # since it's a business logic class, not just an interface implementation
 

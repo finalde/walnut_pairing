@@ -1,23 +1,31 @@
 # src/data_access_layers/data_access_objects/walnut_dao.py
-from dataclasses import dataclass, field
+"""SQLAlchemy ORM model for walnut table."""
 from datetime import datetime
-from typing import Optional, List, TYPE_CHECKING
+from sqlalchemy import String, Text, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import List, TYPE_CHECKING
+
+from .base import Base
 
 if TYPE_CHECKING:
     from .walnut_image_dao import WalnutImageDAO
 
 
-@dataclass
-class WalnutDAO:
-    """
-    Data Access Object for the walnut table.
-    Represents a walnut record in the database.
-    """
-    id: str
-    description: str = ""
-    created_at: Optional[datetime] = None  # NOT NULL in DB, set by DEFAULT NOW()
-    created_by: str = ""
-    updated_at: Optional[datetime] = None  # NOT NULL in DB, set by DEFAULT NOW()
-    updated_by: str = ""
-    images: List["WalnutImageDAO"] = field(default_factory=list)
+class WalnutDAO(Base):
+    """Data Access Object / ORM model for the walnut table."""
+    __tablename__ = "walnut"
 
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
+    created_by: Mapped[str] = mapped_column(String, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
+    updated_by: Mapped[str] = mapped_column(String, nullable=False)
+
+    # Relationships
+    images: Mapped[List["WalnutImageDAO"]] = relationship(
+        "WalnutImageDAO",
+        back_populates="walnut",
+        cascade="all, delete-orphan",
+        lazy="select"
+    )

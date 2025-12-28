@@ -1,6 +1,37 @@
 [tool.black]
 line-length = 88
 target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
 
 [tool.isort]
 profile = "black"
+line_length = 88
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_glob = ["*/migrations/*", "*/__pycache__/*"]
+
+[tool.mypy]
+# Note: Main mypy config is in mypy.ini
+# This section can be used for tool-specific overrides if needed
+
+[tool.flake8]
+# Note: Main flake8 config is in .flake8
+# This section can be used for tool-specific overrides if needed
