@@ -1,14 +1,11 @@
 # batch/application.py
-from typing import TYPE_CHECKING
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "libs"))
 
-if TYPE_CHECKING:
-    from src.application_layer.commands.command_dispatcher import ICommandDispatcher
-    from src.application_layer.queries.walnut__query import WalnutQuery
-
+from src.application_layer.commands.command_dispatcher import ICommandDispatcher
+from src.application_layer.queries.walnut__query import WalnutQuery
 from src.application_layer.commands.command_objects.walnut_command import (
     CreateFakeWalnutCommand,
 )
@@ -21,14 +18,13 @@ class IApplication:
 class Application:
     def __init__(
         self,
-        command_dispatcher: "ICommandDispatcher",
-        walnut_query: "WalnutQuery",
+        command_dispatcher: ICommandDispatcher,
+        walnut_query: WalnutQuery,
     ) -> None:
-        self.command_dispatcher: "ICommandDispatcher" = command_dispatcher
-        self.walnut_query: "WalnutQuery" = walnut_query
+        self.command_dispatcher: ICommandDispatcher = command_dispatcher
+        self.walnut_query: WalnutQuery = walnut_query
 
     def run(self) -> None:
-        print("\n--- Testing CQRS: Create Fake Walnut Command ---")
         command = CreateFakeWalnutCommand(walnut_id="WALNUT-TEST-001")
         self.command_dispatcher.dispatch(command)
         

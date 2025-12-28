@@ -13,10 +13,7 @@ from batch.di_registry import DIRegistry
 from src.infrastructure_layer.session_factory import SessionFactory
 from sqlalchemy.orm import Session
 from batch.application import IApplication, Application
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.application_layer.commands.command_dispatcher import ICommandDispatcher
+from src.application_layer.commands.command_dispatcher import ICommandDispatcher
 
 
 def create_app_config(config_path: str) -> IAppConfig:
@@ -118,24 +115,14 @@ class Container(containers.DeclarativeContainer):
         provider = _providers.get(interface_or_class)
         return provider() if provider else None
     
-    def command_dispatcher(self) -> "ICommandDispatcher":
+    def command_dispatcher(self) -> ICommandDispatcher:
         from src.application_layer.commands.command_dispatcher import (
             CommandDispatcher,
         )
-        from src.application_layer.commands.command_handlers.walnut_command_handler import (
-            CreateFakeWalnutHandler,
-        )
-        from src.application_layer.commands.command_objects.walnut_command import (
-            CreateFakeWalnutCommand,
-        )
         
-        dispatcher = CommandDispatcher()
-        create_fake_handler = CreateFakeWalnutHandler(
+        return CommandDispatcher.create_with_handlers(
             walnut_writer=self.walnutdbwriter(),
         )
-        dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
-        
-        return dispatcher
     
     def application(self) -> IApplication:
         cmd_disp = Container.command_dispatcher.__get__(self, Container)()
