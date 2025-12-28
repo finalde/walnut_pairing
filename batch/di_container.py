@@ -1,6 +1,7 @@
 # batch/di_container.py
 import inspect
 import sys
+import types
 from dependency_injector import containers, providers
 from pathlib import Path
 import psycopg2
@@ -12,6 +13,10 @@ from batch.di_registry import DIRegistry
 from src.infrastructure_layer.session_factory import SessionFactory
 from sqlalchemy.orm import Session
 from batch.application import IApplication, Application
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.application_layer.commands.command_dispatcher import ICommandDispatcher
 
 
 def create_app_config(config_path: str) -> IAppConfig:
@@ -112,6 +117,32 @@ class Container(containers.DeclarativeContainer):
     def get_provider(self, interface_or_class: Type[Any]) -> Any:
         provider = _providers.get(interface_or_class)
         return provider() if provider else None
+    
+    def command_dispatcher(self) -> "ICommandDispatcher":
+        from src.application_layer.commands.command_dispatcher import (
+            CommandDispatcher,
+        )
+        from src.application_layer.commands.command_handlers.walnut_command_handler import (
+            CreateFakeWalnutHandler,
+        )
+        from src.application_layer.commands.command_objects.walnut_command import (
+            CreateFakeWalnutCommand,
+        )
+        
+        dispatcher = CommandDispatcher()
+        create_fake_handler = CreateFakeWalnutHandler(
+            walnut_writer=self.walnutdbwriter(),
+        )
+        dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
+        
+        return dispatcher
+    
+    def application(self) -> IApplication:
+        cmd_disp = Container.command_dispatcher.__get__(self, Container)()
+        return Application(
+            command_dispatcher=cmd_disp,
+            walnut_query=self.walnutquery(),
+        )
 
 
 _providers = {
@@ -127,4 +158,5 @@ for interface in DIRegistry._registry.keys():
         attr = interface.__name__[1:].lower() if interface.__name__.startswith("I") else interface.__name__.lower()
         attr = attr.replace("appconfig", "app_config").replace("databaseconnection", "db_connection").replace("walnutal", "walnut_al")
         setattr(Container, attr, provider)
+
 
