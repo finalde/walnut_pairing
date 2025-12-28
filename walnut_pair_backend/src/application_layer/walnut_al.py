@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, TYPE_CHECKING
 import numpy as np
 
-from src.domain_layers.services.embedding_service import (
+from src.domain_layer.services.embedding_service import (
     IImageEmbeddingService,
 )
 from src.common.interfaces import IAppConfig, IDatabaseConnection

@@ -6,8 +6,8 @@ from datetime import datetime
 from typing import Optional
 import numpy as np
 
-from src.domain_layers.entities.walnut_entity import WalnutEntity
-from src.domain_layers.value_objects.image_value_object import ImageValueObject
+from src.domain_layer.entities.walnut_entity import WalnutEntity
+from src.domain_layer.value_objects.image_value_object import ImageValueObject
 from src.infrastructure_layer.data_access_objects import (
     WalnutDAO,
     WalnutImageDAO,

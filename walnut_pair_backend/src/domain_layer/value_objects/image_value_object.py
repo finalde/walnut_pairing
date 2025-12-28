@@ -1,4 +1,4 @@
-# src/domain_layers/value_objects/image_value_object.py
+# src/domain_layer/value_objects/image_value_object.py
 from dataclasses import dataclass
 from PIL import Image
 from src.common.enums import WalnutSideEnum

@@ -6,7 +6,7 @@ Just register once, and dependencies are automatically resolved.
 from typing import Dict, Type, TypeVar, Any
 from src.common.interfaces import IAppConfig, IDatabaseConnection
 from src.app_config import AppConfig
-from src.domain_layers.services.embedding_service import (
+from src.domain_layer.services.embedding_service import (
     IImageEmbeddingService,
     ImageEmbeddingService,
 )
