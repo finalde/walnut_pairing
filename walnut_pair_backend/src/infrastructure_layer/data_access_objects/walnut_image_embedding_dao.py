@@ -25,7 +25,7 @@ class WalnutImageEmbeddingDAO(Base):
         nullable=False
     )
     model_name: Mapped[str] = mapped_column(String, nullable=False)
-    embedding: Mapped[Any] = mapped_column(Vector(512), nullable=False)  # pgvector Vector type
+    embedding: Mapped[Any] = mapped_column(Vector(2048), nullable=False)  # pgvector Vector type (ResNet50 produces 2048-dim embeddings)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
     created_by: Mapped[str] = mapped_column(String, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")

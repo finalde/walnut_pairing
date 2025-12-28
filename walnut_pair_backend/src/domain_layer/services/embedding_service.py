@@ -19,20 +19,16 @@ class IImageEmbeddingService(ABC):
 
 
 class ImageEmbeddingService(IImageEmbeddingService):
-    model: nn.Module
-    preprocess: transforms.Compose
-    device: str
-
     def __init__(self) -> None:
-        self.device = ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device: str = ("cuda" if torch.cuda.is_available() else "cpu")
 
         # Pretrained ResNet50 without classifier
         resnet = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
-        self.model = nn.Sequential(*list(resnet.children())[:-1])  # remove final FC
+        self.model: nn.Module = nn.Sequential(*list(resnet.children())[:-1])  # remove final FC
         self.model.eval().to(self.device)
 
         # Image preprocessing
-        self.preprocess = transforms.Compose([
+        self.preprocess: transforms.Compose = transforms.Compose([
             transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],

@@ -29,7 +29,7 @@ class WalnutImageEmbeddingWriter(IWalnutImageEmbeddingWriter):
         Args:
             session: SQLAlchemy Session instance (injected via DI container)
         """
-        self.session = session
+        self.session: Session = session
 
     def save(self, embedding: WalnutImageEmbeddingDAO) -> WalnutImageEmbeddingDAO:
         """Save an embedding to the database. Returns embedding with generated ID."""

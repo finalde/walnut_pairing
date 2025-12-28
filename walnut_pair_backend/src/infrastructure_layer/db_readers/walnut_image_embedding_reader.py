@@ -41,7 +41,7 @@ class WalnutImageEmbeddingReader(IWalnutImageEmbeddingReader):
         Args:
             db_connection: IDatabaseConnection instance (injected via DI container)
         """
-        self.db_connection = db_connection
+        self.db_connection: IDatabaseConnection = db_connection
 
     def _vector_to_numpy(self, vector_data) -> np.ndarray:
         """

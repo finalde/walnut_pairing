@@ -42,8 +42,8 @@ class WalnutWriter(IWalnutWriter):
             session: SQLAlchemy Session instance (injected via DI container)
             image_writer: IWalnutImageWriter instance (injected via DI container)
         """
-        self.session = session
-        self.image_writer = image_writer
+        self.session: Session = session
+        self.image_writer: "IWalnutImageWriter" = image_writer
 
     def save(self, walnut: WalnutDAO) -> WalnutDAO:
         """Save a walnut to the database. Returns walnut with timestamps."""

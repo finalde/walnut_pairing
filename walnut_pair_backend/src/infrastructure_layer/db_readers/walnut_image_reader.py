@@ -53,8 +53,8 @@ class WalnutImageReader(IWalnutImageReader):
             db_connection: IDatabaseConnection instance (injected via DI container)
             embedding_reader: IWalnutImageEmbeddingReader instance (injected via DI container).
         """
-        self.db_connection = db_connection
-        self.embedding_reader = embedding_reader
+        self.db_connection: IDatabaseConnection = db_connection
+        self.embedding_reader: "IWalnutImageEmbeddingReader" = embedding_reader
 
     def get_by_id(self, image_id: int) -> Optional[WalnutImageDAO]:
         """Get a walnut image by its ID without embedding."""

@@ -22,8 +22,8 @@ class AppConfig(IAppConfig):
         image_root: str,
         database: dict,
     ) -> None:
-        self._image_root = image_root
-        self._database = DatabaseConfig(**database)
+        self._image_root: str = image_root
+        self._database: DatabaseConfig = DatabaseConfig(**database)
 
     @property
     def image_root(self) -> str:
