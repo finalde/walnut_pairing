@@ -1,4 +1,4 @@
-# src/data_access_layers/db_readers/walnut_reader.py
+# src/infrastructure_layer/db_readers/walnut_reader.py
 from abc import ABC, abstractmethod
 from typing import Optional, List, TYPE_CHECKING
 from ..data_access_objects import WalnutDAO

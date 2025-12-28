@@ -1,4 +1,4 @@
-# src/data_access_layers/db_writers/__init__.py
+# src/infrastructure_layer/db_writers/__init__.py
 from .walnut_writer import (
     IWalnutWriter,
     WalnutWriter,

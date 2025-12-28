@@ -1,4 +1,4 @@
-# src/application_layers/walnut_al.py
+# src/application_layer/walnut_al.py
 from abc import ABC, abstractmethod
 from typing import Optional, TYPE_CHECKING
 import numpy as np
@@ -7,9 +7,9 @@ from src.domain_layers.services.embedding_service import (
     IImageEmbeddingService,
 )
 from src.common.interfaces import IAppConfig, IDatabaseConnection
-from src.data_access_layers.db_readers import IWalnutImageEmbeddingReader, IWalnutReader
-from src.data_access_layers.db_writers import IWalnutWriter
-from src.data_access_layers.data_access_objects import (
+from src.infrastructure_layer.db_readers import IWalnutImageEmbeddingReader, IWalnutReader
+from src.infrastructure_layer.db_writers import IWalnutWriter
+from src.infrastructure_layer.data_access_objects import (
     WalnutDAO,
     WalnutImageDAO,
     WalnutImageEmbeddingDAO,

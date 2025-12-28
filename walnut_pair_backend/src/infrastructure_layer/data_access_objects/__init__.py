@@ -1,4 +1,4 @@
-# src/data_access_layers/data_access_objects/__init__.py
+# src/infrastructure_layer/data_access_objects/__init__.py
 from .base import Base
 from .walnut_dao import WalnutDAO
 from .walnut_image_dao import WalnutImageDAO

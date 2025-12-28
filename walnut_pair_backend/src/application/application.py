@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.application_layers.walnut_al import IWalnutAL
+    from src.application_layer.walnut_al import IWalnutAL
 
 
 class IApplication(ABC):

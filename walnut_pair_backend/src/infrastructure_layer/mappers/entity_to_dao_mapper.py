@@ -1,4 +1,4 @@
-# src/data_access_layers/mappers/entity_to_dao_mapper.py
+# src/infrastructure_layer/mappers/entity_to_dao_mapper.py
 """
 Mapper to convert domain entities and value objects to DAOs.
 """
@@ -8,7 +8,7 @@ import numpy as np
 
 from src.domain_layers.entities.walnut_entity import WalnutEntity
 from src.domain_layers.value_objects.image_value_object import ImageValueObject
-from src.data_access_layers.data_access_objects import (
+from src.infrastructure_layer.data_access_objects import (
     WalnutDAO,
     WalnutImageDAO,
     WalnutImageEmbeddingDAO,

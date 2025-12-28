@@ -1,4 +1,4 @@
-# src/data_access_layers/data_access_objects/base.py
+# src/infrastructure_layer/data_access_objects/base.py
 """Base class for SQLAlchemy ORM models."""
 from sqlalchemy.orm import DeclarativeBase
 

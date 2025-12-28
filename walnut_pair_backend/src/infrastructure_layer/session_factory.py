@@ -1,11 +1,11 @@
-# src/data_access_layers/session_factory.py
+# src/infrastructure_layer/session_factory.py
 """SQLAlchemy session factory and database connection management."""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Protocol
 
 from src.common.interfaces import IAppConfig
-from src.data_access_layers.data_access_objects import Base
+from src.infrastructure_layer.data_access_objects import Base
 
 
 class ISessionFactory(Protocol):

@@ -94,7 +94,7 @@ def create_connection_pool(
 # Example usage with readers:
 def example_usage():
     """Example of how to use the database connection with readers."""
-    from src.data_access_layers.db_readers import (
+    from src.infrastructure_layer.db_readers import (
         WalnutReader,
         WalnutImageReader,
     )
@@ -129,7 +129,7 @@ def example_usage():
 # Example with connection pool:
 def example_usage_with_pool():
     """Example using connection pool."""
-    from src.data_access_layers.db_readers import WalnutReader
+    from src.infrastructure_layer.db_readers import WalnutReader
     
     # Create connection pool
     pool = create_connection_pool(

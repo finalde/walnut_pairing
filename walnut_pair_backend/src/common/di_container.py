@@ -14,7 +14,7 @@ from typing import get_type_hints, get_origin, get_args, Dict, Type, Any
 from src.common.app_config import AppConfig
 from src.common.interfaces import IAppConfig, IDatabaseConnection
 from src.common.di_registry import DIRegistry
-from src.data_access_layers.session_factory import SessionFactory
+from src.infrastructure_layer.session_factory import SessionFactory
 from sqlalchemy.orm import Session
 
 

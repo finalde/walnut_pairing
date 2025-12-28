@@ -10,7 +10,7 @@ from src.domain_layers.services.embedding_service import (
     IImageEmbeddingService,
     ImageEmbeddingService,
 )
-from src.data_access_layers.db_readers import (
+from src.infrastructure_layer.db_readers import (
     IWalnutReader,
     WalnutReader,
     IWalnutImageReader,
@@ -18,7 +18,7 @@ from src.data_access_layers.db_readers import (
     IWalnutImageEmbeddingReader,
     WalnutImageEmbeddingReader,
 )
-from src.data_access_layers.db_writers import (
+from src.infrastructure_layer.db_writers import (
     IWalnutWriter,
     WalnutWriter,
     IWalnutImageWriter,
@@ -26,7 +26,7 @@ from src.data_access_layers.db_writers import (
     IWalnutImageEmbeddingWriter,
     WalnutImageEmbeddingWriter,
 )
-from src.application_layers.walnut_al import IWalnutAL, WalnutAL
+from src.application_layer.walnut_al import IWalnutAL, WalnutAL
 from src.application.application import IApplication, Application
 
 T = TypeVar("T")

@@ -1,8 +1,8 @@
-# src/data_access_layers/db_writers/walnut_image_writer.py
+# src/infrastructure_layer/db_writers/walnut_image_writer.py
 from abc import ABC, abstractmethod
 from sqlalchemy.orm import Session
 from typing import TYPE_CHECKING
-from src.data_access_layers.data_access_objects import WalnutImageDAO
+from src.infrastructure_layer.data_access_objects import WalnutImageDAO
 
 if TYPE_CHECKING:
     from .walnut_image_embedding_writer import IWalnutImageEmbeddingWriter
