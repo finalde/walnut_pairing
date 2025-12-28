@@ -1,91 +1,114 @@
 # webapi/routes/walnuts.py
-"""Walnut API routes."""
-from fastapi import APIRouter, Depends, HTTPException
 from typing import List
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+
 import sys
 from pathlib import Path
-
-# Add libs to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "libs"))
 
-from webapi.dependencies import get_container
-from src.application_layer.walnut__al import IWalnutAL
-from src.infrastructure_layer.data_access_objects import WalnutDBDAO
+from src.common.di_container import Container
+from src.application_layer.commands.command_dispatcher import ICommandDispatcher
+from src.application_layer.queries.walnut__query import WalnutQuery
+from src.application_layer.commands.command_objects.walnut_command import (
+    CreateFakeWalnutCommand,
+)
+from src.application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
 
-router = APIRouter()
+router = APIRouter(prefix="/walnuts", tags=["walnuts"])
+
+container = Container()
+container.config_path.from_value(str(Path(__file__).resolve().parent.parent.parent / "config.yml"))
+
+
+def get_command_dispatcher() -> ICommandDispatcher:
+    return container.command_dispatcher()
+
+
+def get_walnut_query() -> WalnutQuery:
+    return container.walnut_query()
+
+
+class WalnutImageResponse(BaseModel):
+    image_id: int
+    walnut_id: str
+    side: str
+    image_path: str
+    width: int
+    height: int
+    checksum: str
+    embedding_id: int | None = None
 
 
 class WalnutResponse(BaseModel):
-    """Walnut response model."""
-    id: str
+    walnut_id: str
     description: str
-    image_count: int
-
-    class Config:
-        from_attributes = True
-
-
-def get_walnut_al() -> IWalnutAL:
-    """Dependency to get WalnutAL from container."""
-    container = get_container()
-    return container.walnut_al()
+    created_at: str
+    created_by: str
+    updated_at: str
+    updated_by: str
+    images: List[WalnutImageResponse]
 
 
-@router.get("/walnuts", response_model=List[WalnutResponse])
-async def get_walnuts(walnut_al: IWalnutAL = Depends(get_walnut_al)) -> List[WalnutResponse]:
-    """Get all walnuts."""
-    try:
-        walnuts = walnut_al.walnut_reader.get_all()
-        return [
-            WalnutResponse(
-                id=w.id,
-                description=w.description,
-                image_count=len(w.images)
+def _dto_to_response(dto: WalnutDTO) -> WalnutResponse:
+    return WalnutResponse(
+        walnut_id=dto.walnut_id,
+        description=dto.description,
+        created_at=dto.created_at.isoformat(),
+        created_by=dto.created_by,
+        updated_at=dto.updated_at.isoformat(),
+        updated_by=dto.updated_by,
+        images=[
+            WalnutImageResponse(
+                image_id=img.image_id,
+                walnut_id=img.walnut_id,
+                side=img.side,
+                image_path=img.image_path,
+                width=img.width,
+                height=img.height,
+                checksum=img.checksum,
+                embedding_id=img.embedding_id,
             )
-            for w in walnuts
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            for img in dto.images
+        ],
+    )
 
 
-@router.get("/walnuts/{walnut_id}", response_model=WalnutResponse)
+@router.get("/", response_model=List[WalnutResponse])
+async def get_walnuts(
+    query: WalnutQuery = Depends(get_walnut_query)
+) -> List[WalnutResponse]:
+    walnuts = query.get_all()
+    return [_dto_to_response(w) for w in walnuts]
+
+
+@router.get("/{walnut_id}", response_model=WalnutResponse)
 async def get_walnut(
     walnut_id: str,
-    walnut_al: IWalnutAL = Depends(get_walnut_al)
+    query: WalnutQuery = Depends(get_walnut_query)
 ) -> WalnutResponse:
-    """Get a walnut by ID."""
-    try:
-        walnut = walnut_al.walnut_reader.get_by_id(walnut_id)
-        if not walnut:
-            raise HTTPException(status_code=404, detail=f"Walnut {walnut_id} not found")
-        return WalnutResponse(
-            id=walnut.id,
-            description=walnut.description,
-            image_count=len(walnut.images)
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    walnut = query.get_by_id(walnut_id)
+    if walnut is None:
+        raise HTTPException(status_code=404, detail=f"Walnut {walnut_id} not found")
+    return _dto_to_response(walnut)
 
 
-@router.post("/walnuts/{walnut_id}/load-from-filesystem")
+@router.get("/{walnut_id}/load-from-filesystem", response_model=WalnutResponse)
 async def load_walnut_from_filesystem(
     walnut_id: str,
-    walnut_al: IWalnutAL = Depends(get_walnut_al)
+    query: WalnutQuery = Depends(get_walnut_query)
 ) -> WalnutResponse:
-    """Load a walnut from filesystem and save to database."""
-    try:
-        walnut = walnut_al.load_and_save_walnut_from_filesystem(walnut_id)
-        return WalnutResponse(
-            id=walnut.id,
-            description=walnut.description,
-            image_count=len(walnut.images)
-        )
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    walnut = query.load_from_filesystem(walnut_id)
+    if walnut is None:
+        raise HTTPException(status_code=404, detail=f"Walnut {walnut_id} not found in filesystem")
+    return _dto_to_response(walnut)
+
+
+@router.post("/{walnut_id}/create-fake")
+async def create_fake_walnut(
+    walnut_id: str,
+    command_dispatcher: ICommandDispatcher = Depends(get_command_dispatcher)
+) -> dict:
+    command = CreateFakeWalnutCommand(walnut_id=walnut_id)
+    command_dispatcher.dispatch(command)
+    return {"message": f"Fake walnut {walnut_id} created"}

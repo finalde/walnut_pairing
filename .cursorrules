@@ -1,0 +1,104 @@
+# ========================
+# CURSOR CONFIGURATION
+# ========================
+# Limit the number of auto-generation cycles to avoid infinite loops
+max_iterations: 3
+
+========================
+GENERAL CODING RULES
+========================
+
+This project follows strict, explicit, and readable Python coding standards.
+
+General:
+- Prefer clarity over cleverness.
+- Write code that is easy to read, review, and refactor.
+- Avoid hidden or implicit behavior.
+- avoid magic string or numbers, use enum, constants or strong typed hint like Class.__name__ to replace magic string or numbers
+
+Typing:
+- All variables, parameters, and return values MUST have explicit type hints.
+- Class attributes MUST be type-annotated.
+- Avoid using Any unless absolutely necessary and explicitly justified.
+- Prefer concrete types over generic ones.
+
+Naming:
+- Class names MUST be PascalCase.
+- Function and variable names MUST be snake_case.
+- Constants MUST be UPPER_SNAKE_CASE.
+- File names MUST be snake_case.
+- A file should contain a primary class whose name matches the file name.
+- Inside the file name, should use __ to sperate name and type, for examle xy__db_reader.py indicates this is a database reader class file.
+
+Structure:
+- One primary responsibility per file.
+- Avoid large files; split responsibilities when files grow.
+- Avoid circular imports.
+- Prefer explicit imports over wildcard imports.
+
+Functions and classes:
+- Functions should do one thing.
+- Classes should have a single, clear responsibility.
+- Avoid deeply nested logic.
+- Prefer composition over inheritance unless inheritance is clearly justified.
+
+Error handling:
+- Do not silently swallow exceptions.
+- Raise domain-specific or meaningful exceptions.
+- Infrastructure exceptions must not leak into the domain layer.
+
+Documentation:
+- Public classes and methods must have clear docstrings.
+- Modules should include a short docstring explaining their responsibility.
+
+========================
+DOMAIN-DRIVEN DESIGN & CQRS RULES
+========================
+
+This project follows Domain-Driven Design (DDD), Clean Architecture, and CQRS principles.
+
+Layer boundaries MUST be respected.
+
+Domain Layer:
+- Everything under domain_layer folder
+- Contains ONLY business logic.
+- Includes entities, value objects, aggregates, and domain services.
+- Must NOT import:
+  - infrastructure
+  - application
+  - web frameworks
+  - ORM libraries
+  - database, filesystem, HTTP, messaging, or cluster libraries
+- Must NOT reference:
+  - DTOs
+  - DAOs
+  - ORM models
+  - distributed execution decorators (e.g. cluster_node)
+- Domain logic must be pure and deterministic.
+- Entities enforce business invariants.
+- Value objects must be immutable.
+
+Application Layer (libs/core/application):
+- under apppication_layer folder
+- Orchestrates use cases.
+- Implements CQRS:
+  - Commands modify state.
+  - Queries read state.
+- Mapping between Domain ↔ DTO and Domain ↔ DAO belongs here
+
+Infrastructure Layer (libs/infrastructure):
+- Contains only technical concerns.
+- Includes:
+  - Database readers and writers
+  - ORM models
+  - File system access
+  - External API clients
+  - Distributed cluster adapters (Spark, Databricks, custom clusters)
+- Must not depend on Domain Layers
+- Must NOT contain business rules.
+
+CQRS rules:
+- Commands and queries MUST be separated.
+- Command handlers must not return read models.
+- Query handlers must not call command logic.
+- Read and write models may diverge.

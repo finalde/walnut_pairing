@@ -18,7 +18,7 @@ from src.infrastructure_layer.data_access_objects import (
     WalnutImageEmbeddingDBDAO,
 )
 from src.application_layer.services.walnut_image_loader import WalnutImageLoader
-from src.application_layer.mappers.walnut__mapper import WalnutMapper
+from src.application_layer.mappers.walnut__mapper import IWalnutMapper
 
 
 class IWalnutAL(ABC):
@@ -172,7 +172,7 @@ class WalnutAL(IWalnutAL):
         print(f"Loaded {len(walnut_file_dao.images)} images from {image_directory}")
 
         # Step 2: Convert File DAO to Domain Entity (with validation)
-        walnut_entity = WalnutMapper.file_dao_to_entity(walnut_file_dao)
+        walnut_entity = self.walnut_mapper.file_dao_to_entity(walnut_file_dao)
         print("Converted DTO to domain entity")
 
         # Step 3: Domain processing and validation
@@ -187,7 +187,7 @@ class WalnutAL(IWalnutAL):
             print(f"Generated embedding for {side_enum.value} side")
 
         # Step 5: Convert Domain Entity to DAO
-        walnut_dao = WalnutMapper.entity_to_dao(
+        walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,
             walnut_id=walnut_id,
             description=f"Walnut {walnut_id} loaded from filesystem",

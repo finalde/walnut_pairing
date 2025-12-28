@@ -1,6 +1,7 @@
-# src/common/di_registry.py
+# batch/di_registry.py
 from typing import Dict, Type, TypeVar, Any
 from src.common.interfaces import IAppConfig
+from batch.app_config import AppConfig
 from src.domain_layer.services.embedding__service import (
     IImageEmbeddingService,
     ImageEmbeddingService,
@@ -51,11 +52,7 @@ class DIRegistry:
         return interface in cls._registry
 
 
-try:
-    from batch.app_config import AppConfig
-    DIRegistry.register(IAppConfig, AppConfig)
-except ImportError:
-    pass
+DIRegistry.register(IAppConfig, AppConfig)
 DIRegistry.register(IImageEmbeddingService, ImageEmbeddingService)
 DIRegistry.register(IWalnutImageEmbeddingDBReader, WalnutImageEmbeddingDBReader)
 DIRegistry.register(IWalnutImageFileReader, WalnutImageFileReader)
@@ -66,3 +63,4 @@ DIRegistry.register(IWalnutDBWriter, WalnutDBWriter)
 DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IWalnutMapper, WalnutMapper)
 DIRegistry.register(WalnutQuery, WalnutQuery)
+

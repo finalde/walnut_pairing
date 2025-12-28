@@ -1,45 +1,51 @@
 # batch/main.py
-"""Batch job entry point."""
-from pathlib import Path
 import sys
+from pathlib import Path
 
-# Add project root and libs to path (must be before importing batch.application)
 project_root = Path(__file__).resolve().parent.parent
+print(f"project_root: {project_root}")
 sys.path.insert(0, str(project_root))
 sys.path.insert(0, str(project_root / "libs"))
 
 from batch.application import IApplication, Application
-from src.common.di_container import Container
+from batch.di_container import Container
+from src.application_layer.commands.command_dispatcher import (
+    SyncCommandDispatcher,
+    AsyncCommandDispatcher,
+    CommandDispatcher,
+    ExecutionMode,
+)
+from src.application_layer.commands.command_handlers.walnut_command_handler import (
+    CreateFakeWalnutHandler,
+)
+from src.application_layer.commands.command_objects.walnut_command import (
+    CreateFakeWalnutCommand,
+)
 
 
 def main() -> None:
-    """Main entry point for batch job using dependency injection container."""
-    config_path: Path = project_root / "batch" / "config.yml"
-
-    # Initialize dependency injection container
+    config_path = project_root / "batch/config.yml"
+    
     container = Container()
-    container.config_path.from_value(config_path)
-
-    try:
-        # Get application dependencies from container
-        from src.application_layer.walnut__al import IWalnutAL
-        walnut_al: IWalnutAL = container.walnut_al()
-        
-        # Create application instance
-        app: IApplication = Application(walnut_al=walnut_al)
-        app.run()
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
-    finally:
-        # Clean up database connection and session
-        db_connection = container.db_connection()
-        if db_connection:
-            db_connection.close()
-        
-        # Note: SQLAlchemy sessions are created per operation and should be closed
-        # The session factory manages session lifecycle
+    container.config_path.from_value(str(config_path))
+    
+    command_dispatcher = SyncCommandDispatcher()
+    create_fake_handler = CreateFakeWalnutHandler(
+        walnut_writer=container.walnutdbwriter(),
+    )
+    command_dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
+    
+    dispatcher = CommandDispatcher(
+        sync_dispatcher=command_dispatcher,
+        async_dispatcher=AsyncCommandDispatcher(),
+        command_config={CreateFakeWalnutCommand: ExecutionMode.SYNC},
+    )
+    
+    app: IApplication = Application(
+        command_dispatcher=dispatcher,
+        walnut_query=container.walnutquery(),
+    )
+    app.run()
 
 
 if __name__ == "__main__":

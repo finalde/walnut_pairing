@@ -1,66 +1,63 @@
 # batch/application.py
-"""Batch job application layer - orchestrates batch processing logic."""
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 import sys
 from pathlib import Path
 
-# Add libs to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "libs"))
 
 if TYPE_CHECKING:
-    from src.application_layer.walnut__al import IWalnutAL
+    from src.application_layer.commands.command_dispatcher import ICommandDispatcher
+    from src.application_layer.queries.walnut__query import WalnutQuery
+
+from src.application_layer.commands.command_objects.walnut_command import (
+    CreateFakeWalnutCommand,
+)
 
 
-class IApplication(ABC):
-    """Interface for the batch application layer."""
-
-    @abstractmethod
-    def run(self) -> None:
-        """Run the batch job logic."""
-        pass
+class IApplication:
+    pass
 
 
-class Application(IApplication):
-    """Batch application class that orchestrates batch processing."""
-
-    def __init__(self, walnut_al: "IWalnutAL") -> None:
-        """
-        Initialize the batch application with application layer dependencies.
-
-        Args:
-            walnut_al: Walnut application layer
-        """
-        self.walnut_al: "IWalnutAL" = walnut_al
+class Application:
+    def __init__(
+        self,
+        command_dispatcher: "ICommandDispatcher",
+        walnut_query: "WalnutQuery",
+    ) -> None:
+        self.command_dispatcher: "ICommandDispatcher" = command_dispatcher
+        self.walnut_query: "WalnutQuery" = walnut_query
 
     def run(self) -> None:
-        """Run the batch job logic."""
-        # Generate embeddings
-        self.walnut_al.generate_embeddings()
-
-        # Test creating and saving a fake walnut with images and embeddings
-        print("\n--- Testing DB Writer (Fake Data) ---")
-        fake_walnut = self.walnut_al.create_and_save_fake_walnut("WALNUT-TEST-001")
-        print(f"Saved walnut: {fake_walnut.id}")
-        print(f"Number of images: {len(fake_walnut.images)}")
-        for img in fake_walnut.images:
-            print(
-                f"  - {img.side}: image_id={img.id}, "
-                f"embedding_id={img.embedding.id if img.embedding else None}"
-            )
-
-        # Test loading walnut from filesystem and saving to database
-        print("\n--- Testing Load from Filesystem ---")
-        try:
-            loaded_walnut = self.walnut_al.load_and_save_walnut_from_filesystem("0001")
-            print(f"Loaded and saved walnut: {loaded_walnut.id}")
-            print(f"Number of images: {len(loaded_walnut.images)}")
-            for img in loaded_walnut.images:
+        print("\n--- Testing CQRS: Create Fake Walnut Command ---")
+        command = CreateFakeWalnutCommand(walnut_id="WALNUT-TEST-001")
+        self.command_dispatcher.dispatch(command)
+        
+        fake_walnut = self.walnut_query.get_by_id("WALNUT-TEST-001")
+        if fake_walnut:
+            print(f"Query result: Found walnut {fake_walnut.walnut_id} with {len(fake_walnut.images)} images")
+            for img in fake_walnut.images:
                 print(
-                    f"  - {img.side}: image_id={img.id}, "
-                    f"embedding_id={img.embedding.id if img.embedding else None}"
+                    f"  - {img.side}: image_id={img.image_id}, "
+                    f"embedding_id={img.embedding_id}"
                 )
+
+        print("\n--- Testing Query: Load Walnut from Filesystem ---")
+        try:
+            loaded_walnut = self.walnut_query.load_from_filesystem("0001")
+            if loaded_walnut:
+                print(f"Query result: Found walnut {loaded_walnut.walnut_id} with {len(loaded_walnut.images)} images")
+                for img in loaded_walnut.images:
+                    print(
+                        f"  - {img.side}: image_path={img.image_path}, "
+                        f"width={img.width}, height={img.height}"
+                    )
+            else:
+                print("No walnut found in filesystem")
         except Exception as e:
             print(f"Error loading walnut from filesystem: {e}")
             import traceback
             traceback.print_exc()
+
+        print("\n--- Testing CQRS: Get All Walnuts Query ---")
+        all_walnuts = self.walnut_query.get_all()
+        print(f"Query result: Found {len(all_walnuts)} walnuts in database")

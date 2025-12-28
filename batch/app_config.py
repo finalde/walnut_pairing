@@ -1,14 +1,13 @@
-# src/app_config.py
+# batch/app_config.py
 from pathlib import Path
 from dataclasses import dataclass
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 from src.common.interfaces import IAppConfig
 
 
 @dataclass
 class DatabaseConfig:
-    """Database configuration settings."""
     host: str
     port: int
     database: str
@@ -27,12 +26,10 @@ class AppConfig(IAppConfig):
 
     @property
     def image_root(self) -> str:
-        """Get the root path for images."""
         return self._image_root
 
     @property
     def database(self) -> DatabaseConfig:
-        """Get the database configuration."""
         return self._database
 
     @classmethod
@@ -40,3 +37,4 @@ class AppConfig(IAppConfig):
         with open(yaml_path, "r") as f:
             cfg = yaml.safe_load(f)
         return cls(**cfg)
+

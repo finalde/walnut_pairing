@@ -1,0 +1,27 @@
+# src/application_layer/dtos/walnut__dto.py
+from dataclasses import dataclass
+from typing import List, Optional
+from datetime import datetime
+
+
+@dataclass
+class WalnutImageDTO:
+    image_id: int
+    walnut_id: str
+    side: str
+    image_path: str
+    width: int
+    height: int
+    checksum: str
+    embedding_id: Optional[int] = None
+
+
+@dataclass
+class WalnutDTO:
+    walnut_id: str
+    description: str
+    created_at: datetime
+    created_by: str
+    updated_at: datetime
+    updated_by: str
+    images: List[WalnutImageDTO]

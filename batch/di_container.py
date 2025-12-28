@@ -1,4 +1,4 @@
-# src/common/di_container.py
+# batch/di_container.py
 import inspect
 import sys
 from dependency_injector import containers, providers
@@ -6,20 +6,15 @@ from pathlib import Path
 import psycopg2
 from typing import get_type_hints, get_origin, get_args, Dict, Type, Any
 
+from batch.app_config import AppConfig
 from src.common.interfaces import IAppConfig, IDatabaseConnection
-from src.common.di_registry import DIRegistry
+from batch.di_registry import DIRegistry
 from src.infrastructure_layer.session_factory import SessionFactory
 from sqlalchemy.orm import Session
+from batch.application import IApplication, Application
 
 
 def create_app_config(config_path: str) -> IAppConfig:
-    try:
-        from batch.app_config import AppConfig
-    except ImportError:
-        raise ImportError(
-            "AppConfig is not available. For batch applications, use batch.di_container.Container. "
-            "For webapi, provide your own AppConfig implementation."
-        )
     if isinstance(config_path, dict):
         raise ValueError(
             "config_path must be a string path, not a dict. "
@@ -132,3 +127,4 @@ for interface in DIRegistry._registry.keys():
         attr = interface.__name__[1:].lower() if interface.__name__.startswith("I") else interface.__name__.lower()
         attr = attr.replace("appconfig", "app_config").replace("databaseconnection", "db_connection").replace("walnutal", "walnut_al")
         setattr(Container, attr, provider)
+

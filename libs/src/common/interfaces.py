@@ -6,7 +6,11 @@ from abc import ABC, abstractmethod
 from typing import Protocol, TYPE_CHECKING, runtime_checkable
 
 if TYPE_CHECKING:
-    from src.app_config import DatabaseConfig
+    try:
+        from batch.app_config import DatabaseConfig
+    except ImportError:
+        from typing import Any
+        DatabaseConfig = Any
 
 
 @runtime_checkable

@@ -1,10 +1,6 @@
 # src/application_layer/mappers/walnut__mapper.py
-"""
-Mapper for walnut domain objects.
-Handles all mapping logic between walnut domain entities/value objects and other types (DAOs, DTOs, etc.).
-"""
-from typing import Optional, Dict
-import numpy as np
+from abc import ABC, abstractmethod
+from typing import Dict
 from PIL import Image
 
 from src.infrastructure_layer.data_access_objects.walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
@@ -17,26 +13,47 @@ from src.infrastructure_layer.data_access_objects import (
 )
 from src.common.enums import WalnutSideEnum
 from src.common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER, UNKNOWN_IMAGE_FORMAT
+from src.application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
 
 
-class WalnutMapper:
-    """Maps walnut domain objects to and from other representations."""
+class IWalnutMapper(ABC):
+    @abstractmethod
+    def file_dao_to_entity(self, walnut_file_dao: WalnutFileDAO) -> WalnutEntity:
+        pass
 
-    @staticmethod
-    def file_dao_to_entity(walnut_file_dao: WalnutFileDAO) -> WalnutEntity:
-        """
-        Convert a WalnutFileDAO to a WalnutEntity with domain validation.
+    @abstractmethod
+    def entity_to_dao(
+        self,
+        walnut_entity: WalnutEntity,
+        walnut_id: str,
+        description: str,
+        created_by: str,
+        updated_by: str,
+        model_name: str,
+    ) -> WalnutDBDAO:
+        pass
 
-        Args:
-            walnut_file_dao: The file DAO loaded from filesystem
+    @abstractmethod
+    def image_value_object_to_dao(
+        self,
+        image_vo: ImageValueObject,
+        walnut_id: str,
+        created_by: str,
+        updated_by: str,
+    ) -> WalnutImageDBDAO:
+        pass
 
-        Returns:
-            WalnutEntity with all images as value objects
+    @abstractmethod
+    def dao_to_dto(self, walnut_dao: WalnutDBDAO) -> WalnutDTO:
+        pass
 
-        Raises:
-            ValueError: If required images are missing or invalid
-        """
-        # Map side letters to enum values
+    @abstractmethod
+    def file_dao_to_dto(self, walnut_file_dao: WalnutFileDAO, walnut_id: str) -> WalnutDTO:
+        pass
+
+
+class WalnutMapper(IWalnutMapper):
+    def file_dao_to_entity(self, walnut_file_dao: WalnutFileDAO) -> WalnutEntity:
         side_mapping: Dict[str, WalnutSideEnum] = {
             "F": WalnutSideEnum.FRONT,
             "B": WalnutSideEnum.BACK,
@@ -46,7 +63,6 @@ class WalnutMapper:
             "D": WalnutSideEnum.DOWN,
         }
 
-        # Group images by side
         images_by_side: Dict[WalnutSideEnum, WalnutImageFileDAO] = {}
         for image_file_dao in walnut_file_dao.images:
             side_enum = side_mapping.get(image_file_dao.side_letter.upper())
@@ -56,7 +72,6 @@ class WalnutMapper:
                 )
             images_by_side[side_enum] = image_file_dao
 
-        # Validate all required sides are present
         required_sides = set(WalnutSideEnum)
         missing_sides = required_sides - set(images_by_side.keys())
         if missing_sides:
@@ -64,10 +79,8 @@ class WalnutMapper:
                 f"Missing required images for sides: {[s.value for s in missing_sides]}"
             )
 
-        # Convert each image file DAO to ImageValueObject
         image_value_objects: Dict[WalnutSideEnum, ImageValueObject] = {}
         for side_enum, image_file_dao in images_by_side.items():
-            # Load image to get format
             try:
                 with Image.open(image_file_dao.file_path) as img:
                     img_format = img.format or UNKNOWN_IMAGE_FORMAT
@@ -86,7 +99,6 @@ class WalnutMapper:
             )
             image_value_objects[side_enum] = image_vo
 
-        # Create WalnutEntity with all images
         return WalnutEntity(
             front=image_value_objects[WalnutSideEnum.FRONT],
             back=image_value_objects[WalnutSideEnum.BACK],
@@ -96,8 +108,8 @@ class WalnutMapper:
             down=image_value_objects[WalnutSideEnum.DOWN],
         )
 
-    @staticmethod
     def entity_to_dao(
+        self,
         walnut_entity: WalnutEntity,
         walnut_id: str,
         description: str = "",
@@ -105,21 +117,6 @@ class WalnutMapper:
         updated_by: str = SYSTEM_USER,
         model_name: str = DEFAULT_EMBEDDING_MODEL,
     ) -> WalnutDBDAO:
-        """
-        Convert a WalnutEntity to a WalnutDBDAO with images and embeddings.
-
-        Args:
-            walnut_entity: The domain entity to convert
-            walnut_id: The ID for the walnut
-            description: Description of the walnut
-            created_by: User who created the record
-            updated_by: User who last updated the record
-            model_name: Model name for embeddings
-
-        Returns:
-            WalnutDBDAO with all images and embeddings populated
-        """
-        # Create walnut DB DAO
         walnut_dao = WalnutDBDAO(
             id=walnut_id,
             description=description,
@@ -127,7 +124,6 @@ class WalnutMapper:
             updated_by=updated_by,
         )
 
-        # Map each side to an image DAO using enum
         side_mapping = {
             WalnutSideEnum.FRONT: walnut_entity.front,
             WalnutSideEnum.BACK: walnut_entity.back,
@@ -147,19 +143,17 @@ class WalnutMapper:
         }
 
         for side_enum, image_vo in side_mapping.items():
-            side_name = side_enum.value
-            image_dao = WalnutMapper.image_value_object_to_dao(
+            image_dao = self.image_value_object_to_dao(
                 image_vo,
                 walnut_id,
                 created_by=created_by,
                 updated_by=updated_by,
             )
 
-            # Add embedding if available
             embedding = embedding_mapping[side_enum]
             if embedding is not None:
                 embedding_dao = WalnutImageEmbeddingDBDAO(
-                    image_id=0,  # Will be set after image is saved
+                    image_id=0,
                     model_name=model_name,
                     embedding=embedding,
                     created_by=created_by,
@@ -171,28 +165,16 @@ class WalnutMapper:
 
         return walnut_dao
 
-    @staticmethod
     def image_value_object_to_dao(
+        self,
         image_vo: ImageValueObject,
         walnut_id: str,
         created_by: str = SYSTEM_USER,
         updated_by: str = SYSTEM_USER,
     ) -> WalnutImageDBDAO:
-        """
-        Convert an ImageValueObject to a WalnutImageDBDAO.
-
-        Args:
-            image_vo: The image value object to convert
-            walnut_id: The ID of the walnut this image belongs to
-            created_by: User who created the record
-            updated_by: User who last updated the record
-
-        Returns:
-            WalnutImageDBDAO
-        """
         return WalnutImageDBDAO(
             walnut_id=walnut_id,
-            side=image_vo.side.value,  # Convert enum to string
+            side=image_vo.side.value,
             image_path=image_vo.path,
             width=image_vo.width,
             height=image_vo.height,
@@ -201,9 +183,55 @@ class WalnutMapper:
             updated_by=updated_by,
         )
 
-    # Future mapping methods can be added here:
-    # - dao_to_entity()
-    # - dao_to_value_object()
-    # - entity_to_dto()
-    # - etc.
+    def dao_to_dto(self, walnut_dao: WalnutDBDAO) -> WalnutDTO:
+        images = [
+            WalnutImageDTO(
+                image_id=img.id,
+                walnut_id=img.walnut_id,
+                side=img.side,
+                image_path=img.image_path,
+                width=img.width,
+                height=img.height,
+                checksum=img.checksum,
+                embedding_id=img.embedding.id if img.embedding else None,
+            )
+            for img in walnut_dao.images
+        ]
+        
+        return WalnutDTO(
+            walnut_id=walnut_dao.id,
+            description=walnut_dao.description,
+            created_at=walnut_dao.created_at,
+            created_by=walnut_dao.created_by,
+            updated_at=walnut_dao.updated_at,
+            updated_by=walnut_dao.updated_by,
+            images=images,
+        )
 
+    def file_dao_to_dto(self, walnut_file_dao: WalnutFileDAO, walnut_id: str) -> WalnutDTO:
+        from datetime import datetime
+        from src.common.constants import SYSTEM_USER
+        
+        images = [
+            WalnutImageDTO(
+                image_id=0,
+                walnut_id=walnut_id,
+                side=img.side_letter.upper(),
+                image_path=str(img.file_path),
+                width=img.width,
+                height=img.height,
+                checksum=img.checksum,
+                embedding_id=None,
+            )
+            for img in walnut_file_dao.images
+        ]
+        
+        return WalnutDTO(
+            walnut_id=walnut_id,
+            description=f"Walnut {walnut_id} loaded from filesystem",
+            created_at=datetime.now(),
+            created_by=SYSTEM_USER,
+            updated_at=datetime.now(),
+            updated_by=SYSTEM_USER,
+            images=images,
+        )
