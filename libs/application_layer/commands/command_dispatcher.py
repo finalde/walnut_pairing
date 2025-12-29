@@ -1,7 +1,6 @@
 # application_layer/commands/command_dispatcher.py
 from abc import ABC, abstractmethod
 from typing import Dict, Type, Any
-import uuid
 from datetime import datetime
 
 from .command_objects.base_command import ICommand
@@ -23,8 +22,6 @@ class CommandDispatcher(ICommandDispatcher):
         self._handlers: Dict[Type[ICommand], ICommandHandler] = {}
 
     def dispatch(self, command: ICommand) -> None:
-        if command.command_id is None:
-            command.command_id = str(uuid.uuid4())
         if command.timestamp is None:
             command.timestamp = datetime.now()
 

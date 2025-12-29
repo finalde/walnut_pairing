@@ -7,6 +7,5 @@ from datetime import datetime
 
 @dataclass
 class ICommand(ABC):
-    command_id: Optional[str] = None
     timestamp: Optional[datetime] = None
     user_id: Optional[str] = None

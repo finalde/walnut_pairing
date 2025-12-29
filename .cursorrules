@@ -102,3 +102,6 @@ CQRS rules:
 - Command handlers must not return read models.
 - Query handlers must not call command logic.
 - Read and write models may diverge.
+
+File Naming covention:
+- we use __ as the separtor in file names, it is like abc__file_type.py, abc is the name, and after __ it is file type, file type includes, value_object, entity, aggregate, db_reader, db_writer, file_reader, file_writer, command, command_handler, query, mapper, domain_service
