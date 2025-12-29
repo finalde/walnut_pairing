@@ -1,22 +1,25 @@
-# batch/di_container.py
+# common/di_container.py
 import inspect
 import sys
-import types
 from dependency_injector import containers, providers
 from pathlib import Path
 import psycopg2
 from typing import get_type_hints, get_origin, get_args, Dict, Type, Any
 
-from batch.app_config import AppConfig
 from common.interfaces import IAppConfig, IDatabaseConnection
-from batch.di_registry import DIRegistry
+from common.di_registry import DIRegistry
 from infrastructure_layer.session_factory import SessionFactory
 from sqlalchemy.orm import Session
-from batch.application import IApplication, Application
-from application_layer.commands.command_dispatcher import ICommandDispatcher
 
 
 def create_app_config(config_path: str) -> IAppConfig:
+    try:
+        from batch.app_config import AppConfig
+    except ImportError:
+        raise ImportError(
+            "AppConfig is not available. For batch applications, use batch.di_container.Container. "
+            "For webapi, provide your own AppConfig implementation."
+        )
     if isinstance(config_path, dict):
         raise ValueError(
             "config_path must be a string path, not a dict. "
@@ -114,22 +117,6 @@ class Container(containers.DeclarativeContainer):
     def get_provider(self, interface_or_class: Type[Any]) -> Any:
         provider = _providers.get(interface_or_class)
         return provider() if provider else None
-    
-    def command_dispatcher(self) -> ICommandDispatcher:
-        from application_layer.commands.command_dispatcher import (
-            CommandDispatcher,
-        )
-        
-        return CommandDispatcher.create_with_handlers(
-            walnut_writer=self.walnutdbwriter(),
-        )
-    
-    def application(self) -> IApplication:
-        cmd_disp = Container.command_dispatcher.__get__(self, Container)()
-        return Application(
-            command_dispatcher=cmd_disp,
-            walnut_query=self.walnutquery(),
-        )
 
 
 _providers = {
@@ -145,5 +132,3 @@ for interface in DIRegistry._registry.keys():
         attr = interface.__name__[1:].lower() if interface.__name__.startswith("I") else interface.__name__.lower()
         attr = attr.replace("appconfig", "app_config").replace("databaseconnection", "db_connection").replace("walnutal", "walnut_al")
         setattr(Container, attr, provider)
-
-

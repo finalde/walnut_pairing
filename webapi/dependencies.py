@@ -7,7 +7,7 @@ import sys
 # Add libs to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "libs"))
 
-from src.common.di_container import Container
+from common.di_container import Container
 
 # Global container instance
 _container: Optional[Container] = None

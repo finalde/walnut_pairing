@@ -3,7 +3,7 @@ from pathlib import Path
 from dataclasses import dataclass
 import yaml
 
-from src.common.interfaces import IAppConfig
+from common.interfaces import IAppConfig
 
 
 @dataclass

@@ -4,9 +4,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "libs"))
 
-from src.application_layer.commands.command_dispatcher import ICommandDispatcher
-from src.application_layer.queries.walnut__query import WalnutQuery
-from src.application_layer.commands.command_objects.walnut_command import (
+from application_layer.commands.command_dispatcher import ICommandDispatcher
+from application_layer.queries.walnut__query import WalnutQuery
+from application_layer.commands.command_objects.walnut_command import (
     CreateFakeWalnutCommand,
 )
 
