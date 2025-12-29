@@ -1,6 +1,6 @@
 # batch/application.py
 from application_layer.commands.command_dispatcher import ICommandDispatcher
-from application_layer.queries.walnut__query import WalnutQuery
+from application_layer.queries.walnut__query import IWalnutQuery
 from application_layer.commands.command_objects.walnut_command import (
     CreateFakeWalnutCommand,
 )
@@ -14,10 +14,10 @@ class Application:
     def __init__(
         self,
         command_dispatcher: ICommandDispatcher,
-        walnut_query: WalnutQuery,
+        walnut_query: IWalnutQuery,
     ) -> None:
         self.command_dispatcher: ICommandDispatcher = command_dispatcher
-        self.walnut_query: WalnutQuery = walnut_query
+        self.walnut_query: IWalnutQuery = walnut_query
 
     def run(self) -> None:
         command = CreateFakeWalnutCommand(walnut_id="WALNUT-TEST-001")

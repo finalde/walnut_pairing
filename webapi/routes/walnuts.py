@@ -6,7 +6,7 @@ from pathlib import Path
 
 from common.di_container import Container
 from application_layer.commands.command_dispatcher import ICommandDispatcher
-from application_layer.queries.walnut__query import WalnutQuery
+from application_layer.queries.walnut__query import IWalnutQuery
 from application_layer.commands.command_objects.walnut_command import (
     CreateFakeWalnutCommand,
 )
@@ -22,8 +22,8 @@ def get_command_dispatcher() -> ICommandDispatcher:
     return container.command_dispatcher()
 
 
-def get_walnut_query() -> WalnutQuery:
-    return container.walnut_query()
+def get_walnut_query() -> IWalnutQuery:
+    return container.walnutquery()
 
 
 class WalnutImageResponse(BaseModel):
@@ -73,7 +73,7 @@ def _dto_to_response(dto: WalnutDTO) -> WalnutResponse:
 
 @router.get("/", response_model=List[WalnutResponse])
 async def get_walnuts(
-    query: WalnutQuery = Depends(get_walnut_query)
+    query: IWalnutQuery = Depends(get_walnut_query)
 ) -> List[WalnutResponse]:
     walnuts = query.get_all()
     return [_dto_to_response(w) for w in walnuts]
@@ -82,7 +82,7 @@ async def get_walnuts(
 @router.get("/{walnut_id}", response_model=WalnutResponse)
 async def get_walnut(
     walnut_id: str,
-    query: WalnutQuery = Depends(get_walnut_query)
+    query: IWalnutQuery = Depends(get_walnut_query)
 ) -> WalnutResponse:
     walnut = query.get_by_id(walnut_id)
     if walnut is None:
@@ -93,7 +93,7 @@ async def get_walnut(
 @router.get("/{walnut_id}/load-from-filesystem", response_model=WalnutResponse)
 async def load_walnut_from_filesystem(
     walnut_id: str,
-    query: WalnutQuery = Depends(get_walnut_query)
+    query: IWalnutQuery = Depends(get_walnut_query)
 ) -> WalnutResponse:
     walnut = query.load_from_filesystem(walnut_id)
     if walnut is None:

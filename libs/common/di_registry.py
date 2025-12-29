@@ -25,7 +25,7 @@ from infrastructure_layer.db_writers import (
 )
 from application_layer.walnut__al import IWalnutAL, WalnutAL
 from application_layer.mappers.walnut__mapper import IWalnutMapper, WalnutMapper
-from application_layer.queries.walnut__query import WalnutQuery
+from application_layer.queries.walnut__query import IWalnutQuery, WalnutQuery
 
 T = TypeVar("T")
 
@@ -65,4 +65,4 @@ DIRegistry.register(IWalnutImageDBWriter, WalnutImageDBWriter)
 DIRegistry.register(IWalnutDBWriter, WalnutDBWriter)
 DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IWalnutMapper, WalnutMapper)
-DIRegistry.register(WalnutQuery, WalnutQuery)
+DIRegistry.register(IWalnutQuery, WalnutQuery)

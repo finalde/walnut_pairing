@@ -1,4 +1,5 @@
 # application_layer/queries/walnut__query.py
+from abc import ABC, abstractmethod
 from typing import Optional, List
 from pathlib import Path
 
@@ -9,11 +10,21 @@ from common.interfaces import IAppConfig
 from application_layer.services.walnut_image_loader import WalnutImageLoader
 
 
-class IWalnutQuery:
-    pass
+class IWalnutQuery(ABC):
+    @abstractmethod
+    def get_by_id(self, walnut_id: str) -> Optional[WalnutDTO]:
+        pass
+
+    @abstractmethod
+    def get_all(self) -> List[WalnutDTO]:
+        pass
+
+    @abstractmethod
+    def load_from_filesystem(self, walnut_id: str) -> Optional[WalnutDTO]:
+        pass
 
 
-class WalnutQuery:
+class WalnutQuery(IWalnutQuery):
     def __init__(
         self,
         walnut_reader: IWalnutDBReader,
