@@ -19,6 +19,7 @@ dependencies = [
     "numpy",
     "fastapi",
     "uvicorn",
+    "structlog",
 ]
 
 [tool.setuptools.packages.find]

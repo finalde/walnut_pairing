@@ -10,6 +10,7 @@ from domain_layer.services.embedding__service import (
 from common.interfaces import IAppConfig, IDatabaseConnection
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
+from common.logger import get_logger
 from infrastructure_layer.db_readers import IWalnutImageEmbeddingDBReader, IWalnutDBReader
 from infrastructure_layer.db_writers import IWalnutDBWriter
 from infrastructure_layer.data_access_objects import (
@@ -59,6 +60,7 @@ class WalnutAL(IWalnutAL):
         walnut_image_embedding_reader: IWalnutImageEmbeddingDBReader,
         walnut_reader: IWalnutDBReader,
         walnut_writer: IWalnutDBWriter,
+        walnut_mapper: IWalnutMapper,
     ) -> None:  
         self.image_embedding_service: IImageEmbeddingService = image_embedding_service
         self.app_config: IAppConfig = app_config
@@ -66,28 +68,30 @@ class WalnutAL(IWalnutAL):
         self.walnut_image_embedding_reader: IWalnutImageEmbeddingDBReader = walnut_image_embedding_reader
         self.walnut_reader: IWalnutDBReader = walnut_reader
         self.walnut_writer: IWalnutDBWriter = walnut_writer
+        self.walnut_mapper: IWalnutMapper = walnut_mapper
+        self.logger = get_logger(__name__)
     
     def generate_embeddings(self) -> None:
         """Generate embeddings for testing purposes."""
-        print(f"Image root: {self.app_config.image_root}")
-        print(f"Database host: {self.app_config.database.host}")
+        self.logger.info(
+            "embedding_generation_start",
+            image_root=self.app_config.image_root,
+            database_host=self.app_config.database.host,
+        )
         
-        # Try to load a test image if it exists
         test_image_path = Path(self.app_config.image_root) / "0001" / "0001_B_1.jpg"
         if test_image_path.exists():
-            print(f"Testing embedding generation with: {test_image_path}")
+            self.logger.info("testing_embedding", test_image_path=str(test_image_path))
             embedding = self.image_embedding_service.generate(str(test_image_path))
-            print(f"Generated embedding shape: {embedding.shape}")
+            self.logger.info("embedding_generated", shape=embedding.shape)
         else:
-            print(f"Test image not found at: {test_image_path}")
+            self.logger.warning("test_image_not_found", path=str(test_image_path))
         
-        # Check existing embeddings in database
         test = self.walnut_image_embedding_reader.get_by_model_name(DEFAULT_EMBEDDING_MODEL)
-        print(f"Found {len(test)} embeddings in database")
+        self.logger.info("embeddings_found", count=len(test))
         
-        # Check existing walnuts in database
         walnuts = self.walnut_reader.get_all()
-        print(f"Found {len(walnuts)} walnuts in database")
+        self.logger.info("walnuts_found", count=len(walnuts))
 
     def create_and_save_fake_walnut(self, walnut_id: str) -> WalnutDBDAO:
         """
@@ -132,9 +136,12 @@ class WalnutAL(IWalnutAL):
 
             walnut.images.append(image)
 
-        # Save walnut with all images and embeddings using ORM-like save
         saved_walnut = self.walnut_writer.save_with_images(walnut)
-        print(f"Successfully saved walnut {walnut_id} with {len(saved_walnut.images)} images")
+        self.logger.info(
+            "walnut_saved",
+            walnut_id=walnut_id,
+            image_count=len(saved_walnut.images),
+        )
         return saved_walnut
 
     def load_and_save_walnut_from_filesystem(self, walnut_id: str) -> WalnutDBDAO:
@@ -169,24 +176,29 @@ class WalnutAL(IWalnutAL):
                 f"No valid images found in directory: {image_directory}"
             )
 
-        print(f"Loaded {len(walnut_file_dao.images)} images from {image_directory}")
+        self.logger.info(
+            "images_loaded",
+            walnut_id=walnut_id,
+            image_count=len(walnut_file_dao.images),
+            directory=str(image_directory),
+        )
 
-        # Step 2: Convert File DAO to Domain Entity (with validation)
         walnut_entity = self.walnut_mapper.file_dao_to_entity(walnut_file_dao)
-        print("Converted DTO to domain entity")
+        self.logger.debug("dto_to_entity_converted", walnut_id=walnut_id)
 
-        # Step 3: Domain processing and validation
         walnut_entity.validate()
-        print("Domain validation passed")
+        self.logger.debug("domain_validation_passed", walnut_id=walnut_id)
 
-        # Step 4: Generate embeddings for all images
         for side_enum in WalnutSideEnum:
             image_vo = getattr(walnut_entity, side_enum.value)
             embedding = self.image_embedding_service.generate(image_vo.path)
             walnut_entity.set_embedding(side_enum.value, embedding)
-            print(f"Generated embedding for {side_enum.value} side")
+            self.logger.debug(
+                "embedding_generated",
+                walnut_id=walnut_id,
+                side=side_enum.value,
+            )
 
-        # Step 5: Convert Domain Entity to DAO
         walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,
             walnut_id=walnut_id,
@@ -195,12 +207,13 @@ class WalnutAL(IWalnutAL):
             updated_by=SYSTEM_USER,
             model_name=DEFAULT_EMBEDDING_MODEL,
         )
-        print("Converted domain entity to DAO")
+        self.logger.debug("entity_to_dao_converted", walnut_id=walnut_id)
 
-        # Step 6: Save to database
         saved_walnut = self.walnut_writer.save_with_images(walnut_dao)
-        print(
-            f"Successfully saved walnut {walnut_id} with {len(saved_walnut.images)} images"
+        self.logger.info(
+            "walnut_saved",
+            walnut_id=walnut_id,
+            image_count=len(saved_walnut.images),
         )
         return saved_walnut
 

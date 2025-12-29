@@ -7,6 +7,7 @@ import hashlib
 
 from infrastructure_layer.data_access_objects.walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
 from common.enums import WalnutSideEnum
+from common.logger import get_logger
 
 
 class WalnutImageLoader:
@@ -93,7 +94,11 @@ class WalnutImageLoader:
                 )
                 images.append(image_dao)
             except Exception as e:
-                print(f"Error loading image {file_path}: {e}")
+                WalnutImageLoader._logger.warning(
+                    "image_load_error",
+                    file_path=str(file_path),
+                    error=str(e),
+                )
                 continue
 
         if not images:

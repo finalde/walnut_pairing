@@ -7,6 +7,7 @@ from ..command_objects.walnut__command import (
 )
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
+from common.logger import get_logger
 from infrastructure_layer.db_writers import IWalnutDBWriter
 from infrastructure_layer.data_access_objects import (
     WalnutDBDAO,
@@ -21,6 +22,7 @@ class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
         walnut_writer: IWalnutDBWriter,
     ) -> None:
         self.walnut_writer: IWalnutDBWriter = walnut_writer
+        self.logger = get_logger(__name__)
 
     def handle(self, command: CreateFakeWalnutCommand) -> None:
         walnut = WalnutDBDAO(
@@ -54,4 +56,8 @@ class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
             walnut.images.append(image)
 
         saved_walnut = self.walnut_writer.save_with_images(walnut)
-        print(f"Successfully saved walnut {command.walnut_id} with {len(saved_walnut.images)} images")
+        self.logger.info(
+            "walnut_saved",
+            walnut_id=command.walnut_id,
+            image_count=len(saved_walnut.images),
+        )

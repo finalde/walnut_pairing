@@ -4,6 +4,7 @@ from application_layer.queries.walnut__query import IWalnutQuery
 from application_layer.commands.command_objects.walnut__command import (
     CreateFakeWalnutCommand,
 )
+from common.logger import get_logger
 
 
 class IApplication:
@@ -18,6 +19,7 @@ class Application:
     ) -> None:
         self.command_dispatcher: ICommandDispatcher = command_dispatcher
         self.walnut_query: IWalnutQuery = walnut_query
+        self.logger = get_logger(__name__)
 
     def run(self) -> None:
         command = CreateFakeWalnutCommand(walnut_id="WALNUT-TEST-001")
@@ -25,30 +27,47 @@ class Application:
         
         fake_walnut = self.walnut_query.get_by_id("WALNUT-TEST-001")
         if fake_walnut:
-            print(f"Query result: Found walnut {fake_walnut.walnut_id} with {len(fake_walnut.images)} images")
+            self.logger.info(
+                "walnut_found",
+                walnut_id=fake_walnut.walnut_id,
+                image_count=len(fake_walnut.images),
+            )
             for img in fake_walnut.images:
-                print(
-                    f"  - {img.side}: image_id={img.image_id}, "
-                    f"embedding_id={img.embedding_id}"
+                self.logger.debug(
+                    "walnut_image",
+                    walnut_id=fake_walnut.walnut_id,
+                    side=img.side,
+                    image_id=img.image_id,
+                    embedding_id=img.embedding_id,
                 )
 
-        print("\n--- Testing Query: Load Walnut from Filesystem ---")
+        self.logger.info("testing_filesystem_load", walnut_id="0001")
         try:
             loaded_walnut = self.walnut_query.load_from_filesystem("0001")
             if loaded_walnut:
-                print(f"Query result: Found walnut {loaded_walnut.walnut_id} with {len(loaded_walnut.images)} images")
+                self.logger.info(
+                    "walnut_loaded_from_filesystem",
+                    walnut_id=loaded_walnut.walnut_id,
+                    image_count=len(loaded_walnut.images),
+                )
                 for img in loaded_walnut.images:
-                    print(
-                        f"  - {img.side}: image_path={img.image_path}, "
-                        f"width={img.width}, height={img.height}"
+                    self.logger.debug(
+                        "filesystem_image",
+                        walnut_id=loaded_walnut.walnut_id,
+                        side=img.side,
+                        image_path=img.image_path,
+                        width=img.width,
+                        height=img.height,
                     )
             else:
-                print("No walnut found in filesystem")
+                self.logger.warning("walnut_not_found_in_filesystem", walnut_id="0001")
         except Exception as e:
-            print(f"Error loading walnut from filesystem: {e}")
-            import traceback
-            traceback.print_exc()
+            self.logger.error(
+                "filesystem_load_error",
+                walnut_id="0001",
+                error=str(e),
+                exc_info=True,
+            )
 
-        print("\n--- Testing CQRS: Get All Walnuts Query ---")
         all_walnuts = self.walnut_query.get_all()
-        print(f"Query result: Found {len(all_walnuts)} walnuts in database")
+        self.logger.info("all_walnuts_queried", count=len(all_walnuts))
