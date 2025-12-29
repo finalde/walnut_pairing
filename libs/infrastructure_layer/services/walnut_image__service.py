@@ -1,9 +1,10 @@
 # infrastructure_layer/services/walnut_image__service.py
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from common.enums import WalnutSideEnum
 from domain_layer.value_objects.image__value_object import ImageValueObject
@@ -17,6 +18,7 @@ class IWalnutImageService(ABC):
         camera_quality_factor: Optional[float] = None,
         min_dimension_mm: Optional[float] = None,
         max_dimension_mm: Optional[float] = None,
+        save_intermediate_results: bool = False,
     ) -> Tuple[float, float, float]:
         """
         Estimate walnut dimensions (length, width, height) from 6 side images.
@@ -33,6 +35,10 @@ class IWalnutImageService(ABC):
                 - Default: Uses service's default_camera_quality_factor
             min_dimension_mm: Optional minimum dimension in mm for validation
             max_dimension_mm: Optional maximum dimension in mm for validation
+            save_intermediate_results: If True, saves intermediate processing images
+                (grayscale, edges, contours, bounding boxes) to _intermediate folder
+                under each image's original path. Files are named with pattern:
+                {original_name}_intermediate_{step}_{side}.png
 
         Returns:
             Tuple of (length_mm, width_mm, height_mm)
@@ -57,6 +63,7 @@ class WalnutImageService(IWalnutImageService):
         camera_quality_factor: Optional[float] = None,
         min_dimension_mm: Optional[float] = None,
         max_dimension_mm: Optional[float] = None,
+        save_intermediate_results: bool = False,
     ) -> Tuple[float, float, float]:
         image_dict = {}
         camera_distances: Dict[WalnutSideEnum, float] = {}
@@ -67,7 +74,9 @@ class WalnutImageService(IWalnutImageService):
         quality_factor = camera_quality_factor or self.default_camera_quality_factor
         edge_threshold = 1.0 - quality_factor
 
-        pixel_dimensions = self._estimate_pixel_dimensions(image_dict, edge_threshold)
+        pixel_dimensions = self._estimate_pixel_dimensions(
+            image_dict, edge_threshold, images if save_intermediate_results else None
+        )
 
         scales = self._estimate_scales_from_camera_distances(image_dict, pixel_dimensions, camera_distances)
 
@@ -87,7 +96,12 @@ class WalnutImageService(IWalnutImageService):
 
         return (length_mm, width_mm, height_mm)
 
-    def _estimate_pixel_dimensions(self, images: Dict[WalnutSideEnum, Image.Image], edge_threshold: float) -> Dict[str, float]:
+    def _estimate_pixel_dimensions(
+        self,
+        images: Dict[WalnutSideEnum, Image.Image],
+        edge_threshold: float,
+        image_vos: Optional[Dict[WalnutSideEnum, ImageValueObject]] = None,
+    ) -> Dict[str, float]:
         front = np.array(images[WalnutSideEnum.FRONT])
         back = np.array(images[WalnutSideEnum.BACK])
         left = np.array(images[WalnutSideEnum.LEFT])
@@ -96,13 +110,28 @@ class WalnutImageService(IWalnutImageService):
         down = np.array(images[WalnutSideEnum.DOWN])
 
         length_px = self._estimate_dimension_from_orthogonal_views(
-            [front, back], [left, right], [top, down], edge_threshold
+            [front, back],
+            [left, right],
+            [top, down],
+            edge_threshold,
+            image_vos,
+            [WalnutSideEnum.FRONT, WalnutSideEnum.BACK, WalnutSideEnum.LEFT, WalnutSideEnum.RIGHT, WalnutSideEnum.TOP, WalnutSideEnum.DOWN],
         )
         width_px = self._estimate_dimension_from_orthogonal_views(
-            [left, right], [front, back], [top, down], edge_threshold
+            [left, right],
+            [front, back],
+            [top, down],
+            edge_threshold,
+            image_vos,
+            [WalnutSideEnum.LEFT, WalnutSideEnum.RIGHT, WalnutSideEnum.FRONT, WalnutSideEnum.BACK, WalnutSideEnum.TOP, WalnutSideEnum.DOWN],
         )
         height_px = self._estimate_dimension_from_orthogonal_views(
-            [top, down], [front, back], [left, right], edge_threshold
+            [top, down],
+            [front, back],
+            [left, right],
+            edge_threshold,
+            image_vos,
+            [WalnutSideEnum.TOP, WalnutSideEnum.DOWN, WalnutSideEnum.FRONT, WalnutSideEnum.BACK, WalnutSideEnum.LEFT, WalnutSideEnum.RIGHT],
         )
 
         return {"length": length_px, "width": width_px, "height": height_px}
@@ -113,30 +142,51 @@ class WalnutImageService(IWalnutImageService):
         side_views: list[np.ndarray],
         top_views: list[np.ndarray],
         edge_threshold: float,
+        image_vos: Optional[Dict[WalnutSideEnum, ImageValueObject]] = None,
+        primary_sides: Optional[list[WalnutSideEnum]] = None,
     ) -> float:
         measurements = []
 
+        side_enums_for_views = []
+        if image_vos and primary_sides:
+            side_enums_for_views = primary_sides + [
+                s for s in [WalnutSideEnum.LEFT, WalnutSideEnum.RIGHT, WalnutSideEnum.TOP, WalnutSideEnum.DOWN] if s not in primary_sides
+            ]
+
+        view_idx = 0
         for view in primary_views:
-            dim = self._measure_primary_dimension(view, edge_threshold)
+            side_enum = side_enums_for_views[view_idx] if image_vos and view_idx < len(side_enums_for_views) else None
+            dim = self._measure_primary_dimension(view, edge_threshold, image_vos, side_enum)
             if dim > 0:
                 measurements.append(dim)
+            view_idx += 1
 
         for view in side_views:
-            dim = self._measure_secondary_dimension(view, edge_threshold)
+            side_enum = side_enums_for_views[view_idx] if image_vos and view_idx < len(side_enums_for_views) else None
+            dim = self._measure_secondary_dimension(view, edge_threshold, image_vos, side_enum)
             if dim > 0:
                 measurements.append(dim)
+            view_idx += 1
 
         for view in top_views:
-            dim = self._measure_secondary_dimension(view, edge_threshold)
+            side_enum = side_enums_for_views[view_idx] if image_vos and view_idx < len(side_enums_for_views) else None
+            dim = self._measure_secondary_dimension(view, edge_threshold, image_vos, side_enum)
             if dim > 0:
                 measurements.append(dim)
+            view_idx += 1
 
         if not measurements:
             return 0.0
 
         return float(np.median(measurements))
 
-    def _measure_primary_dimension(self, image: np.ndarray, edge_threshold: float) -> float:
+    def _measure_primary_dimension(
+        self,
+        image: np.ndarray,
+        edge_threshold: float,
+        image_vos: Optional[Dict[WalnutSideEnum, ImageValueObject]] = None,
+        side_enum: Optional[WalnutSideEnum] = None,
+    ) -> float:
         """
         Measure the primary dimension (largest) of the walnut in the image.
         The walnut is expected to be centered in the image. If the detected bounding box
@@ -146,11 +196,19 @@ class WalnutImageService(IWalnutImageService):
         edges = self._detect_edges(gray, edge_threshold)
         contours = self._find_contours(edges)
 
+        if image_vos and side_enum:
+            self._save_intermediate_image(gray, image_vos[side_enum], "01_grayscale")
+            self._save_intermediate_image(edges, image_vos[side_enum], "02_edges")
+
         if not contours:
             return float(max(image.shape[0], image.shape[1]))
 
         largest_contour = max(contours, key=lambda c: self._contour_area(c))
         bbox = self._bounding_box(largest_contour)
+
+        if image_vos and side_enum:
+            self._save_intermediate_contour(image, contours, largest_contour, image_vos[side_enum], "03_contours")
+            self._save_intermediate_bbox(image, bbox, image_vos[side_enum], "04_bounding_box")
 
         center_x = image.shape[1] // 2
         center_y = image.shape[0] // 2
@@ -162,7 +220,13 @@ class WalnutImageService(IWalnutImageService):
 
         return float(max(bbox[2] - bbox[0], bbox[3] - bbox[1]))
 
-    def _measure_secondary_dimension(self, image: np.ndarray, edge_threshold: float) -> float:
+    def _measure_secondary_dimension(
+        self,
+        image: np.ndarray,
+        edge_threshold: float,
+        image_vos: Optional[Dict[WalnutSideEnum, ImageValueObject]] = None,
+        side_enum: Optional[WalnutSideEnum] = None,
+    ) -> float:
         """
         Measure the secondary dimension (smallest) of the walnut in the image.
         The walnut is expected to be centered in the image. If the detected bounding box
@@ -172,11 +236,19 @@ class WalnutImageService(IWalnutImageService):
         edges = self._detect_edges(gray, edge_threshold)
         contours = self._find_contours(edges)
 
+        if image_vos and side_enum:
+            self._save_intermediate_image(gray, image_vos[side_enum], "01_grayscale")
+            self._save_intermediate_image(edges, image_vos[side_enum], "02_edges")
+
         if not contours:
             return 0.0
 
         largest_contour = max(contours, key=lambda c: self._contour_area(c))
         bbox = self._bounding_box(largest_contour)
+
+        if image_vos and side_enum:
+            self._save_intermediate_contour(image, contours, largest_contour, image_vos[side_enum], "03_contours")
+            self._save_intermediate_bbox(image, bbox, image_vos[side_enum], "04_bounding_box")
 
         center_x = image.shape[1] // 2
         center_y = image.shape[0] // 2
@@ -310,4 +382,88 @@ class WalnutImageService(IWalnutImageService):
             height_scale = self.default_walnut_size_mm / max(images[WalnutSideEnum.TOP].size[1], images[WalnutSideEnum.DOWN].size[1])
 
         return {"length": length_scale, "width": width_scale, "height": height_scale}
+
+    def _save_intermediate_image(
+        self, image_array: np.ndarray, image_vo: ImageValueObject, step_name: str
+    ) -> None:
+        """Save an intermediate grayscale or edge detection image."""
+        if image_array.ndim == 2:
+            img = Image.fromarray(image_array, mode="L")
+        else:
+            img = Image.fromarray(image_array)
+
+        output_path = self._get_intermediate_path(image_vo, step_name)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        img.save(output_path)
+
+    def _save_intermediate_contour(
+        self,
+        original_image: np.ndarray,
+        all_contours: list[np.ndarray],
+        largest_contour: np.ndarray,
+        image_vo: ImageValueObject,
+        step_name: str,
+    ) -> None:
+        """Save an intermediate image showing all contours and highlighting the largest one."""
+        if original_image.ndim == 3:
+            img = Image.fromarray(original_image)
+        else:
+            img = Image.fromarray(original_image, mode="L").convert("RGB")
+
+        draw = ImageDraw.Draw(img)
+
+        for contour in all_contours:
+            if len(contour) > 0:
+                points = [(int(pt[1]), int(pt[0])) for pt in contour]
+                if len(points) > 2:
+                    draw.polygon(points, outline="blue", width=1)
+
+        if len(largest_contour) > 0:
+            points = [(int(pt[1]), int(pt[0])) for pt in largest_contour]
+            if len(points) > 2:
+                draw.polygon(points, outline="red", width=3)
+
+        output_path = self._get_intermediate_path(image_vo, step_name)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        img.save(output_path)
+
+    def _save_intermediate_bbox(
+        self, original_image: np.ndarray, bbox: Tuple[int, int, int, int], image_vo: ImageValueObject, step_name: str
+    ) -> None:
+        """Save an intermediate image showing the bounding box."""
+        if original_image.ndim == 3:
+            img = Image.fromarray(original_image)
+        else:
+            img = Image.fromarray(original_image, mode="L").convert("RGB")
+
+        draw = ImageDraw.Draw(img)
+        draw.rectangle(bbox, outline="green", width=3)
+
+        center_x = original_image.shape[1] // 2
+        center_y = original_image.shape[0] // 2
+        bbox_center_x = (bbox[0] + bbox[2]) // 2
+        bbox_center_y = (bbox[1] + bbox[3]) // 2
+
+        draw.ellipse(
+            [center_x - 5, center_y - 5, center_x + 5, center_y + 5], fill="yellow", outline="yellow"
+        )
+        draw.ellipse(
+            [bbox_center_x - 5, bbox_center_y - 5, bbox_center_x + 5, bbox_center_y + 5],
+            fill="red",
+            outline="red",
+        )
+
+        output_path = self._get_intermediate_path(image_vo, step_name)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        img.save(output_path)
+
+    def _get_intermediate_path(self, image_vo: ImageValueObject, step_name: str) -> Path:
+        """Generate the path for an intermediate result file."""
+        original_path = Path(image_vo.path)
+        side_name = image_vo.side.value.lower()
+        intermediate_dir = original_path.parent / "_intermediate"
+        stem = original_path.stem
+        suffix = original_path.suffix
+        filename = f"{stem}_intermediate_{step_name}_{side_name}{suffix}"
+        return intermediate_dir / filename
 
