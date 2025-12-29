@@ -1,13 +1,13 @@
 # application_layer/queries/walnut__query.py
 from abc import ABC, abstractmethod
-from typing import Optional, List
 from pathlib import Path
+from typing import List, Optional
 
-from infrastructure_layer.db_readers import IWalnutDBReader
 from application_layer.dtos.walnut__dto import WalnutDTO
 from application_layer.mappers.walnut__mapper import IWalnutMapper
-from common.interfaces import IAppConfig
 from application_layer.services.walnut_image_loader import WalnutImageLoader
+from common.interfaces import IAppConfig
+from infrastructure_layer.db_readers import IWalnutDBReader
 
 
 class IWalnutQuery(ABC):
@@ -52,9 +52,7 @@ class WalnutQuery(IWalnutQuery):
         if not image_directory.exists():
             return None
 
-        walnut_file_dao = WalnutImageLoader.load_walnut_from_directory(
-            walnut_id, image_directory
-        )
+        walnut_file_dao = WalnutImageLoader.load_walnut_from_directory(walnut_id, image_directory)
         if walnut_file_dao is None:
             return None
 

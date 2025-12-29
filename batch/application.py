@@ -1,9 +1,9 @@
 # batch/application.py
 from application_layer.commands.command_dispatcher import ICommandDispatcher
-from application_layer.queries.walnut__query import IWalnutQuery
 from application_layer.commands.command_objects.walnut__command import (
     CreateFakeWalnutCommand,
 )
+from application_layer.queries.walnut__query import IWalnutQuery
 from common.logger import get_logger
 
 
@@ -24,14 +24,10 @@ class Application:
     def run(self) -> None:
         command = CreateFakeWalnutCommand(walnut_id="WALNUT-TEST-001")
         self.command_dispatcher.dispatch(command)
-        
+
         fake_walnut = self.walnut_query.get_by_id("WALNUT-TEST-001")
         if fake_walnut:
-            self.logger.info(
-                "walnut_found",
-                walnut_id=fake_walnut.walnut_id,
-                image_count=len(fake_walnut.images),
-            )
+            self.logger.info("walnut_found", walnut_id=fake_walnut.walnut_id, image_count=len(fake_walnut.images))
             for img in fake_walnut.images:
                 self.logger.debug(
                     "walnut_image",

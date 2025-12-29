@@ -1,9 +1,10 @@
 # infrastructure_layer/db_writers/walnut_image__db_writer.py
 from abc import ABC, abstractmethod
-from sqlalchemy.orm import Session
 from typing import TYPE_CHECKING
-from infrastructure_layer.data_access_objects import WalnutImageDBDAO
+
 from common.constants import DEFAULT_EMBEDDING_MODEL
+from infrastructure_layer.data_access_objects import WalnutImageDBDAO
+from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
     from .walnut_image_embedding__db_writer import IWalnutImageEmbeddingDBWriter
@@ -53,7 +54,7 @@ class WalnutImageDBWriter(IWalnutImageDBWriter):
         try:
             # For new objects (without id or id is 0), use add() instead of merge()
             # This avoids SQLAlchemy's sentinel column detection
-            image_id = getattr(image, 'id', None)
+            image_id = getattr(image, "id", None)
             if image_id is None or image_id == 0:
                 # New object - use add()
                 self.session.add(image)
@@ -73,7 +74,7 @@ class WalnutImageDBWriter(IWalnutImageDBWriter):
             existing = self.session.get(WalnutImageDBDAO, image.id)
             if existing is None:
                 raise ValueError(f"Image with id {image.id} not found")
-            
+
             # Update fields
             existing.image_path = image.image_path
             existing.width = image.width
@@ -81,7 +82,7 @@ class WalnutImageDBWriter(IWalnutImageDBWriter):
             existing.checksum = image.checksum
             existing.updated_by = image.updated_by
             # updated_at is set by database default
-            
+
             self.session.flush()
             return existing
         else:
@@ -103,7 +104,7 @@ class WalnutImageDBWriter(IWalnutImageDBWriter):
                 embedding.model_name = model_name
                 saved_embedding = self.embedding_writer.save(embedding)
                 image.embedding = saved_embedding
-            
+
             self.session.commit()  # Commit the transaction
             return image
         except Exception:

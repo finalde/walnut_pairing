@@ -1,8 +1,8 @@
 # batch/app_config.py
-from pathlib import Path
 from dataclasses import dataclass
-import yaml
+from pathlib import Path
 
+import yaml
 from common.interfaces import IAppConfig
 
 
@@ -37,4 +37,3 @@ class AppConfig(IAppConfig):
         with open(yaml_path, "r") as f:
             cfg = yaml.safe_load(f)
         return cls(**cfg)
-

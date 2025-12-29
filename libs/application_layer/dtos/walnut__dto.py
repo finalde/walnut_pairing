@@ -1,7 +1,7 @@
 # application_layer/dtos/walnut__dto.py
 from dataclasses import dataclass
-from typing import List, Optional
 from datetime import datetime
+from typing import List, Optional
 
 
 @dataclass

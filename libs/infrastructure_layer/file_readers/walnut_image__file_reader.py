@@ -1,10 +1,12 @@
 # infrastructure_layer/file_readers/walnut_image__file_reader.py
 from abc import ABC, abstractmethod
-from typing import Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Optional
+
+from common.interfaces import IDatabaseConnection
+
 from ..data_access_objects import (
     WalnutImageDBDAO,
 )
-from common.interfaces import IDatabaseConnection
 
 if TYPE_CHECKING:
     from ..db_readers.walnut_image_embedding__db_reader import IWalnutImageEmbeddingDBReader
@@ -24,16 +26,12 @@ class IWalnutImageFileReader(ABC):
         pass
 
     @abstractmethod
-    def get_by_walnut_id_with_embeddings(
-        self, walnut_id: str
-    ) -> List[WalnutImageDBDAO]:
+    def get_by_walnut_id_with_embeddings(self, walnut_id: str) -> List[WalnutImageDBDAO]:
         """Get all images for a specific walnut with their embeddings loaded."""
         pass
 
     @abstractmethod
-    def get_by_id_with_embedding(
-        self, image_id: int
-    ) -> Optional[WalnutImageDBDAO]:
+    def get_by_id_with_embedding(self, image_id: int) -> Optional[WalnutImageDBDAO]:
         """Get a walnut image by ID with its embedding loaded."""
         pass
 
@@ -117,9 +115,7 @@ class WalnutImageFileReader(IWalnutImageFileReader):
                 for row in rows
             ]
 
-    def get_by_walnut_id_with_embeddings(
-        self, walnut_id: str
-    ) -> List[WalnutImageDBDAO]:
+    def get_by_walnut_id_with_embeddings(self, walnut_id: str) -> List[WalnutImageDBDAO]:
         """Get all images for a specific walnut with their embeddings loaded."""
         images = self.get_by_walnut_id(walnut_id)
 
@@ -130,9 +126,7 @@ class WalnutImageFileReader(IWalnutImageFileReader):
 
         return images
 
-    def get_by_id_with_embedding(
-        self, image_id: int
-    ) -> Optional[WalnutImageDBDAO]:
+    def get_by_id_with_embedding(self, image_id: int) -> Optional[WalnutImageDBDAO]:
         """Get a walnut image by ID with its embedding loaded."""
         image = self.get_by_id(image_id)
         if image is None:
@@ -143,4 +137,3 @@ class WalnutImageFileReader(IWalnutImageFileReader):
             image.embedding = self.embedding_reader.get_by_image_id(image.id)
 
         return image
-

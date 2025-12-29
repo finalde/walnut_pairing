@@ -1,25 +1,25 @@
 # application_layer/walnut__al.py
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
-import numpy as np
-
 from pathlib import Path
+from typing import TYPE_CHECKING, Optional
+
+import numpy as np
+from application_layer.mappers.walnut__mapper import IWalnutMapper
+from application_layer.services.walnut_image_loader import WalnutImageLoader
+from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
+from common.enums import WalnutSideEnum
+from common.interfaces import IAppConfig, IDatabaseConnection
+from common.logger import get_logger
 from domain_layer.services.embedding__service import (
     IImageEmbeddingService,
 )
-from common.interfaces import IAppConfig, IDatabaseConnection
-from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
-from common.enums import WalnutSideEnum
-from common.logger import get_logger
-from infrastructure_layer.db_readers import IWalnutImageEmbeddingDBReader, IWalnutDBReader
-from infrastructure_layer.db_writers import IWalnutDBWriter
 from infrastructure_layer.data_access_objects import (
     WalnutDBDAO,
     WalnutImageDBDAO,
     WalnutImageEmbeddingDBDAO,
 )
-from application_layer.services.walnut_image_loader import WalnutImageLoader
-from application_layer.mappers.walnut__mapper import IWalnutMapper
+from infrastructure_layer.db_readers import IWalnutDBReader, IWalnutImageEmbeddingDBReader
+from infrastructure_layer.db_writers import IWalnutDBWriter
 
 
 class IWalnutAL(ABC):
@@ -61,7 +61,7 @@ class WalnutAL(IWalnutAL):
         walnut_reader: IWalnutDBReader,
         walnut_writer: IWalnutDBWriter,
         walnut_mapper: IWalnutMapper,
-    ) -> None:  
+    ) -> None:
         self.image_embedding_service: IImageEmbeddingService = image_embedding_service
         self.app_config: IAppConfig = app_config
         self.db_connection: IDatabaseConnection = db_connection
@@ -70,7 +70,7 @@ class WalnutAL(IWalnutAL):
         self.walnut_writer: IWalnutDBWriter = walnut_writer
         self.walnut_mapper: IWalnutMapper = walnut_mapper
         self.logger = get_logger(__name__)
-    
+
     def generate_embeddings(self) -> None:
         """Generate embeddings for testing purposes."""
         self.logger.info(
@@ -78,7 +78,7 @@ class WalnutAL(IWalnutAL):
             image_root=self.app_config.image_root,
             database_host=self.app_config.database.host,
         )
-        
+
         test_image_path = Path(self.app_config.image_root) / "0001" / "0001_B_1.jpg"
         if test_image_path.exists():
             self.logger.info("testing_embedding", test_image_path=str(test_image_path))
@@ -86,10 +86,10 @@ class WalnutAL(IWalnutAL):
             self.logger.info("embedding_generated", shape=embedding.shape)
         else:
             self.logger.warning("test_image_not_found", path=str(test_image_path))
-        
+
         test = self.walnut_image_embedding_reader.get_by_model_name(DEFAULT_EMBEDDING_MODEL)
         self.logger.info("embeddings_found", count=len(test))
-        
+
         walnuts = self.walnut_reader.get_all()
         self.logger.info("walnuts_found", count=len(walnuts))
 
@@ -168,13 +168,9 @@ class WalnutAL(IWalnutAL):
         if not image_directory.exists():
             raise FileNotFoundError(f"Image directory not found: {image_directory}")
 
-        walnut_file_dao = WalnutImageLoader.load_walnut_from_directory(
-            walnut_id, image_directory
-        )
+        walnut_file_dao = WalnutImageLoader.load_walnut_from_directory(walnut_id, image_directory)
         if walnut_file_dao is None:
-            raise ValueError(
-                f"No valid images found in directory: {image_directory}"
-            )
+            raise ValueError(f"No valid images found in directory: {image_directory}")
 
         self.logger.info(
             "images_loaded",
@@ -216,4 +212,3 @@ class WalnutAL(IWalnutAL):
             image_count=len(saved_walnut.images),
         )
         return saved_walnut
-

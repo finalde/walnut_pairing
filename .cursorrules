@@ -15,6 +15,7 @@ General:
 - Write code that is easy to read, review, and refactor.
 - Avoid hidden or implicit behavior.
 - avoid magic string or numbers, use enum, constants or strong typed hint like Class.__name__ to replace magic string or numbers
+- Max line length: 120 characters (configured in pyproject.toml for black and isort)
 
 Typing:
 - All variables, parameters, and return values MUST have explicit type hints.

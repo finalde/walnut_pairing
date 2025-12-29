@@ -17,4 +17,3 @@ CONSTRAINT_UQ_WALNUT_SIDE = "uq_walnut_side"
 TABLE_WALNUT = "walnut"
 TABLE_WALNUT_IMAGE = "walnut_image"
 TABLE_WALNUT_IMAGE_EMBEDDING = "walnut_image_embedding"
-

@@ -1,8 +1,8 @@
 # application_layer/commands/command_objects/base_command.py
 from abc import ABC
 from dataclasses import dataclass
-from typing import Optional
 from datetime import datetime
+from typing import Optional
 
 
 @dataclass

@@ -1,5 +1,9 @@
 # common/di_registry.py
-from typing import Dict, Type, TypeVar, Any
+from typing import Any, Dict, Type, TypeVar
+
+from application_layer.mappers.walnut__mapper import IWalnutMapper, WalnutMapper
+from application_layer.queries.walnut__query import IWalnutQuery, WalnutQuery
+from application_layer.walnut__al import IWalnutAL, WalnutAL
 from common.interfaces import IAppConfig
 from domain_layer.services.embedding__service import (
     IImageEmbeddingService,
@@ -7,25 +11,22 @@ from domain_layer.services.embedding__service import (
 )
 from infrastructure_layer.db_readers import (
     IWalnutDBReader,
-    WalnutDBReader,
     IWalnutImageEmbeddingDBReader,
+    WalnutDBReader,
     WalnutImageEmbeddingDBReader,
+)
+from infrastructure_layer.db_writers import (
+    IWalnutDBWriter,
+    IWalnutImageDBWriter,
+    IWalnutImageEmbeddingDBWriter,
+    WalnutDBWriter,
+    WalnutImageDBWriter,
+    WalnutImageEmbeddingDBWriter,
 )
 from infrastructure_layer.file_readers import (
     IWalnutImageFileReader,
     WalnutImageFileReader,
 )
-from infrastructure_layer.db_writers import (
-    IWalnutDBWriter,
-    WalnutDBWriter,
-    IWalnutImageDBWriter,
-    WalnutImageDBWriter,
-    IWalnutImageEmbeddingDBWriter,
-    WalnutImageEmbeddingDBWriter,
-)
-from application_layer.walnut__al import IWalnutAL, WalnutAL
-from application_layer.mappers.walnut__mapper import IWalnutMapper, WalnutMapper
-from application_layer.queries.walnut__query import IWalnutQuery, WalnutQuery
 
 T = TypeVar("T")
 
@@ -53,6 +54,7 @@ class DIRegistry:
 
 try:
     from batch.app_config import AppConfig
+
     DIRegistry.register(IAppConfig, AppConfig)
 except ImportError:
     pass

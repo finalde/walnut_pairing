@@ -3,13 +3,14 @@
 Common interfaces for dependency injection.
 """
 from abc import ABC, abstractmethod
-from typing import Protocol, TYPE_CHECKING, runtime_checkable, Any
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     try:
         from batch.app_config import DatabaseConfig
     except ImportError:
         from typing import Any
+
         DatabaseConfig = Any
 
 
@@ -49,4 +50,3 @@ class IDependencyProvider(ABC):
     def resolve(self, dependency_type: type) -> Any:
         """Resolve a dependency by type."""
         pass
-

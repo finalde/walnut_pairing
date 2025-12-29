@@ -15,7 +15,7 @@ def get_container() -> Container:
     if _container is None:
         project_root = Path(__file__).resolve().parent.parent
         config_path = project_root / "webapi" / "config.yml"
-        
+
         _container = Container()
         _container.config_path.from_value(config_path)
     return _container
@@ -29,4 +29,3 @@ def shutdown_container() -> None:
         if db_connection:
             db_connection.close()
         _container = None
-

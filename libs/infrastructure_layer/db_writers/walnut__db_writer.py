@@ -1,8 +1,9 @@
 # infrastructure_layer/db_writers/walnut__db_writer.py
 from abc import ABC, abstractmethod
-from sqlalchemy.orm import Session
 from typing import TYPE_CHECKING
+
 from infrastructure_layer.data_access_objects import WalnutDBDAO
+from sqlalchemy.orm import Session
 
 if TYPE_CHECKING:
     from .walnut_image__db_writer import IWalnutImageDBWriter
@@ -57,12 +58,12 @@ class WalnutDBWriter(IWalnutDBWriter):
         Save a walnut with all its images and embeddings using SQLAlchemy ORM.
         This is the ORM-like save that cascades to images and embeddings.
         Returns walnut with all IDs populated.
-        
+
         If the walnut already exists, it will be deleted first (along with its images and embeddings)
         due to CASCADE delete, then the new walnut will be inserted.
         """
         try:
-            walnut_id = getattr(walnut, 'id', None)
+            walnut_id = getattr(walnut, "id", None)
             if walnut_id is None or walnut_id == "":
                 # New object - use add() which will cascade to images and embeddings
                 self.session.add(walnut)
@@ -73,10 +74,10 @@ class WalnutDBWriter(IWalnutDBWriter):
                     # Delete existing walnut (CASCADE will delete images and embeddings)
                     self.session.delete(existing)
                     self.session.flush()  # Flush the delete
-                
+
                 # Now add the new walnut with its images and embeddings
                 self.session.add(walnut)
-            
+
             self.session.flush()  # Flush to get all generated IDs without committing
             self.session.commit()  # Commit the transaction
             return walnut

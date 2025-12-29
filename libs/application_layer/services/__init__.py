@@ -3,4 +3,3 @@
 from .walnut_image_loader import WalnutImageLoader
 
 __all__ = ["WalnutImageLoader"]
-

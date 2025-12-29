@@ -1,11 +1,12 @@
 # infrastructure_layer/db_readers/walnut_image_embedding__db_reader.py
 from abc import ABC, abstractmethod
-from typing import Optional, List
+from typing import List, Optional
+
 import numpy as np
+from common.interfaces import IDatabaseConnection
 from infrastructure_layer.data_access_objects.walnut_image_embedding__db_dao import (
     WalnutImageEmbeddingDBDAO,
 )
-from common.interfaces import IDatabaseConnection
 
 
 class IWalnutImageEmbeddingDBReader(ABC):
@@ -17,16 +18,12 @@ class IWalnutImageEmbeddingDBReader(ABC):
         pass
 
     @abstractmethod
-    def get_by_image_id(
-        self, image_id: int
-    ) -> Optional[WalnutImageEmbeddingDBDAO]:
+    def get_by_image_id(self, image_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by image ID (one-to-one relationship)."""
         pass
 
     @abstractmethod
-    def get_by_model_name(
-        self, model_name: str
-    ) -> List[WalnutImageEmbeddingDBDAO]:
+    def get_by_model_name(self, model_name: str) -> List[WalnutImageEmbeddingDBDAO]:
         """Get all embeddings for a specific model."""
         pass
 
@@ -56,6 +53,7 @@ class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
         if isinstance(vector_data, str):
             # If it's a string like '[0.1, 0.2, ...]', parse it
             import ast
+
             vector_list = ast.literal_eval(vector_data)
             return np.array(vector_list, dtype=np.float32)
         elif isinstance(vector_data, (list, tuple)):
@@ -66,9 +64,7 @@ class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
             # Try to convert directly
             return np.array(vector_data, dtype=np.float32)
 
-    def get_by_id(
-        self, embedding_id: int
-    ) -> Optional[WalnutImageEmbeddingDBDAO]:
+    def get_by_id(self, embedding_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by its ID."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -97,9 +93,7 @@ class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
                 updated_by=row[7],
             )
 
-    def get_by_image_id(
-        self, image_id: int
-    ) -> Optional[WalnutImageEmbeddingDBDAO]:
+    def get_by_image_id(self, image_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by image ID (one-to-one relationship)."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -129,9 +123,7 @@ class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
                 updated_by=row[7],
             )
 
-    def get_by_model_name(
-        self, model_name: str
-    ) -> List[WalnutImageEmbeddingDBDAO]:
+    def get_by_model_name(self, model_name: str) -> List[WalnutImageEmbeddingDBDAO]:
         """Get all embeddings for a specific model."""
         with self.db_connection.cursor() as cursor:
             cursor.execute(
@@ -158,4 +150,3 @@ class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
                 )
                 for row in rows
             ]
-

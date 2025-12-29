@@ -1,16 +1,16 @@
 # webapi/routes/walnuts.py
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 from pathlib import Path
+from typing import List
 
-from common.di_container import Container
 from application_layer.commands.command_dispatcher import ICommandDispatcher
-from application_layer.queries.walnut__query import IWalnutQuery
 from application_layer.commands.command_objects.walnut__command import (
     CreateFakeWalnutCommand,
 )
 from application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
+from application_layer.queries.walnut__query import IWalnutQuery
+from common.di_container import Container
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/walnuts", tags=["walnuts"])
 
@@ -72,18 +72,13 @@ def _dto_to_response(dto: WalnutDTO) -> WalnutResponse:
 
 
 @router.get("/", response_model=List[WalnutResponse])
-async def get_walnuts(
-    query: IWalnutQuery = Depends(get_walnut_query)
-) -> List[WalnutResponse]:
+async def get_walnuts(query: IWalnutQuery = Depends(get_walnut_query)) -> List[WalnutResponse]:
     walnuts = query.get_all()
     return [_dto_to_response(w) for w in walnuts]
 
 
 @router.get("/{walnut_id}", response_model=WalnutResponse)
-async def get_walnut(
-    walnut_id: str,
-    query: IWalnutQuery = Depends(get_walnut_query)
-) -> WalnutResponse:
+async def get_walnut(walnut_id: str, query: IWalnutQuery = Depends(get_walnut_query)) -> WalnutResponse:
     walnut = query.get_by_id(walnut_id)
     if walnut is None:
         raise HTTPException(status_code=404, detail=f"Walnut {walnut_id} not found")
@@ -92,8 +87,7 @@ async def get_walnut(
 
 @router.get("/{walnut_id}/load-from-filesystem", response_model=WalnutResponse)
 async def load_walnut_from_filesystem(
-    walnut_id: str,
-    query: IWalnutQuery = Depends(get_walnut_query)
+    walnut_id: str, query: IWalnutQuery = Depends(get_walnut_query)
 ) -> WalnutResponse:
     walnut = query.load_from_filesystem(walnut_id)
     if walnut is None:
@@ -103,8 +97,7 @@ async def load_walnut_from_filesystem(
 
 @router.post("/{walnut_id}/create-fake")
 async def create_fake_walnut(
-    walnut_id: str,
-    command_dispatcher: ICommandDispatcher = Depends(get_command_dispatcher)
+    walnut_id: str, command_dispatcher: ICommandDispatcher = Depends(get_command_dispatcher)
 ) -> dict:
     command = CreateFakeWalnutCommand(walnut_id=walnut_id)
     command_dispatcher.dispatch(command)

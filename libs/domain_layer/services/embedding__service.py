@@ -1,11 +1,11 @@
-import torch
-import torch.nn as nn
-from torchvision import models, transforms
-from PIL import Image
-
 from abc import ABC, abstractmethod
 from typing import Optional, Union
+
 import numpy as np
+import torch
+import torch.nn as nn
+from PIL import Image
+from torchvision import models, transforms
 
 
 class IImageEmbeddingService(ABC):
@@ -20,7 +20,7 @@ class IImageEmbeddingService(ABC):
 
 class ImageEmbeddingService(IImageEmbeddingService):
     def __init__(self) -> None:
-        self.device: str = ("cuda" if torch.cuda.is_available() else "cpu")
+        self.device: str = "cuda" if torch.cuda.is_available() else "cpu"
 
         # Pretrained ResNet50 without classifier
         resnet = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V2)
@@ -28,12 +28,13 @@ class ImageEmbeddingService(IImageEmbeddingService):
         self.model.eval().to(self.device)
 
         # Image preprocessing
-        self.preprocess: transforms.Compose = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                 std=[0.229, 0.224, 0.225]),
-        ])
+        self.preprocess: transforms.Compose = transforms.Compose(
+            [
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            ]
+        )
 
     def generate(self, data: Union[str, Image.Image]) -> np.ndarray:
         if isinstance(data, str):

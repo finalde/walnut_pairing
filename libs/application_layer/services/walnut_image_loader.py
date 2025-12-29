@@ -1,13 +1,13 @@
 # application_layer/services/walnut_image_loader.py
 """Service to load walnut images from filesystem and create file DAOs."""
+import hashlib
 from pathlib import Path
 from typing import List, Optional
-from PIL import Image
-import hashlib
 
-from infrastructure_layer.data_access_objects.walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
 from common.enums import WalnutSideEnum
 from common.logger import get_logger
+from infrastructure_layer.data_access_objects.walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
+from PIL import Image
 
 
 class WalnutImageLoader:
@@ -49,9 +49,7 @@ class WalnutImageLoader:
         return None
 
     @classmethod
-    def load_walnut_from_directory(
-        cls, walnut_id: str, image_directory: Path
-    ) -> Optional[WalnutFileDAO]:
+    def load_walnut_from_directory(cls, walnut_id: str, image_directory: Path) -> Optional[WalnutFileDAO]:
         """
         Load a walnut's images from a directory and create a file DAO.
 
@@ -109,4 +107,3 @@ class WalnutImageLoader:
             image_directory=image_directory,
             images=images,
         )
-

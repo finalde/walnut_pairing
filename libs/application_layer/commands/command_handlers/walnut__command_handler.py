@@ -1,19 +1,19 @@
 # application_layer/commands/command_handlers/walnut__command_handler.py
 import numpy as np
-
-from .base__command_handler import ICommandHandler
-from ..command_objects.walnut__command import (
-    CreateFakeWalnutCommand,
-)
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
 from common.logger import get_logger
-from infrastructure_layer.db_writers import IWalnutDBWriter
 from infrastructure_layer.data_access_objects import (
     WalnutDBDAO,
     WalnutImageDBDAO,
     WalnutImageEmbeddingDBDAO,
 )
+from infrastructure_layer.db_writers import IWalnutDBWriter
+
+from ..command_objects.walnut__command import (
+    CreateFakeWalnutCommand,
+)
+from .base__command_handler import ICommandHandler
 
 
 class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):

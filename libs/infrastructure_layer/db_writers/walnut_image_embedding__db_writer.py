@@ -1,8 +1,9 @@
 # infrastructure_layer/db_writers/walnut_image_embedding__db_writer.py
 from abc import ABC, abstractmethod
-from sqlalchemy.orm import Session
-from infrastructure_layer.data_access_objects import WalnutImageEmbeddingDBDAO
+
 import numpy as np
+from infrastructure_layer.data_access_objects import WalnutImageEmbeddingDBDAO
+from sqlalchemy.orm import Session
 
 
 class IWalnutImageEmbeddingDBWriter(ABC):
@@ -40,7 +41,7 @@ class WalnutImageEmbeddingDBWriter(IWalnutImageEmbeddingDBWriter):
             # Convert numpy array to list for pgvector
             if isinstance(embedding.embedding, np.ndarray):
                 embedding.embedding = embedding.embedding.tolist()
-            
+
             # Add to session and flush to get generated ID
             self.session.add(embedding)
             self.session.flush()  # Flush to get the generated ID without committing
@@ -57,7 +58,7 @@ class WalnutImageEmbeddingDBWriter(IWalnutImageEmbeddingDBWriter):
                 existing = self.session.get(WalnutImageEmbeddingDBDAO, embedding.id)
                 if existing is None:
                     raise ValueError(f"Embedding with id {embedding.id} not found")
-                
+
                 # Update fields
                 existing.model_name = embedding.model_name
                 if embedding.embedding is not None:
@@ -67,7 +68,7 @@ class WalnutImageEmbeddingDBWriter(IWalnutImageEmbeddingDBWriter):
                         existing.embedding = embedding.embedding
                 existing.updated_by = embedding.updated_by
                 # updated_at is set by database default
-                
+
                 self.session.flush()
                 return existing
             else:

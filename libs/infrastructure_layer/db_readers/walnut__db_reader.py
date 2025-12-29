@@ -1,8 +1,10 @@
 # infrastructure_layer/db_readers/walnut__reader.py
 from abc import ABC, abstractmethod
-from typing import Optional, List, TYPE_CHECKING
-from ..data_access_objects import WalnutDBDAO
+from typing import TYPE_CHECKING, List, Optional
+
 from common.interfaces import IDatabaseConnection
+
+from ..data_access_objects import WalnutDBDAO
 
 if TYPE_CHECKING:
     from ..file_readers.walnut_image__file_reader import IWalnutImageFileReader
@@ -22,11 +24,9 @@ class IWalnutDBReader(ABC):
         pass
 
     @abstractmethod
-    def get_by_id_with_images(
-        self, walnut_id: str
-    ) -> Optional[WalnutDBDAO]:
+    def get_by_id_with_images(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by ID with its related images and embeddings loaded.
-        
+
         Note: This method now delegates to get_by_id() which already loads
         images and embeddings. Kept for backward compatibility.
         """
@@ -76,9 +76,7 @@ class WalnutDBReader(IWalnutDBReader):
             )
 
             # Load related images with embeddings
-            walnut.images = self.image_reader.get_by_walnut_id_with_embeddings(
-                walnut_id
-            )
+            walnut.images = self.image_reader.get_by_walnut_id_with_embeddings(walnut_id)
 
             return walnut
 
@@ -107,19 +105,14 @@ class WalnutDBReader(IWalnutDBReader):
 
             # Load related images with embeddings for each walnut
             for walnut in walnuts:
-                walnut.images = self.image_reader.get_by_walnut_id_with_embeddings(
-                    walnut.id
-                )
+                walnut.images = self.image_reader.get_by_walnut_id_with_embeddings(walnut.id)
 
             return walnuts
 
-    def get_by_id_with_images(
-        self, walnut_id: str
-    ) -> Optional[WalnutDBDAO]:
+    def get_by_id_with_images(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by ID with its related images and embeddings loaded.
-        
+
         Note: This method now delegates to get_by_id() which already loads
         images and embeddings. Kept for backward compatibility.
         """
         return self.get_by_id(walnut_id)
-

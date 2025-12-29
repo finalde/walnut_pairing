@@ -1,9 +1,11 @@
 # Example: PostgreSQL database connection for localhost:5432
 # This file demonstrates how to create a database connection for use with the readers
 
+from typing import Optional
+
 import psycopg2
 from psycopg2 import pool
-from typing import Optional
+
 
 # Option 1: Simple connection (for single operations)
 def create_db_connection(
@@ -15,14 +17,14 @@ def create_db_connection(
 ) -> psycopg2.extensions.connection:
     """
     Create a PostgreSQL database connection.
-    
+
     Args:
         host: Database host (default: localhost)
         port: Database port (default: 5432)
         database: Database name
         user: Database user
         password: Database password
-    
+
     Returns:
         psycopg2 connection object
     """
@@ -42,11 +44,11 @@ def create_db_connection_from_string(
 ) -> psycopg2.extensions.connection:
     """
     Create a PostgreSQL database connection from a connection string.
-    
+
     Args:
         connection_string: PostgreSQL connection string
             Format: "host=localhost port=5432 dbname=mydb user=myuser password=mypass"
-    
+
     Returns:
         psycopg2 connection object
     """
@@ -66,7 +68,7 @@ def create_connection_pool(
 ) -> psycopg2.pool.ThreadedConnectionPool:
     """
     Create a connection pool for better performance.
-    
+
     Args:
         min_conn: Minimum number of connections in the pool
         max_conn: Maximum number of connections in the pool
@@ -75,7 +77,7 @@ def create_connection_pool(
         database: Database name
         user: Database user
         password: Database password
-    
+
     Returns:
         ThreadedConnectionPool object
     """
@@ -98,7 +100,7 @@ def example_usage():
         WalnutDBReader,
         WalnutImageFileReader,
     )
-    
+
     # Create connection
     db_conn = create_db_connection(
         host="localhost",
@@ -107,20 +109,20 @@ def example_usage():
         user="postgres",
         password="your_password",
     )
-    
+
     try:
         # Use with readers
         walnut_reader = WalnutDBReader(db_conn)
         walnut = walnut_reader.get_by_id("WALNUT-001")
-        
+
         if walnut:
             print(f"Found walnut: {walnut.id} - {walnut.description}")
-        
+
         # Get walnut with images
         walnut_with_images = walnut_reader.get_by_id_with_images("WALNUT-001")
         if walnut_with_images:
             print(f"Walnut has {len(walnut_with_images.images)} images")
-    
+
     finally:
         # Always close the connection
         db_conn.close()
@@ -130,7 +132,7 @@ def example_usage():
 def example_usage_with_pool():
     """Example using connection pool."""
     from infrastructure_layer.db_readers import WalnutDBReader
-    
+
     # Create connection pool
     pool = create_connection_pool(
         min_conn=1,
@@ -141,11 +143,11 @@ def example_usage_with_pool():
         user="postgres",
         password="your_password",
     )
-    
+
     try:
         # Get connection from pool
         db_conn = pool.getconn()
-        
+
         try:
             walnut_reader = WalnutDBReader(db_conn)
             walnuts = walnut_reader.get_all()
@@ -153,7 +155,7 @@ def example_usage_with_pool():
         finally:
             # Return connection to pool
             pool.putconn(db_conn)
-    
+
     finally:
         # Close all connections in pool
         pool.closeall()
@@ -162,7 +164,7 @@ def example_usage_with_pool():
 if __name__ == "__main__":
     # Example connection string format:
     # "host=localhost port=5432 dbname=walnut_pairing_db user=postgres password=mypassword"
-    
+
     # Quick example:
     conn = create_db_connection(
         host="localhost",
@@ -173,4 +175,3 @@ if __name__ == "__main__":
     )
     print("Connection created successfully!")
     conn.close()
-
