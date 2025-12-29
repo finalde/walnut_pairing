@@ -110,6 +110,9 @@ class WalnutMapper(IWalnutMapper):
             description=description,
             created_by=created_by,
             updated_by=updated_by,
+            length_mm=walnut_entity.length_mm,
+            width_mm=walnut_entity.width_mm,
+            height_mm=walnut_entity.height_mm,
         )
 
         side_mapping = {
@@ -193,6 +196,9 @@ class WalnutMapper(IWalnutMapper):
             created_by=walnut_dao.created_by,
             updated_at=walnut_dao.updated_at,
             updated_by=walnut_dao.updated_by,
+            length_mm=walnut_dao.length_mm,
+            width_mm=walnut_dao.width_mm,
+            height_mm=walnut_dao.height_mm,
             images=images,
         )
 
@@ -220,5 +226,8 @@ class WalnutMapper(IWalnutMapper):
             created_by=SYSTEM_USER,
             updated_at=datetime.now(),
             updated_by=SYSTEM_USER,
+            length_mm=None,
+            width_mm=None,
+            height_mm=None,
             images=images,
         )

@@ -13,7 +13,10 @@ CREATE TABLE walnut (
     created_at TIMESTAMP DEFAULT NOW() not null,
     created_by TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW() not null,
-    updated_by TEXT NOT NULL
+    updated_by TEXT NOT NULL,
+    length_mm DOUBLE PRECISION,
+    width_mm DOUBLE PRECISION,
+    height_mm DOUBLE PRECISION
 );
 
 -- Create walnut_image table

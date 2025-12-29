@@ -23,6 +23,7 @@ from infrastructure_layer.file_readers import (
     IWalnutImageFileReader,
     WalnutImageFileReader,
 )
+from infrastructure_layer.services import IWalnutImageService, WalnutImageService
 
 from batch.app_config import AppConfig
 
@@ -60,3 +61,4 @@ DIRegistry.register(IWalnutDBWriter, WalnutDBWriter)
 DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IWalnutMapper, WalnutMapper)
 DIRegistry.register(IWalnutQuery, WalnutQuery)
+DIRegistry.register(IWalnutImageService, WalnutImageService)

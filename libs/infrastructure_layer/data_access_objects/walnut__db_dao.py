@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import DateTime, String, Text
+from sqlalchemy import DateTime, Float, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base__db_dao import Base
@@ -23,6 +23,9 @@ class WalnutDBDAO(Base):
     created_by: Mapped[str] = mapped_column(String, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
     updated_by: Mapped[str] = mapped_column(String, nullable=False)
+    length_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    width_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    height_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Relationships
     # Using string literal - SQLAlchemy resolves it by class name at runtime

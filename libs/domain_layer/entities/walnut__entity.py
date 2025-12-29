@@ -33,6 +33,9 @@ class _WalnutEntityBuilder:
         self.top_embedding: Optional[np.ndarray] = None
         self.down_embedding: Optional[np.ndarray] = None
         self.paired_walnut_id: Optional[str] = None
+        self.length_mm: Optional[float] = None
+        self.width_mm: Optional[float] = None
+        self.height_mm: Optional[float] = None
         self.processing_status: dict[str, bool] = {"embedding_generated": False, "validated": False}
 
 
@@ -72,6 +75,9 @@ class WalnutEntity:
         self.top_embedding: Optional[np.ndarray] = builder.top_embedding
         self.down_embedding: Optional[np.ndarray] = builder.down_embedding
         self.paired_walnut_id: Optional[str] = builder.paired_walnut_id
+        self.length_mm: Optional[float] = builder.length_mm
+        self.width_mm: Optional[float] = builder.width_mm
+        self.height_mm: Optional[float] = builder.height_mm
         self.processing_status: dict[str, bool] = builder.processing_status
         self._initialized: bool = True
 

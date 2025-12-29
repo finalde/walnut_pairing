@@ -83,8 +83,19 @@ def _create_provider(
     hints = _resolve_type_hints(impl.__init__)
     deps = {}
 
+    import inspect
+
+    sig = inspect.signature(impl.__init__)
     for name, param_type in hints.items():
         if name in ("self", "return") or param_type is None:
+            continue
+
+        param = sig.parameters.get(name)
+        if param and param.default != inspect.Parameter.empty:
+            continue
+
+        primitive_types = (int, float, str, bool, bytes, type(None))
+        if param_type in primitive_types or isinstance(param_type, type) and issubclass(param_type, primitive_types):
             continue
 
         if get_origin(param_type):

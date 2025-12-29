@@ -9,15 +9,16 @@ from PIL import Image
 @dataclass(frozen=True)
 class ImageValueObject:
     side: WalnutSideEnum
-    path: str  # path to image
+    path: str
     width: int
     height: int
-    format: str  # e.g., JPEG, PNG
-    hash: str  # optional, for image identity/checksum
+    format: str
+    hash: str
+    camera_distance_mm: float | None = None
 
     @classmethod
-    def from_path(cls, path: str, side: WalnutSideEnum) -> "ImageValueObject":
+    def from_path(cls, path: str, side: WalnutSideEnum, camera_distance_mm: float | None = None) -> "ImageValueObject":
         img = Image.open(path)
         img_hash = str(hash(img.tobytes()))
         img_format = img.format or UNKNOWN_IMAGE_FORMAT
-        return cls(side=side, path=path, width=img.width, height=img.height, format=img_format, hash=img_hash)
+        return cls(side=side, path=path, width=img.width, height=img.height, format=img_format, hash=img_hash, camera_distance_mm=camera_distance_mm)

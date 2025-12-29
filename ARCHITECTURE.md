@@ -297,8 +297,24 @@ class WalnutMapper(IWalnutMapper):
 ### What Gets DI
 
 - **Application Layer**: Commands, queries, mappers, application services
-- **Infrastructure Layer**: Readers, writers, file readers
+- **Infrastructure Layer**: Readers, writers, file readers, services (image processing, etc.)
 - **NOT Domain Layer**: Domain services and factories are static
+
+## Infrastructure Services
+
+**What is an Infrastructure Service:**
+- Provides external capabilities not in domain services (e.g., image processing, external APIs)
+- Lives in `infrastructure_layer/services/`
+- File naming: `xxx__service.py`
+- Class naming: `XxxService`
+- Implements `IXxxService` interface
+- Injected via DI
+
+**Infrastructure Service Rules:**
+- Contains technical/algorithmic logic (not business logic)
+- Can use external libraries (OpenCV, PIL, numpy, etc.)
+- Registered in DI container
+- Used by application layer or command handlers
 
 ## File Naming Conventions
 
@@ -321,6 +337,7 @@ All files follow the pattern: `xxx__file_type.py`
 - `__db_reader.py`: Database readers
 - `__db_writer.py`: Database writers
 - `__file_reader.py`: File readers
+- `__service.py`: Infrastructure services (external capabilities like image processing)
 - `__al.py`: Application layer services
 
 ## Important Rules
