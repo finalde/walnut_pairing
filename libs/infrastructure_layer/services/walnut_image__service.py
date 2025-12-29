@@ -193,11 +193,16 @@ class WalnutImageService(IWalnutImageService):
         is too far from the center (>30% of image size), it's likely not the walnut.
         """
         gray = self._to_grayscale(image)
-        edges = self._detect_edges(gray, edge_threshold)
+        
+        # Apply slight Gaussian-like smoothing to reduce noise before edge detection
+        gray_smoothed = self._smooth_image(gray)
+        
+        edges = self._detect_edges(gray_smoothed, edge_threshold)
         contours = self._find_contours(edges)
 
         if image_vos and side_enum:
             self._save_intermediate_image(gray, image_vos[side_enum], "01_grayscale")
+            self._save_intermediate_image(gray_smoothed, image_vos[side_enum], "01b_smoothed")
             self._save_intermediate_image(edges, image_vos[side_enum], "02_edges")
 
         if not contours:
@@ -233,11 +238,16 @@ class WalnutImageService(IWalnutImageService):
         is too far from the center (>30% of image size), it's likely not the walnut.
         """
         gray = self._to_grayscale(image)
-        edges = self._detect_edges(gray, edge_threshold)
+        
+        # Apply slight Gaussian-like smoothing to reduce noise before edge detection
+        gray_smoothed = self._smooth_image(gray)
+        
+        edges = self._detect_edges(gray_smoothed, edge_threshold)
         contours = self._find_contours(edges)
 
         if image_vos and side_enum:
             self._save_intermediate_image(gray, image_vos[side_enum], "01_grayscale")
+            self._save_intermediate_image(gray_smoothed, image_vos[side_enum], "01b_smoothed")
             self._save_intermediate_image(edges, image_vos[side_enum], "02_edges")
 
         if not contours:
@@ -265,6 +275,30 @@ class WalnutImageService(IWalnutImageService):
             return np.dot(image[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
         return image.astype(np.uint8)
 
+    def _smooth_image(self, gray: np.ndarray) -> np.ndarray:
+        """
+        Apply a simple box filter (Gaussian-like smoothing) to reduce noise.
+        This helps edge detection work better on real images with noise.
+        """
+        h, w = gray.shape
+        smoothed = np.zeros_like(gray, dtype=np.float32)
+        
+        # Simple 3x3 box filter (can be thought of as a simple Gaussian blur)
+        kernel = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.float32) / 16.0
+        
+        for y in range(1, h - 1):
+            for x in range(1, w - 1):
+                patch = gray[y - 1 : y + 2, x - 1 : x + 2].astype(np.float32)
+                smoothed[y, x] = np.sum(patch * kernel)
+        
+        # Handle borders by copying edge pixels
+        smoothed[0, :] = gray[0, :].astype(np.float32)
+        smoothed[-1, :] = gray[-1, :].astype(np.float32)
+        smoothed[:, 0] = gray[:, 0].astype(np.float32)
+        smoothed[:, -1] = gray[:, -1].astype(np.float32)
+        
+        return smoothed.astype(np.uint8)
+
     def _detect_edges(self, gray: np.ndarray, edge_threshold: float) -> np.ndarray:
         """
         Detect edges using Sobel operator.
@@ -274,6 +308,9 @@ class WalnutImageService(IWalnutImageService):
             - Higher threshold (e.g., 0.9) = Less sensitive, detects fewer edges (good for low quality/noisy cameras)
             - Formula: edge_threshold = 1.0 - camera_quality_factor
             - Example: quality_factor=0.7 -> edge_threshold=0.3 (moderate sensitivity)
+            
+        The threshold is applied to the normalized magnitude (0-255 range) using a percentile-based approach
+        to handle varying image contrast levels.
         """
         kernel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32)
         kernel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32)
@@ -289,8 +326,31 @@ class WalnutImageService(IWalnutImageService):
                 sobel_y[y, x] = np.sum(patch * kernel_y)
 
         magnitude = np.hypot(sobel_x, sobel_y)
-        threshold = magnitude.max() * edge_threshold
-        return (magnitude > threshold).astype(np.uint8) * 255
+        
+        # Normalize magnitude to 0-255 range for consistent thresholding
+        if magnitude.max() > 0:
+            magnitude_normalized = (magnitude / magnitude.max() * 255.0).astype(np.float32)
+        else:
+            # No edges detected, return empty edge image
+            return np.zeros_like(gray, dtype=np.uint8)
+        
+        # Use percentile-based threshold for adaptive edge detection
+        # Higher edge_threshold means we want fewer edges (higher percentile = more selective)
+        # Lower edge_threshold means we want more edges (lower percentile = more sensitive)
+        # Map edge_threshold (0.0-1.0) to percentile range (70th to 85th percentile)
+        # This range is more conservative to ensure we detect the walnut edges
+        # edge_threshold=0.0 -> 70th percentile (more sensitive, detects more edges)
+        # edge_threshold=1.0 -> 85th percentile (more selective, detects fewer but stronger edges)
+        percentile = 70.0 + (edge_threshold * 15.0)  # Maps 0.0->70%, 1.0->85%
+        threshold_value = np.percentile(magnitude_normalized, percentile)
+        
+        # Apply threshold and convert to binary image
+        # Use a minimum threshold to ensure we don't filter out everything
+        min_threshold = magnitude_normalized.max() * 0.1  # At least 10% of max
+        final_threshold = max(threshold_value, min_threshold)
+        
+        edges = (magnitude_normalized > final_threshold).astype(np.uint8) * 255
+        return edges
 
     def _find_contours(self, edges: np.ndarray) -> list[np.ndarray]:
         h, w = edges.shape
