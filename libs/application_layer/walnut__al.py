@@ -10,9 +10,7 @@ from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
 from common.interfaces import IAppConfig, IDatabaseConnection
 from common.logger import get_logger
-from domain_layer.services.embedding__service import (
-    IImageEmbeddingService,
-)
+from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
 from infrastructure_layer.data_access_objects import (
     WalnutDBDAO,
     WalnutImageDBDAO,
@@ -54,7 +52,6 @@ class IWalnutAL(ABC):
 class WalnutAL(IWalnutAL):
     def __init__(
         self,
-        image_embedding_service: IImageEmbeddingService,
         app_config: IAppConfig,
         db_connection: IDatabaseConnection,
         walnut_image_embedding_reader: IWalnutImageEmbeddingDBReader,
@@ -62,7 +59,6 @@ class WalnutAL(IWalnutAL):
         walnut_writer: IWalnutDBWriter,
         walnut_mapper: IWalnutMapper,
     ) -> None:
-        self.image_embedding_service: IImageEmbeddingService = image_embedding_service
         self.app_config: IAppConfig = app_config
         self.db_connection: IDatabaseConnection = db_connection
         self.walnut_image_embedding_reader: IWalnutImageEmbeddingDBReader = walnut_image_embedding_reader
@@ -174,31 +170,32 @@ class WalnutAL(IWalnutAL):
 
         self.logger.info(
             "images_loaded",
-            walnut_id=walnut_id,
             image_count=len(walnut_file_dao.images),
             directory=str(image_directory),
         )
 
-        walnut_entity = self.walnut_mapper.file_dao_to_entity(walnut_file_dao)
-        self.logger.debug("dto_to_entity_converted", walnut_id=walnut_id)
+        entity_result = self.walnut_mapper.file_dao_to_entity(walnut_file_dao)
+        if entity_result.is_left():
+            error = entity_result.value
+            self.logger.error("entity_creation_failed", error=str(error))
+            raise ValueError(f"Failed to create entity: {error}")
 
-        walnut_entity.validate()
-        self.logger.debug("domain_validation_passed", walnut_id=walnut_id)
+        walnut_entity = entity_result.value
+        self.logger.debug("entity_created", walnut_id=walnut_entity.id)
 
         for side_enum in WalnutSideEnum:
             image_vo = getattr(walnut_entity, side_enum.value)
-            embedding = self.image_embedding_service.generate(image_vo.path)
-            walnut_entity.set_embedding(side_enum.value, embedding)
-            self.logger.debug(
-                "embedding_generated",
-                walnut_id=walnut_id,
-                side=side_enum.value,
-            )
+            embedding = ImageEmbeddingDomainService.generate(image_vo.path)
+            embedding_result = walnut_entity.set_embedding(side_enum.value, embedding)
+            if embedding_result.is_left():
+                error = embedding_result.value
+                self.logger.error("embedding_set_failed", walnut_id=walnut_entity.id, side=side_enum.value, error=str(error))
+                raise ValueError(f"Failed to set embedding: {error}")
+            self.logger.debug("embedding_generated", walnut_id=walnut_entity.id, side=side_enum.value)
 
         walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,
-            walnut_id=walnut_id,
-            description=f"Walnut {walnut_id} loaded from filesystem",
+            description=f"Walnut loaded from filesystem",
             created_by=SYSTEM_USER,
             updated_by=SYSTEM_USER,
             model_name=DEFAULT_EMBEDDING_MODEL,
@@ -208,7 +205,7 @@ class WalnutAL(IWalnutAL):
         saved_walnut = self.walnut_writer.save_with_images(walnut_dao)
         self.logger.info(
             "walnut_saved",
-            walnut_id=walnut_id,
+            walnut_id=walnut_entity.id,
             image_count=len(saved_walnut.images),
         )
         return saved_walnut

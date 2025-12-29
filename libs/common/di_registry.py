@@ -5,10 +5,6 @@ from application_layer.mappers.walnut__mapper import IWalnutMapper, WalnutMapper
 from application_layer.queries.walnut__query import IWalnutQuery, WalnutQuery
 from application_layer.walnut__al import IWalnutAL, WalnutAL
 from common.interfaces import IAppConfig
-from domain_layer.services.embedding__service import (
-    IImageEmbeddingService,
-    ImageEmbeddingService,
-)
 from infrastructure_layer.db_readers import (
     IWalnutDBReader,
     IWalnutImageEmbeddingDBReader,
@@ -58,7 +54,6 @@ try:
     DIRegistry.register(IAppConfig, AppConfig)
 except ImportError:
     pass
-DIRegistry.register(IImageEmbeddingService, ImageEmbeddingService)
 DIRegistry.register(IWalnutImageEmbeddingDBReader, WalnutImageEmbeddingDBReader)
 DIRegistry.register(IWalnutImageFileReader, WalnutImageFileReader)
 DIRegistry.register(IWalnutDBReader, WalnutDBReader)

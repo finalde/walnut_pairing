@@ -5,6 +5,9 @@ from typing import Dict
 from application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER, UNKNOWN_IMAGE_FORMAT
 from common.enums import WalnutSideEnum
+from common.either import Either, Left
+from domain_layer.domain_error import DomainError, MissingSideError, ValidationError
+from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.entities.walnut__entity import WalnutEntity
 from domain_layer.value_objects.image__value_object import ImageValueObject
 from infrastructure_layer.data_access_objects import (
@@ -18,14 +21,13 @@ from PIL import Image
 
 class IWalnutMapper(ABC):
     @abstractmethod
-    def file_dao_to_entity(self, walnut_file_dao: WalnutFileDAO) -> WalnutEntity:
+    def file_dao_to_entity(self, walnut_file_dao: WalnutFileDAO) -> Either[WalnutEntity, DomainError]:
         pass
 
     @abstractmethod
     def entity_to_dao(
         self,
         walnut_entity: WalnutEntity,
-        walnut_id: str,
         description: str,
         created_by: str,
         updated_by: str,
@@ -37,7 +39,7 @@ class IWalnutMapper(ABC):
     def image_value_object_to_dao(
         self,
         image_vo: ImageValueObject,
-        walnut_id: str,
+        walnut_entity: WalnutEntity,
         created_by: str,
         updated_by: str,
     ) -> WalnutImageDBDAO:
@@ -53,7 +55,7 @@ class IWalnutMapper(ABC):
 
 
 class WalnutMapper(IWalnutMapper):
-    def file_dao_to_entity(self, walnut_file_dao: WalnutFileDAO) -> WalnutEntity:
+    def file_dao_to_entity(self, walnut_file_dao: WalnutFileDAO) -> Either[WalnutEntity, DomainError]:
         side_mapping: Dict[str, WalnutSideEnum] = {
             "F": WalnutSideEnum.FRONT,
             "B": WalnutSideEnum.BACK,
@@ -67,15 +69,13 @@ class WalnutMapper(IWalnutMapper):
         for image_file_dao in walnut_file_dao.images:
             side_enum = side_mapping.get(image_file_dao.side_letter.upper())
             if side_enum is None:
-                raise ValueError(
-                    f"Invalid side letter '{image_file_dao.side_letter}' in file {image_file_dao.file_path.name}"
-                )
+                return Left(ValidationError(f"Invalid side letter '{image_file_dao.side_letter}' in file {image_file_dao.file_path.name}"))
             images_by_side[side_enum] = image_file_dao
 
         required_sides = set(WalnutSideEnum)
         missing_sides = required_sides - set(images_by_side.keys())
         if missing_sides:
-            raise ValueError(f"Missing required images for sides: {[s.value for s in missing_sides]}")
+            return Left(MissingSideError([s.value for s in missing_sides]))
 
         image_value_objects: Dict[WalnutSideEnum, ImageValueObject] = {}
         for side_enum, image_file_dao in images_by_side.items():
@@ -83,7 +83,7 @@ class WalnutMapper(IWalnutMapper):
                 with Image.open(image_file_dao.file_path) as img:
                     img_format = img.format or UNKNOWN_IMAGE_FORMAT
             except Exception as e:
-                raise ValueError(f"Failed to load image {image_file_dao.file_path}: {e}") from e
+                return Left(ValidationError(f"Failed to load image {image_file_dao.file_path}: {e}"))
 
             image_vo = ImageValueObject(
                 side=side_enum,
@@ -95,26 +95,18 @@ class WalnutMapper(IWalnutMapper):
             )
             image_value_objects[side_enum] = image_vo
 
-        return WalnutEntity(
-            front=image_value_objects[WalnutSideEnum.FRONT],
-            back=image_value_objects[WalnutSideEnum.BACK],
-            left=image_value_objects[WalnutSideEnum.LEFT],
-            right=image_value_objects[WalnutSideEnum.RIGHT],
-            top=image_value_objects[WalnutSideEnum.TOP],
-            down=image_value_objects[WalnutSideEnum.DOWN],
-        )
+        return WalnutDomainFactory.create_from_file_dao_images(image_value_objects)
 
     def entity_to_dao(
         self,
         walnut_entity: WalnutEntity,
-        walnut_id: str,
         description: str = "",
         created_by: str = SYSTEM_USER,
         updated_by: str = SYSTEM_USER,
         model_name: str = DEFAULT_EMBEDDING_MODEL,
     ) -> WalnutDBDAO:
         walnut_dao = WalnutDBDAO(
-            id=walnut_id,
+            id=walnut_entity.id,
             description=description,
             created_by=created_by,
             updated_by=updated_by,
@@ -141,7 +133,7 @@ class WalnutMapper(IWalnutMapper):
         for side_enum, image_vo in side_mapping.items():
             image_dao = self.image_value_object_to_dao(
                 image_vo,
-                walnut_id,
+                walnut_entity,
                 created_by=created_by,
                 updated_by=updated_by,
             )
@@ -164,12 +156,12 @@ class WalnutMapper(IWalnutMapper):
     def image_value_object_to_dao(
         self,
         image_vo: ImageValueObject,
-        walnut_id: str,
+        walnut_entity: WalnutEntity,
         created_by: str = SYSTEM_USER,
         updated_by: str = SYSTEM_USER,
     ) -> WalnutImageDBDAO:
         return WalnutImageDBDAO(
-            walnut_id=walnut_id,
+            walnut_id=walnut_entity.id,
             side=image_vo.side.value,
             image_path=image_vo.path,
             width=image_vo.width,
@@ -206,8 +198,6 @@ class WalnutMapper(IWalnutMapper):
 
     def file_dao_to_dto(self, walnut_file_dao: WalnutFileDAO, walnut_id: str) -> WalnutDTO:
         from datetime import datetime
-
-        from common.constants import SYSTEM_USER
 
         images = [
             WalnutImageDTO(
