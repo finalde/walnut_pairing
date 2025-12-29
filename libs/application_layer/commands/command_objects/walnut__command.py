@@ -13,3 +13,14 @@ class CreateFakeWalnutCommand(ICommand):
     def __post_init__(self) -> None:
         if not self.walnut_id:
             raise ValueError("walnut_id is required")
+
+
+@dataclass
+class CreateWalnutFromImagesCommand(ICommand):
+    walnut_id: str = ""
+    description: Optional[str] = None
+    save_intermediate_results: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.walnut_id:
+            raise ValueError("walnut_id is required")

@@ -43,12 +43,17 @@ class CommandDispatcher(ICommandDispatcher):
 
         from .command_handlers.walnut__command_handler import (
             CreateFakeWalnutHandler,
+            CreateWalnutFromImagesHandler,
         )
         from .command_objects.walnut__command import (
             CreateFakeWalnutCommand,
+            CreateWalnutFromImagesCommand,
         )
 
         dispatcher = cls()
         create_fake_handler = dependency_provider.resolve(CreateFakeWalnutHandler)
         dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
+
+        create_from_images_handler = dependency_provider.resolve(CreateWalnutFromImagesHandler)
+        dispatcher.register_handler(CreateWalnutFromImagesCommand, create_from_images_handler)
         return dispatcher

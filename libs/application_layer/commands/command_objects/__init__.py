@@ -2,9 +2,11 @@
 from .base__command import ICommand
 from .walnut__command import (
     CreateFakeWalnutCommand,
+    CreateWalnutFromImagesCommand,
 )
 
 __all__ = [
     "ICommand",
     "CreateFakeWalnutCommand",
+    "CreateWalnutFromImagesCommand",
 ]

@@ -1,9 +1,13 @@
 # batch/application.py
+from pathlib import Path
+from typing import Optional
+
 from application_layer.commands.command_dispatcher import ICommandDispatcher
 from application_layer.commands.command_objects.walnut__command import (
-    CreateFakeWalnutCommand,
+    CreateWalnutFromImagesCommand,
 )
 from application_layer.queries.walnut__query import IWalnutQuery
+from common.interfaces import IAppConfig
 from common.logger import get_logger
 
 
@@ -16,54 +20,59 @@ class Application:
         self,
         command_dispatcher: ICommandDispatcher,
         walnut_query: IWalnutQuery,
+        app_config: IAppConfig,
     ) -> None:
         self.command_dispatcher: ICommandDispatcher = command_dispatcher
         self.walnut_query: IWalnutQuery = walnut_query
+        self.app_config: IAppConfig = app_config
         self.logger = get_logger(__name__)
 
     def run(self) -> None:
-        command = CreateFakeWalnutCommand(walnut_id="WALNUT-TEST-001")
-        self.command_dispatcher.dispatch(command)
+        image_root = Path(self.app_config.image_root)
+        if not image_root.exists():
+            self.logger.error("image_root_not_found", image_root=str(image_root))
+            return
 
-        fake_walnut = self.walnut_query.get_by_id("WALNUT-TEST-001")
-        if fake_walnut:
-            self.logger.info("walnut_found", walnut_id=fake_walnut.walnut_id, image_count=len(fake_walnut.images))
-            for img in fake_walnut.images:
-                self.logger.debug(
-                    "walnut_image",
-                    walnut_id=fake_walnut.walnut_id,
-                    side=img.side,
-                    image_id=img.image_id,
-                    embedding_id=img.embedding_id,
-                )
+        self.logger.info("scanning_images_directory", image_root=str(image_root))
 
-        self.logger.info("testing_filesystem_load", walnut_id="0001")
-        try:
-            loaded_walnut = self.walnut_query.load_from_filesystem("0001")
-            if loaded_walnut:
-                self.logger.info(
-                    "walnut_loaded_from_filesystem",
-                    walnut_id=loaded_walnut.walnut_id,
-                    image_count=len(loaded_walnut.images),
+        walnut_directories = sorted([d for d in image_root.iterdir() if d.is_dir()])
+        if not walnut_directories:
+            self.logger.warning("no_walnut_directories_found", image_root=str(image_root))
+            return
+
+        self.logger.info("walnut_directories_found", count=len(walnut_directories))
+
+        for walnut_dir in walnut_directories:
+            walnut_id = walnut_dir.name
+            self.logger.info("processing_walnut", walnut_id=walnut_id, directory=str(walnut_dir))
+
+            try:
+                command = CreateWalnutFromImagesCommand(
+                    walnut_id=walnut_id,
+                    description=f"Walnut {walnut_id} loaded from images directory",
+                    save_intermediate_results=False,
                 )
-                for img in loaded_walnut.images:
-                    self.logger.debug(
-                        "filesystem_image",
-                        walnut_id=loaded_walnut.walnut_id,
-                        side=img.side,
-                        image_path=img.image_path,
-                        width=img.width,
-                        height=img.height,
+                self.command_dispatcher.dispatch(command)
+
+                saved_walnut = self.walnut_query.get_by_id(walnut_id)
+                if saved_walnut:
+                    self.logger.info(
+                        "walnut_processed_successfully",
+                        walnut_id=saved_walnut.walnut_id,
+                        image_count=len(saved_walnut.images),
+                        length_mm=saved_walnut.length_mm,
+                        width_mm=saved_walnut.width_mm,
+                        height_mm=saved_walnut.height_mm,
                     )
-            else:
-                self.logger.warning("walnut_not_found_in_filesystem", walnut_id="0001")
-        except Exception as e:
-            self.logger.error(
-                "filesystem_load_error",
-                walnut_id="0001",
-                error=str(e),
-                exc_info=True,
-            )
+                else:
+                    self.logger.warning("walnut_not_found_after_processing", walnut_id=walnut_id)
+            except Exception as e:
+                self.logger.error(
+                    "walnut_processing_error",
+                    walnut_id=walnut_id,
+                    error=str(e),
+                    exc_info=True,
+                )
 
         all_walnuts = self.walnut_query.get_all()
-        self.logger.info("all_walnuts_queried", count=len(all_walnuts))
+        self.logger.info("processing_complete", total_walnuts=len(all_walnuts))
