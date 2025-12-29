@@ -50,7 +50,7 @@ class Application:
                 command = CreateWalnutFromImagesCommand(
                     walnut_id=walnut_id,
                     description=f"Walnut {walnut_id} loaded from images directory",
-                    save_intermediate_results=False,
+                    save_intermediate_results=True,
                 )
                 self.command_dispatcher.dispatch(command)
 

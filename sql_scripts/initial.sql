@@ -10,13 +10,13 @@ DROP TABLE IF EXISTS walnut;
 CREATE TABLE walnut (
     id TEXT PRIMARY KEY,
     description text not null,
+    length_mm DOUBLE PRECISION,
+    width_mm DOUBLE PRECISION,
+    height_mm DOUBLE PRECISION,
     created_at TIMESTAMP DEFAULT NOW() not null,
     created_by TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW() not null,
-    updated_by TEXT NOT NULL,
-    length_mm DOUBLE PRECISION,
-    width_mm DOUBLE PRECISION,
-    height_mm DOUBLE PRECISION
+    updated_by TEXT NOT NULL
 );
 
 -- Create walnut_image table

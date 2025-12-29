@@ -20,23 +20,21 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug src.main (WSL)",
+      "name": "Debug batch.main (WSL)",
       "type": "python",
       "request": "launch",
-
-      "module": "src.main",
+      "module": "batch.main",
       "cwd": "${workspaceFolder}",
-
       "console": "integratedTerminal",
       "justMyCode": true,
       "subProcess": true,
-
       "env": {
-        "PYTHONPATH": "${workspaceFolder}"
+        "PYTHONPATH": "${workspaceFolder}",
+        "PYTHONWARNINGS": "ignore::UserWarning:pkg_resources"
       },
-
       "envFile": "${workspaceFolder}/.env"
     }
+    
   ]
 }
 

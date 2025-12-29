@@ -69,13 +69,13 @@ class WalnutMapper(IWalnutMapper):
         for image_file_dao in walnut_file_dao.images:
             side_enum = side_mapping.get(image_file_dao.side_letter.upper())
             if side_enum is None:
-                return Left(ValidationError(f"Invalid side letter '{image_file_dao.side_letter}' in file {image_file_dao.file_path.name}"))
+                return Left[WalnutEntity, DomainError](ValidationError(f"Invalid side letter '{image_file_dao.side_letter}' in file {image_file_dao.file_path.name}"))
             images_by_side[side_enum] = image_file_dao
 
-        required_sides = set(WalnutSideEnum)
-        missing_sides = required_sides - set(images_by_side.keys())
+        required_sides = set[WalnutSideEnum](WalnutSideEnum)
+        missing_sides = required_sides - set[WalnutSideEnum](images_by_side.keys())
         if missing_sides:
-            return Left(MissingSideError([s.value for s in missing_sides]))
+            return Left[WalnutEntity, DomainError][WalnutEntity, DomainError](MissingSideError([s.value for s in missing_sides]))
 
         image_value_objects: Dict[WalnutSideEnum, ImageValueObject] = {}
         for side_enum, image_file_dao in images_by_side.items():
@@ -83,7 +83,7 @@ class WalnutMapper(IWalnutMapper):
                 with Image.open(image_file_dao.file_path) as img:
                     img_format = img.format or UNKNOWN_IMAGE_FORMAT
             except Exception as e:
-                return Left(ValidationError(f"Failed to load image {image_file_dao.file_path}: {e}"))
+                return Left[WalnutEntity, DomainError](ValidationError(f"Failed to load image {image_file_dao.file_path}: {e}"))
 
             image_vo = ImageValueObject(
                 side=side_enum,

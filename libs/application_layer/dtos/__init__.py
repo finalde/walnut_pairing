@@ -1,7 +1,7 @@
 # application_layer/dtos/__init__.py
-from .walnut__dto import WalnutDTO, WalnutImageDTO
+from application_layer.dtos.walnut__create_dto import WalnutCreateDTO, WalnutImageCreateDTO
 
 __all__ = [
-    "WalnutDTO",
-    "WalnutImageDTO",
+    "WalnutCreateDTO",
+    "WalnutImageCreateDTO",
 ]

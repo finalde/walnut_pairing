@@ -18,10 +18,9 @@ from domain_layer.domain_error import ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.value_objects.image__value_object import ImageValueObject
 
-from ..command_objects.walnut__command import CreateFakeWalnutCommand, CreateWalnutFromImagesCommand
-from .base__command_handler import ICommandHandler
-
-
+from application_layer.commands.command_objects.walnut__command import CreateFakeWalnutCommand, CreateWalnutFromImagesCommand
+from application_layer.commands.command_handlers.base__command_handler import ICommandHandler
+from application_layer.dtos.walnut__create_dto import WalnutCreateDTO, WalnutImageCreateDTO
 class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
     def __init__(
         self,
