@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
 
-from ..command_objects.base_command import ICommand
+from ..command_objects.base__command import ICommand
 
 TCommand = TypeVar("TCommand", bound=ICommand)
 

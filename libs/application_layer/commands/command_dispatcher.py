@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from typing import Dict, Type, Any
 from datetime import datetime
 
-from .command_objects.base_command import ICommand
-from .command_handlers.base_handler import ICommandHandler
+from .command_objects.base__command import ICommand
+from .command_handlers.base__command_handler import ICommandHandler
 
 
 class ICommandDispatcher(ABC):
@@ -37,10 +37,10 @@ class CommandDispatcher(ICommandDispatcher):
     
     @classmethod
     def create_with_handlers(cls, **dependencies: Any) -> "CommandDispatcher":
-        from .command_handlers.walnut_command_handler import (
+        from .command_handlers.walnut__command_handler import (
             CreateFakeWalnutHandler,
         )
-        from .command_objects.walnut_command import (
+        from .command_objects.walnut__command import (
             CreateFakeWalnutCommand,
         )
         

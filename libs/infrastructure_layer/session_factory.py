@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from typing import Protocol, Callable
 
 from common.interfaces import IAppConfig
-from infrastructure_layer.data_access_objects import Base
+from infrastructure_layer.data_access_objects.base__db_dao import Base
 
 
 class ISessionFactory(Protocol):

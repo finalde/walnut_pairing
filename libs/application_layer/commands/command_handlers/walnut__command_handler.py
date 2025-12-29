@@ -1,8 +1,8 @@
-# application_layer/commands/command_handlers/walnut_command_handler.py
+# application_layer/commands/command_handlers/walnut__command_handler.py
 import numpy as np
 
 from .base__command_handler import ICommandHandler
-from ..command_objects.walnut_command import (
+from ..command_objects.walnut__command import (
     CreateFakeWalnutCommand,
 )
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER

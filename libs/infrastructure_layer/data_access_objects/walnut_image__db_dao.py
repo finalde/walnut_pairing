@@ -5,7 +5,7 @@ from sqlalchemy import String, Integer, BigInteger, DateTime, ForeignKey, Unique
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import Optional, TYPE_CHECKING
 
-from .base import Base
+from .base__db_dao import Base
 from common.constants import CONSTRAINT_UQ_WALNUT_SIDE, TABLE_WALNUT
 
 if TYPE_CHECKING:

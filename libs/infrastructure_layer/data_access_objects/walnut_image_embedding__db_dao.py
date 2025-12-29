@@ -7,7 +7,7 @@ from pgvector.sqlalchemy import Vector
 from typing import TYPE_CHECKING, Any, Optional
 import numpy as np
 
-from .base import Base
+from .base__db_dao import Base
 from common.constants import TABLE_WALNUT_IMAGE
 
 if TYPE_CHECKING:

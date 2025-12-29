@@ -7,7 +7,7 @@ from pathlib import Path
 from common.di_container import Container
 from application_layer.commands.command_dispatcher import ICommandDispatcher
 from application_layer.queries.walnut__query import IWalnutQuery
-from application_layer.commands.command_objects.walnut_command import (
+from application_layer.commands.command_objects.walnut__command import (
     CreateFakeWalnutCommand,
 )
 from application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO

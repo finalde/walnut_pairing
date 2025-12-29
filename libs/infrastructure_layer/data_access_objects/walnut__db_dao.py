@@ -5,7 +5,7 @@ from sqlalchemy import String, Text, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, TYPE_CHECKING
 
-from .base import Base
+from .base__db_dao import Base
 
 if TYPE_CHECKING:
     from .walnut_image__db_dao import WalnutImageDBDAO
