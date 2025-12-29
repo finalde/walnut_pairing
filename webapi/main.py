@@ -1,11 +1,6 @@
 # webapi/main.py
 """FastAPI web application entry point."""
 from pathlib import Path
-import sys
-
-# Add libs to path
-libs_path = Path(__file__).resolve().parent.parent / "libs"
-sys.path.insert(0, str(libs_path))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

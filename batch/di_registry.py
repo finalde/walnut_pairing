@@ -1,10 +1,5 @@
 # batch/di_registry.py
-import sys
-from pathlib import Path
 from typing import Dict, Type, TypeVar, Any
-
-project_root = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(project_root / "libs"))
 
 from common.interfaces import IAppConfig
 from batch.app_config import AppConfig

@@ -2,10 +2,6 @@
 """Dependency injection setup for FastAPI."""
 from pathlib import Path
 from typing import Optional
-import sys
-
-# Add libs to path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "libs"))
 
 from common.di_container import Container
 

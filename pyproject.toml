@@ -1,3 +1,29 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "walnut-pairing"
+version = "0.1.0"
+description = "Walnut pairing application"
+requires-python = ">=3.12"
+dependencies = [
+    "dependency-injector",
+    "psycopg2-binary",
+    "sqlalchemy",
+    "pgvector",
+    "pyyaml",
+    "torch",
+    "torchvision",
+    "pillow",
+    "numpy",
+    "fastapi",
+    "uvicorn",
+]
+
+[tool.setuptools.packages.find]
+where = ["libs"]
+
 [tool.black]
 line-length = 88
 target-version = ['py312']

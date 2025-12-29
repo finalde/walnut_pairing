@@ -2,10 +2,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-
-import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "libs"))
 
 from common.di_container import Container
 from application_layer.commands.command_dispatcher import ICommandDispatcher
