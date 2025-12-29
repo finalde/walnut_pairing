@@ -5,6 +5,7 @@ from datetime import datetime
 
 from .command_objects.base__command import ICommand
 from .command_handlers.base__command_handler import ICommandHandler
+from common.interfaces import IDependencyProvider
 
 
 class ICommandDispatcher(ABC):
@@ -36,17 +37,16 @@ class CommandDispatcher(ICommandDispatcher):
         self._handlers[command_type] = handler
     
     @classmethod
-    def create_with_handlers(cls, walnut_writer: Any) -> "CommandDispatcher":
+    def create_with_handlers(cls, dependency_provider: IDependencyProvider) -> "CommandDispatcher":
         from .command_handlers.walnut__command_handler import (
             CreateFakeWalnutHandler,
         )
         from .command_objects.walnut__command import (
             CreateFakeWalnutCommand,
         )
+        from infrastructure_layer.db_writers import IWalnutDBWriter
         
         dispatcher = cls()
-        create_fake_handler = CreateFakeWalnutHandler(
-            walnut_writer=walnut_writer,
-        )
+        create_fake_handler = dependency_provider.resolve(CreateFakeWalnutHandler)
         dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
         return dispatcher

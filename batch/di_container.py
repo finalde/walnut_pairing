@@ -8,7 +8,7 @@ import psycopg2
 from typing import get_type_hints, get_origin, get_args, Dict, Type, Any
 
 from batch.app_config import AppConfig
-from common.interfaces import IAppConfig, IDatabaseConnection
+from common.interfaces import IAppConfig, IDatabaseConnection, IDependencyProvider
 from batch.di_registry import DIRegistry
 from infrastructure_layer.session_factory import SessionFactory
 from sqlalchemy.orm import Session
@@ -104,6 +104,14 @@ def _create_provider(
     return provider
 
 
+class DependencyProviderWrapper(IDependencyProvider):
+    def __init__(self, container: "Container") -> None:
+        self._container: Container = container
+    
+    def resolve(self, dependency_type: Type[Any]) -> Any:
+        return _container_resolve(self._container, dependency_type)
+
+
 class Container(containers.DeclarativeContainer):
     config_path = providers.Configuration()
     app_config = providers.Singleton(create_app_config, config_path=config_path)
@@ -121,7 +129,7 @@ class Container(containers.DeclarativeContainer):
         )
         
         return CommandDispatcher.create_with_handlers(
-            walnut_writer=self.walnutdbwriter(),
+            dependency_provider=DependencyProviderWrapper(self),
         )
     
     def application(self) -> IApplication:
@@ -145,5 +153,41 @@ for interface in DIRegistry._registry.keys():
         attr = interface.__name__[1:].lower() if interface.__name__.startswith("I") else interface.__name__.lower()
         attr = attr.replace("appconfig", "app_config").replace("databaseconnection", "db_connection").replace("walnutal", "walnut_al")
         setattr(Container, attr, provider)
+
+
+def _container_resolve(container: Container, dependency_type: Type[Any]) -> Any:
+    attr_name = dependency_type.__name__.lower()
+    attr_name = attr_name.replace("appconfig", "app_config").replace("databaseconnection", "db_connection").replace("walnutal", "walnut_al")
+    if hasattr(container, attr_name):
+        attr = getattr(container, attr_name)
+        if callable(attr):
+            return attr()
+        return attr
+    
+    if DIRegistry.is_registered(dependency_type):
+        impl = DIRegistry.get(dependency_type)
+        hints = _resolve_type_hints(impl.__init__)
+        deps = {}
+        for name, param_type in hints.items():
+            if name in ("self", "return") or param_type is None:
+                continue
+            if get_origin(param_type):
+                args = get_args(param_type)
+                if args:
+                    param_type = args[0]
+            deps[name] = _container_resolve(container, param_type)
+        return impl(**deps)
+    
+    hints = _resolve_type_hints(dependency_type.__init__)
+    deps = {}
+    for name, param_type in hints.items():
+        if name in ("self", "return") or param_type is None:
+            continue
+        if get_origin(param_type):
+            args = get_args(param_type)
+            if args:
+                param_type = args[0]
+        deps[name] = _container_resolve(container, param_type)
+    return dependency_type(**deps)
 
 

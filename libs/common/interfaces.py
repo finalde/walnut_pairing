@@ -3,7 +3,7 @@
 Common interfaces for dependency injection.
 """
 from abc import ABC, abstractmethod
-from typing import Protocol, TYPE_CHECKING, runtime_checkable
+from typing import Protocol, TYPE_CHECKING, runtime_checkable, Any
 
 if TYPE_CHECKING:
     try:
@@ -39,5 +39,14 @@ class IAppConfig(ABC):
     @abstractmethod
     def database(self) -> "DatabaseConfig":
         """Get the database configuration."""
+        pass
+
+
+class IDependencyProvider(ABC):
+    """Interface for dependency injection provider."""
+
+    @abstractmethod
+    def resolve(self, dependency_type: type) -> Any:
+        """Resolve a dependency by type."""
         pass
 
