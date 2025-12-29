@@ -151,6 +151,7 @@ class Container(containers.DeclarativeContainer):
         return Application(
             command_dispatcher=cmd_disp,
             walnut_query=self.walnutquery(),
+            app_config=self.app_config(),
         )
 
 
@@ -176,7 +177,10 @@ for interface in DIRegistry._registry.keys():
 def _container_resolve(container: Container, dependency_type: Type[Any]) -> Any:
     attr_name = dependency_type.__name__.lower()
     attr_name = (
-        attr_name.replace("appconfig", "app_config")
+        attr_name.replace("iappconfig", "app_config")
+        .replace("idatabaseconnection", "db_connection")
+        .replace("iwalnutal", "walnut_al")
+        .replace("appconfig", "app_config")
         .replace("databaseconnection", "db_connection")
         .replace("walnutal", "walnut_al")
     )
