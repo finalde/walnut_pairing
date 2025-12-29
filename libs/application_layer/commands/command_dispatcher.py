@@ -36,7 +36,7 @@ class CommandDispatcher(ICommandDispatcher):
         self._handlers[command_type] = handler
     
     @classmethod
-    def create_with_handlers(cls, **dependencies: Any) -> "CommandDispatcher":
+    def create_with_handlers(cls, walnut_writer: Any) -> "CommandDispatcher":
         from .command_handlers.walnut__command_handler import (
             CreateFakeWalnutHandler,
         )
@@ -45,11 +45,8 @@ class CommandDispatcher(ICommandDispatcher):
         )
         
         dispatcher = cls()
-        
-        if "walnut_writer" in dependencies:
-            create_fake_handler = CreateFakeWalnutHandler(
-                walnut_writer=dependencies["walnut_writer"],
-            )
-            dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
-        
+        create_fake_handler = CreateFakeWalnutHandler(
+            walnut_writer=walnut_writer,
+        )
+        dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
         return dispatcher
