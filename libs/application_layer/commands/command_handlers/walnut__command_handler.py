@@ -189,25 +189,10 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
                 images=images_dict,
                 save_intermediate_results=command.save_intermediate_results,
             )
-            # Create value object from estimated dimensions
+            # Create value object from estimated dimensions - domain validation
             dimension_result = WalnutDimensionValueObject.create(length_mm=length_mm, width_mm=width_mm, height_mm=height_mm)
-            if dimension_result.is_right():
-                set_result = walnut_entity.set_dimensions(dimension_result.value)
-                if set_result.is_left():
-                    self.logger.error(
-                        "dimension_set_failed",
-                        walnut_id=walnut_entity.id,
-                        error=str(set_result.value),
-                    )
-                else:
-                    self.logger.info(
-                        "dimensions_estimated",
-                        walnut_id=walnut_entity.id,
-                        length_mm=length_mm,
-                        width_mm=width_mm,
-                        height_mm=height_mm,
-                    )
-            else:
+            if dimension_result.is_left():
+                # Domain validation failed - log error and stop, don't persist to DB
                 self.logger.error(
                     "dimension_validation_failed",
                     walnut_id=walnut_entity.id,
@@ -216,8 +201,29 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
                     width_mm=width_mm,
                     height_mm=height_mm,
                 )
+                return
+
+            # Validation passed, set dimensions on entity
+            set_result = walnut_entity.set_dimensions(dimension_result.value)
+            if set_result.is_left():
+                # Domain error setting dimensions - log error and stop
+                self.logger.error(
+                    "dimension_set_failed",
+                    walnut_id=walnut_entity.id,
+                    error=str(set_result.value),
+                )
+                return
+
+            self.logger.info(
+                "dimensions_estimated",
+                walnut_id=walnut_entity.id,
+                length_mm=length_mm,
+                width_mm=width_mm,
+                height_mm=height_mm,
+            )
         except Exception as e:
             self.logger.error("dimension_estimation_failed", walnut_id=walnut_entity.id, error=str(e), exc_info=True)
+            return
 
         walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,
