@@ -26,4 +26,13 @@ class ImageValueObject:
         img = Image.open(path)
         img_hash = str(hash(img.tobytes()))
         img_format = img.format or UNKNOWN_IMAGE_FORMAT
-        return cls(side=side, path=path, width=img.width, height=img.height, format=img_format, hash=img_hash, embedding=embedding, camera_distance_mm=camera_distance_mm)
+        return cls(
+            side=side,
+            path=path,
+            width=img.width,
+            height=img.height,
+            format=img_format,
+            hash=img_hash,
+            embedding=embedding,
+            camera_distance_mm=camera_distance_mm,
+        )

@@ -2,4 +2,3 @@
 from infrastructure_layer.services.walnut_image__service import IWalnutImageService, WalnutImageService
 
 __all__ = ["IWalnutImageService", "WalnutImageService"]
-

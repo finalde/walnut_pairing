@@ -27,4 +27,3 @@ class DimensionValidator:
             self.min_bbox_ratio <= width_ratio <= self.max_bbox_ratio
             and self.min_bbox_ratio <= height_ratio <= self.max_bbox_ratio
         )
-

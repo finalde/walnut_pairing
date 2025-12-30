@@ -5,8 +5,8 @@ from typing import Dict
 import numpy as np
 from application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER, UNKNOWN_IMAGE_FORMAT
-from common.enums import WalnutSideEnum
 from common.either import Either, Left
+from common.enums import WalnutSideEnum
 from domain_layer.domain_error import DomainError, MissingSideError, ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.entities.walnut__entity import WalnutEntity
@@ -70,7 +70,9 @@ class WalnutMapper(IWalnutMapper):
         for image_file_dao in walnut_file_dao.images:
             side_enum = side_mapping.get(image_file_dao.side_letter.upper())
             if side_enum is None:
-                return Left[WalnutEntity, DomainError](ValidationError(f"Invalid side letter '{image_file_dao.side_letter}' in file {image_file_dao.file_path.name}"))
+                return Left[WalnutEntity, DomainError](
+                    ValidationError(f"Invalid side letter '{image_file_dao.side_letter}' in file {image_file_dao.file_path.name}")
+                )
             images_by_side[side_enum] = image_file_dao
 
         required_sides = set[WalnutSideEnum](WalnutSideEnum)

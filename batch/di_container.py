@@ -71,9 +71,7 @@ def _resolve_type_hints(func: Any) -> Dict[str, Any]:
         }
 
 
-def _create_provider(
-    interface: Type[Any], impl: Type[Any], providers_dict: Dict[Type[Any], Any], visited: set[Type[Any]]
-) -> Any:
+def _create_provider(interface: Type[Any], impl: Type[Any], providers_dict: Dict[Type[Any], Any], visited: set[Type[Any]]) -> Any:
     if interface in visited:
         raise ValueError(f"Circular dependency: {interface.__name__}")
     if interface in providers_dict:

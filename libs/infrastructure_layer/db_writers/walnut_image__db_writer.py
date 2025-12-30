@@ -24,9 +24,7 @@ class IWalnutImageDBWriter(ABC):
         pass
 
     @abstractmethod
-    def save_with_embedding(
-        self, image: WalnutImageDBDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
-    ) -> WalnutImageDBDAO:
+    def save_with_embedding(self, image: WalnutImageDBDAO, model_name: str = DEFAULT_EMBEDDING_MODEL) -> WalnutImageDBDAO:
         """Save an image with its embedding. Returns image with IDs."""
         pass
 
@@ -89,9 +87,7 @@ class WalnutImageDBWriter(IWalnutImageDBWriter):
             # Insert new
             return self.save(image)
 
-    def save_with_embedding(
-        self, image: WalnutImageDBDAO, model_name: str = DEFAULT_EMBEDDING_MODEL
-    ) -> WalnutImageDBDAO:
+    def save_with_embedding(self, image: WalnutImageDBDAO, model_name: str = DEFAULT_EMBEDDING_MODEL) -> WalnutImageDBDAO:
         """Save an image with its embedding. Returns image with IDs."""
         try:
             # Save image first

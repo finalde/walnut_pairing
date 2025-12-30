@@ -3,8 +3,8 @@ import uuid
 from typing import Optional
 
 import numpy as np
-from common.enums import WalnutSideEnum
 from common.either import Either, Left, Right
+from common.enums import WalnutSideEnum
 from domain_layer.domain_error import DomainError, InvalidImageError, MissingSideError, ValidationError
 from domain_layer.value_objects.image__value_object import ImageValueObject
 from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject

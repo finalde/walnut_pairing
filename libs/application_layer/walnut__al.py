@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from application_layer.mappers.walnut__mapper import IWalnutMapper
-from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
 from common.interfaces import IAppConfig, IDatabaseConnection
@@ -18,6 +17,7 @@ from infrastructure_layer.data_access_objects import (
 )
 from infrastructure_layer.db_readers import IWalnutDBReader, IWalnutImageEmbeddingDBReader
 from infrastructure_layer.db_writers import IWalnutDBWriter
+from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
 
 
 class IWalnutAL(ABC):

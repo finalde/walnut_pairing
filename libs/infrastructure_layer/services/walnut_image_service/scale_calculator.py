@@ -13,7 +13,7 @@ class ScaleCalculator:
         """
         Calculate mm per pixel using camera distance and focal length.
         Formula: mm_per_px = camera_distance_mm / focal_length_px
-        
+
         Note: This is a simplified model. For accurate results, use:
         - Physical reference object (coin, ruler)
         - Camera calibration
@@ -21,6 +21,5 @@ class ScaleCalculator:
         focal = focal_length_px or self.default_focal_length_px
         if focal <= 0 or camera_distance_mm <= 0:
             return 0.0
-        
-        return camera_distance_mm / focal
 
+        return camera_distance_mm / focal

@@ -28,4 +28,3 @@ class ImageEmbeddingDomainService:
         with torch.no_grad():
             embedding: torch.Tensor = model(x).squeeze().cpu()
         return embedding.numpy()
-

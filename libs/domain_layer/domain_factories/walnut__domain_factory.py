@@ -2,8 +2,8 @@
 from typing import Dict
 
 import numpy as np
-from common.enums import WalnutSideEnum
 from common.either import Either, Left
+from common.enums import WalnutSideEnum
 from domain_layer.domain_error import DomainError, MissingSideError
 from domain_layer.entities.walnut__entity import WalnutEntity
 from domain_layer.value_objects.image__value_object import ImageValueObject
@@ -53,4 +53,3 @@ class WalnutDomainFactory:
             top=images_by_side[WalnutSideEnum.TOP],
             down=images_by_side[WalnutSideEnum.DOWN],
         )
-

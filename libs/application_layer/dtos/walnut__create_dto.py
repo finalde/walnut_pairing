@@ -20,4 +20,3 @@ class WalnutCreateDTO:
     def __post_init__(self) -> None:
         if self.images is None:
             self.images = []
-

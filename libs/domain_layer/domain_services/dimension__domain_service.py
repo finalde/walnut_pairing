@@ -2,7 +2,6 @@
 from typing import Dict
 
 import numpy as np
-
 from common.enums import WalnutSideEnum
 
 
@@ -27,7 +26,7 @@ class DimensionDomainService:
     ) -> Dict[str, float]:
         """
         Aggregate pixel measurements into final dimensions in mm.
-        
+
         Business rule: Use median for robustness against outliers.
         Business rule: Require minimum number of valid views.
         """
@@ -62,4 +61,3 @@ class DimensionDomainService:
             WalnutSideEnum.DOWN: {"length": "width", "width": "height"},
         }
         return mapping.get(side, {})
-

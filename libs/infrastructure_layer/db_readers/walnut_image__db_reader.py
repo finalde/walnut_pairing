@@ -136,4 +136,3 @@ class WalnutImageDBReader(IWalnutImageDBReader):
             image.embedding = self.embedding_reader.get_by_image_id(image.id)
 
         return image
-

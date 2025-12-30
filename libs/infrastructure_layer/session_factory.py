@@ -29,8 +29,7 @@ class SessionFactory:
         db_config = app_config.database
         # Create database URL for SQLAlchemy
         database_url = (
-            f"postgresql://{db_config.user}:{db_config.password}"
-            f"@{db_config.host}:{db_config.port}/{db_config.database}"
+            f"postgresql://{db_config.user}:{db_config.password}" f"@{db_config.host}:{db_config.port}/{db_config.database}"
         )
 
         # Create engine with pgvector support

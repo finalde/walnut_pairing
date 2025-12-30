@@ -1,5 +1,6 @@
 # common/either.py
 from __future__ import annotations
+
 from typing import Callable, Generic, TypeVar
 
 T = TypeVar("T")
@@ -50,4 +51,3 @@ class Left(Either[T, E]):
 class Right(Either[T, E]):
     def __init__(self, value: T) -> None:
         self.value: T = value
-

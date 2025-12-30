@@ -16,17 +16,17 @@ class ContourFinder:
         Returns contour as numpy array of points, or None if not found.
         """
         contours = self._find_contours(mask)
-        
+
         if not contours:
             return None
-        
+
         # Return the largest contour by area
         largest = max(contours, key=lambda c: self._contour_area(c))
-        
+
         # Filter out tiny contours (noise)
         if self._contour_area(largest) < self.min_contour_size:
             return None
-        
+
         return largest
 
     def _find_contours(self, mask: np.ndarray) -> list[np.ndarray]:
@@ -76,4 +76,3 @@ class ContourFinder:
             return float((max_x - min_x) * (max_y - min_y))
         except Exception:
             return 0.0
-

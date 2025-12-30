@@ -2,28 +2,28 @@
 from pathlib import Path
 from typing import Dict
 
-from domain_layer.entities.walnut__entity import WalnutEntity
-from infrastructure_layer.data_access_objects import WalnutFileDAO
 import numpy as np
+from application_layer.commands.command_handlers.base__command_handler import ICommandHandler
+from application_layer.commands.command_objects.walnut__command import CreateFakeWalnutCommand, CreateWalnutFromImagesCommand
+from application_layer.dtos.walnut__create_dto import WalnutCreateDTO, WalnutImageCreateDTO
+from application_layer.mappers.walnut__mapper import IWalnutMapper
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
-from common.enums import WalnutSideEnum
 from common.either import Either, Left, Right
+from common.enums import WalnutSideEnum
 from common.interfaces import IAppConfig
 from common.logger import get_logger
-from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
-from infrastructure_layer.db_writers import IWalnutDBWriter
-from infrastructure_layer.services import IWalnutImageService
-
-from application_layer.mappers.walnut__mapper import IWalnutMapper
-from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
 from domain_layer.domain_error import DomainError, ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
+from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
+from domain_layer.entities.walnut__entity import WalnutEntity
 from domain_layer.value_objects.image__value_object import ImageValueObject
 from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
+from infrastructure_layer.data_access_objects import WalnutFileDAO
+from infrastructure_layer.db_writers import IWalnutDBWriter
+from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
+from infrastructure_layer.services import IWalnutImageService
 
-from application_layer.commands.command_objects.walnut__command import CreateFakeWalnutCommand, CreateWalnutFromImagesCommand
-from application_layer.commands.command_handlers.base__command_handler import ICommandHandler
-from application_layer.dtos.walnut__create_dto import WalnutCreateDTO, WalnutImageCreateDTO
+
 class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
     def __init__(
         self,
@@ -124,16 +124,12 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             self.logger.error("image_directory_not_found", walnut_id=command.walnut_id, directory=str(image_directory))
             return
 
-        walnut_file_dao: WalnutFileDAO = self.walnut_image_file_reader.load_walnut_from_directory(command.walnut_id, image_directory)
-        if walnut_file_dao is None:
-            self.logger.error("no_images_found", walnut_id=command.walnut_id, directory=str(image_directory))
-            return
+        walnut_file_dao: WalnutFileDAO = self.walnut_image_file_reader.load_walnut_from_directory(
+            command.walnut_id, image_directory
+        )
 
         self.logger.info(
-            "images_loaded",
-            walnut_id=command.walnut_id,
-            image_count=len(walnut_file_dao.images),
-            directory=str(image_directory),
+            "images_loaded", walnut_id=command.walnut_id, image_count=len(walnut_file_dao.images), directory=str(image_directory)
         )
 
         # First, create image value objects from file DAO
@@ -152,19 +148,20 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             if side_enum is None:
                 self.logger.error("invalid_side_letter", side_letter=image_file_dao.side_letter, walnut_id=command.walnut_id)
                 return
-            from PIL import Image
             from common.constants import UNKNOWN_IMAGE_FORMAT
+            from PIL import Image
+
             try:
                 with Image.open(image_file_dao.file_path) as img:
                     img_format = img.format or UNKNOWN_IMAGE_FORMAT
             except Exception as e:
                 self.logger.error("failed_to_load_image", path=str(image_file_dao.file_path), error=str(e))
                 return
-            
+
             # Generate embedding for this image
             embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path))
             self.logger.debug("embedding_generated", walnut_id=command.walnut_id, side=side_enum.value)
-            
+
             image_vo = ImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),

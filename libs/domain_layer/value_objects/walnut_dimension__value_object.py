@@ -9,7 +9,7 @@ from domain_layer.domain_error import DomainError, ValidationError
 class WalnutDimensionValueObject:
     """
     Value object representing walnut physical dimensions in millimeters.
-    
+
     Business invariants:
     - All dimensions must be positive
     - All dimensions must be within valid walnut size range (20-50mm)
@@ -28,7 +28,7 @@ class WalnutDimensionValueObject:
     def create(cls, length_mm: float, width_mm: float, height_mm: float) -> Either["WalnutDimensionValueObject", DomainError]:
         """
         Create walnut dimensions value object with validation.
-        
+
         Business rules:
         - All dimensions must be positive
         - All dimensions must be within valid walnut size range
@@ -45,11 +45,12 @@ class WalnutDimensionValueObject:
             "height": height_mm,
         }.items():
             if not (cls.MIN_MM <= value <= cls.MAX_MM):
-                return Left(ValidationError(f"{name.capitalize()} {value}mm is outside valid range [{cls.MIN_MM}, {cls.MAX_MM}]mm"))
+                return Left(
+                    ValidationError(f"{name.capitalize()} {value}mm is outside valid range [{cls.MIN_MM}, {cls.MAX_MM}]mm")
+                )
 
         # Semantic rule: height cannot exceed length
         if height_mm > length_mm:
             return Left(ValidationError("Height cannot exceed length"))
 
         return Right(cls(length_mm=length_mm, width_mm=width_mm, height_mm=height_mm))
-

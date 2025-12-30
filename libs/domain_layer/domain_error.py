@@ -25,4 +25,3 @@ class InvalidImageError(ValidationError):
         self.side: str = side
         self.reason: str = reason
         super().__init__(f"Invalid image for side {side}: {reason}")
-
