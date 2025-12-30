@@ -26,6 +26,16 @@ from infrastructure_layer.file_readers import (
     WalnutImageFileReader,
 )
 from infrastructure_layer.services import IWalnutImageService, WalnutImageService
+from infrastructure_layer.services.walnut_image_service import (
+    IContourFinder,
+    IDimensionMeasurer,
+    IDimensionValidator,
+    IImageSegmenter,
+    ContourFinder,
+    DimensionMeasurer,
+    DimensionValidator,
+    ImageSegmenter,
+)
 
 from batch.app_config import AppConfig
 
@@ -64,4 +74,8 @@ DIRegistry.register(IWalnutDBWriter, WalnutDBWriter)
 DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IWalnutMapper, WalnutMapper)
 DIRegistry.register(IWalnutQuery, WalnutQuery)
+DIRegistry.register(IImageSegmenter, ImageSegmenter)
+DIRegistry.register(IContourFinder, ContourFinder)
+DIRegistry.register(IDimensionValidator, DimensionValidator)
+DIRegistry.register(IDimensionMeasurer, DimensionMeasurer)
 DIRegistry.register(IWalnutImageService, WalnutImageService)

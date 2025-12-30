@@ -1,16 +1,23 @@
 # infrastructure_layer/services/walnut_image_service/image_segmenter.py
+from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
 
 
-class ImageSegmenter:
+class IImageSegmenter(ABC):
+    """Interface for image segmentation."""
+
+    @abstractmethod
+    def segment_walnut(self, gray: np.ndarray, background_is_white: bool = True) -> Optional[np.ndarray]:
+        """Segment walnut from background using OTSU thresholding."""
+        pass
+
+
+class ImageSegmenter(IImageSegmenter):
     """Handles image segmentation to extract walnut silhouette."""
 
-    def __init__(self, background_is_white: bool = True) -> None:
-        self.background_is_white: bool = background_is_white
-
-    def segment_walnut(self, gray: np.ndarray) -> Optional[np.ndarray]:
+    def segment_walnut(self, gray: np.ndarray, background_is_white: bool = True) -> Optional[np.ndarray]:
         """
         Segment walnut from background using OTSU thresholding.
         Returns binary mask where 255 = walnut, 0 = background.
@@ -19,7 +26,7 @@ class ImageSegmenter:
         threshold_value = self._otsu_threshold(gray)
 
         # Create binary mask
-        if self.background_is_white:
+        if background_is_white:
             # Background is white, walnut is darker - invert
             mask = (gray < threshold_value).astype(np.uint8) * 255
         else:

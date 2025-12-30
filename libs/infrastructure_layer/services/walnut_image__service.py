@@ -10,10 +10,10 @@ from domain_layer.value_objects.walnut_dimension__value_object import WalnutDime
 from PIL import Image
 
 from .walnut_image_service import (
-    ContourFinder,
-    DimensionMeasurer,
-    DimensionValidator,
-    ImageSegmenter,
+    IContourFinder,
+    IDimensionMeasurer,
+    IDimensionValidator,
+    IImageSegmenter,
     ScaleCalculator,
 )
 
@@ -23,7 +23,10 @@ class IWalnutImageService(ABC):
     def estimate_dimensions(
         self,
         images: Dict[WalnutSideEnum, ImageValueObject],
-        camera_quality_factor: Optional[float] = None,
+        camera_distance_mm: float = 300.0,
+        focal_length_px: float = 1000.0,
+        background_is_white: bool = True,
+        min_contour_size: int = 100,
         save_intermediate_results: bool = False,
     ) -> Tuple[float, float, float]:
         """
@@ -32,10 +35,10 @@ class IWalnutImageService(ABC):
         Args:
             images: Dictionary mapping WalnutSideEnum to ImageValueObjects
                 Must contain all 6 sides: FRONT, BACK, LEFT, RIGHT, TOP, DOWN
-            camera_quality_factor: Quality factor (0.0-1.0) affecting segmentation sensitivity.
-                - 0.0 = Low quality camera (noisy images)
-                - 1.0 = High quality camera (clean images)
-                - Default: Uses service's default_camera_quality_factor
+            camera_distance_mm: Distance from camera to walnut in millimeters (default: 300.0)
+            focal_length_px: Camera focal length in pixels (default: 1000.0)
+            background_is_white: Whether the background is white (default: True)
+            min_contour_size: Minimum contour size in pixels (default: 100)
             save_intermediate_results: If True, saves intermediate processing images
                 (grayscale, mask, contours, bounding boxes) to _intermediate folder
                 under each image's original path. Files are named with pattern:
@@ -53,32 +56,23 @@ class WalnutImageService(IWalnutImageService):
 
     def __init__(
         self,
-        default_camera_distance_mm: float = 300.0,
-        default_camera_quality_factor: float = 0.7,
-        default_walnut_size_mm: float = 30.0,
-        background_is_white: bool = True,
+        segmenter: IImageSegmenter,
+        contour_finder: IContourFinder,
+        validator: IDimensionValidator,
+        measurer: IDimensionMeasurer,
     ) -> None:
-        self.default_camera_distance_mm: float = default_camera_distance_mm
-        self.default_camera_quality_factor: float = default_camera_quality_factor
-        self.default_walnut_size_mm: float = default_walnut_size_mm
-
-        # Initialize components
-        self.segmenter: ImageSegmenter = ImageSegmenter(background_is_white=background_is_white)
-        self.contour_finder: ContourFinder = ContourFinder(min_contour_size=100)
-        self.validator: DimensionValidator = DimensionValidator()
-        self.measurer: DimensionMeasurer = DimensionMeasurer(
-            segmenter=self.segmenter,
-            contour_finder=self.contour_finder,
-            validator=self.validator,
-        )
-        self.scale_calculator: ScaleCalculator = ScaleCalculator(
-            default_camera_distance_mm=default_camera_distance_mm,
-        )
+        self.segmenter: IImageSegmenter = segmenter
+        self.contour_finder: IContourFinder = contour_finder
+        self.validator: IDimensionValidator = validator
+        self.measurer: IDimensionMeasurer = measurer
 
     def estimate_dimensions(
         self,
         images: Dict[WalnutSideEnum, ImageValueObject],
-        camera_quality_factor: Optional[float] = None,
+        camera_distance_mm: float = 300.0,
+        focal_length_px: float = 1000.0,
+        background_is_white: bool = True,
+        min_contour_size: int = 100,
         save_intermediate_results: bool = False,
     ) -> Tuple[float, float, float]:
         """
@@ -95,7 +89,7 @@ class WalnutImageService(IWalnutImageService):
 
         for side_enum, image_vo in images.items():
             image_dict[side_enum] = Image.open(image_vo.path).convert("RGB")
-            camera_distances[side_enum] = image_vo.camera_distance_mm or self.default_camera_distance_mm
+            camera_distances[side_enum] = image_vo.camera_distance_mm or camera_distance_mm
 
         # Measure dimensions from each view
         measurements: Dict[str, list[float]] = {
@@ -112,6 +106,8 @@ class WalnutImageService(IWalnutImageService):
                 images.get(side),
                 side,
                 save_intermediate_results,
+                background_is_white=background_is_white,
+                min_contour_size=min_contour_size,
             )
             if width_px > 0 and height_px > 0:
                 measurements["length"].append(width_px)  # Width in front/back view = length
@@ -125,6 +121,8 @@ class WalnutImageService(IWalnutImageService):
                 images.get(side),
                 side,
                 save_intermediate_results,
+                background_is_white=background_is_white,
+                min_contour_size=min_contour_size,
             )
             if width_px > 0 and height_px > 0:
                 measurements["width"].append(width_px)  # Width in left/right view = width
@@ -138,6 +136,8 @@ class WalnutImageService(IWalnutImageService):
                 images.get(side),
                 side,
                 save_intermediate_results,
+                background_is_white=background_is_white,
+                min_contour_size=min_contour_size,
             )
             if width_px > 0 and height_px > 0:
                 measurements["length"].append(width_px)  # Width in top/down view = length
@@ -145,7 +145,8 @@ class WalnutImageService(IWalnutImageService):
 
         # Calculate scale (use average camera distance)
         avg_distance = sum(camera_distances.values()) / len(camera_distances)
-        mm_per_px = self.scale_calculator.calculate_scale(avg_distance)
+        scale_calculator = ScaleCalculator()
+        mm_per_px = scale_calculator.calculate_scale(avg_distance, focal_length_px=focal_length_px)
 
         if mm_per_px <= 0:
             return (0.0, 0.0, 0.0)

@@ -1,4 +1,5 @@
 # infrastructure_layer/services/walnut_image_service/dimension_measurer.py
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -7,24 +8,41 @@ from common.enums import WalnutSideEnum
 from domain_layer.value_objects.image__value_object import ImageValueObject
 from PIL import Image, ImageDraw
 
-from .contour_finder import ContourFinder
-from .dimension_validator import DimensionValidator
-from .image_segmenter import ImageSegmenter
+from .contour_finder import IContourFinder
+from .dimension_validator import IDimensionValidator
+from .image_segmenter import IImageSegmenter
 from .rotated_bounding_box import RotatedBoundingBox
 
 
-class DimensionMeasurer:
+class IDimensionMeasurer(ABC):
+    """Interface for dimension measurement."""
+
+    @abstractmethod
+    def measure_dimensions(
+        self,
+        image: np.ndarray,
+        image_vo: Optional[ImageValueObject] = None,
+        side_enum: Optional[WalnutSideEnum] = None,
+        save_intermediate: bool = False,
+        background_is_white: bool = True,
+        min_contour_size: int = 100,
+    ) -> Tuple[float, float]:
+        """Measure width and height (in pixels) from a single view."""
+        pass
+
+
+class DimensionMeasurer(IDimensionMeasurer):
     """Measures dimensions from segmented walnut."""
 
     def __init__(
         self,
-        segmenter: ImageSegmenter,
-        contour_finder: ContourFinder,
-        validator: DimensionValidator,
+        segmenter: IImageSegmenter,
+        contour_finder: IContourFinder,
+        validator: IDimensionValidator,
     ) -> None:
-        self.segmenter: ImageSegmenter = segmenter
-        self.contour_finder: ContourFinder = contour_finder
-        self.validator: DimensionValidator = validator
+        self.segmenter: IImageSegmenter = segmenter
+        self.contour_finder: IContourFinder = contour_finder
+        self.validator: IDimensionValidator = validator
 
     def measure_dimensions(
         self,
@@ -32,6 +50,8 @@ class DimensionMeasurer:
         image_vo: Optional[ImageValueObject] = None,
         side_enum: Optional[WalnutSideEnum] = None,
         save_intermediate: bool = False,
+        background_is_white: bool = True,
+        min_contour_size: int = 100,
     ) -> Tuple[float, float]:
         """
         Measure width and height (in pixels) from a single view.
@@ -44,7 +64,7 @@ class DimensionMeasurer:
             self._save_image(gray, image_vo, "01_grayscale", side_enum)
 
         # Segment walnut
-        mask = self.segmenter.segment_walnut(gray)
+        mask = self.segmenter.segment_walnut(gray, background_is_white=background_is_white)
         if mask is None:
             return (0.0, 0.0)
 
@@ -52,7 +72,7 @@ class DimensionMeasurer:
             self._save_image(mask, image_vo, "02_mask", side_enum)
 
         # Find largest contour
-        contour = self.contour_finder.find_largest_contour(mask)
+        contour = self.contour_finder.find_largest_contour(mask, min_contour_size=min_contour_size)
         if contour is None:
             return (0.0, 0.0)
 

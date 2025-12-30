@@ -1,16 +1,23 @@
 # infrastructure_layer/services/walnut_image_service/contour_finder.py
+from abc import ABC, abstractmethod
 from typing import Optional
 
 import numpy as np
 
 
-class ContourFinder:
+class IContourFinder(ABC):
+    """Interface for finding contours."""
+
+    @abstractmethod
+    def find_largest_contour(self, mask: np.ndarray, min_contour_size: int = 100) -> Optional[np.ndarray]:
+        """Find the largest connected component (walnut) in the mask."""
+        pass
+
+
+class ContourFinder(IContourFinder):
     """Finds and filters contours from binary mask."""
 
-    def __init__(self, min_contour_size: int = 100) -> None:
-        self.min_contour_size: int = min_contour_size
-
-    def find_largest_contour(self, mask: np.ndarray) -> Optional[np.ndarray]:
+    def find_largest_contour(self, mask: np.ndarray, min_contour_size: int = 100) -> Optional[np.ndarray]:
         """
         Find the largest connected component (walnut) in the mask.
         Returns contour as numpy array of points, or None if not found.
@@ -24,7 +31,7 @@ class ContourFinder:
         largest = max(contours, key=lambda c: self._contour_area(c))
 
         # Filter out tiny contours (noise)
-        if self._contour_area(largest) < self.min_contour_size:
+        if self._contour_area(largest) < min_contour_size:
             return None
 
         return largest
