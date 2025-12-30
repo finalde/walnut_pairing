@@ -1,18 +1,16 @@
 # infrastructure_layer/services/walnut_image__service.py
 from abc import ABC, abstractmethod
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 from common.enums import WalnutSideEnum
 from domain_layer.domain_services.dimension__domain_service import DimensionDomainService
 from domain_layer.value_objects.image__value_object import ImageValueObject
-from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
 from PIL import Image
 
 from .walnut_image_service import (
     IContourFinder,
     IDimensionMeasurer,
-    IDimensionValidator,
     IImageSegmenter,
     ScaleCalculator,
 )
@@ -45,8 +43,9 @@ class IWalnutImageService(ABC):
                 {original_name}_intermediate_{step}_{side}.png
 
         Returns:
-            Tuple of (length_mm, width_mm, height_mm) or (0.0, 0.0, 0.0) if validation fails.
-            Dimensions are validated against domain rules (20-50mm range, height <= length).
+            Tuple of (length_mm, width_mm, height_mm) - raw calculation results.
+            Returns (0.0, 0.0, 0.0) if calculation fails (e.g., no valid measurements, invalid scale).
+            Note: Domain validation should be performed by the application layer.
         """
         pass
 
@@ -58,12 +57,10 @@ class WalnutImageService(IWalnutImageService):
         self,
         segmenter: IImageSegmenter,
         contour_finder: IContourFinder,
-        validator: IDimensionValidator,
         measurer: IDimensionMeasurer,
     ) -> None:
         self.segmenter: IImageSegmenter = segmenter
         self.contour_finder: IContourFinder = contour_finder
-        self.validator: IDimensionValidator = validator
         self.measurer: IDimensionMeasurer = measurer
 
     def estimate_dimensions(
@@ -154,20 +151,5 @@ class WalnutImageService(IWalnutImageService):
         # Aggregate pixel dimensions using domain service
         dimensions_mm = DimensionDomainService.aggregate_dimensions(measurements, mm_per_px)
 
-        if dimensions_mm["length"] == 0 or dimensions_mm["width"] == 0 or dimensions_mm["height"] == 0:
-            return (0.0, 0.0, 0.0)
-
-        # Validate using domain value object
-        # Note: If caller wants different min/max, they should be validated at application layer
-        # Domain layer enforces stable business rules
-        dimension_result = WalnutDimensionValueObject.create(
-            length_mm=dimensions_mm["length"],
-            width_mm=dimensions_mm["width"],
-            height_mm=dimensions_mm["height"],
-        )
-
-        if dimension_result.is_left():
-            return (0.0, 0.0, 0.0)
-
-        dim_vo = dimension_result.value
-        return (dim_vo.length_mm, dim_vo.width_mm, dim_vo.height_mm)
+        # Return raw calculation results - domain validation should be done in application layer
+        return (dimensions_mm["length"], dimensions_mm["width"], dimensions_mm["height"])

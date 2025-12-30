@@ -29,11 +29,9 @@ from infrastructure_layer.services import IWalnutImageService, WalnutImageServic
 from infrastructure_layer.services.walnut_image_service import (
     IContourFinder,
     IDimensionMeasurer,
-    IDimensionValidator,
     IImageSegmenter,
     ContourFinder,
     DimensionMeasurer,
-    DimensionValidator,
     ImageSegmenter,
 )
 
@@ -76,6 +74,5 @@ DIRegistry.register(IWalnutMapper, WalnutMapper)
 DIRegistry.register(IWalnutQuery, WalnutQuery)
 DIRegistry.register(IImageSegmenter, ImageSegmenter)
 DIRegistry.register(IContourFinder, ContourFinder)
-DIRegistry.register(IDimensionValidator, DimensionValidator)
 DIRegistry.register(IDimensionMeasurer, DimensionMeasurer)
 DIRegistry.register(IWalnutImageService, WalnutImageService)

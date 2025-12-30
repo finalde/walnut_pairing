@@ -9,7 +9,6 @@ from domain_layer.value_objects.image__value_object import ImageValueObject
 from PIL import Image, ImageDraw
 
 from .contour_finder import IContourFinder
-from .dimension_validator import IDimensionValidator
 from .image_segmenter import IImageSegmenter
 from .rotated_bounding_box import RotatedBoundingBox
 
@@ -38,11 +37,9 @@ class DimensionMeasurer(IDimensionMeasurer):
         self,
         segmenter: IImageSegmenter,
         contour_finder: IContourFinder,
-        validator: IDimensionValidator,
     ) -> None:
         self.segmenter: IImageSegmenter = segmenter
         self.contour_finder: IContourFinder = contour_finder
-        self.validator: IDimensionValidator = validator
 
     def measure_dimensions(
         self,
@@ -78,10 +75,6 @@ class DimensionMeasurer(IDimensionMeasurer):
 
         # Calculate rotated bounding box
         width_px, height_px = RotatedBoundingBox.from_contour(contour)
-
-        # Validate pixel size
-        if not self.validator.validate_pixel_size(width_px, height_px, image.shape[1], image.shape[0]):
-            return (0.0, 0.0)
 
         # Save intermediate results
         if save_intermediate and image_vo and side_enum:
