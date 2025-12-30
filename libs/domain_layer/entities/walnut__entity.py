@@ -7,6 +7,7 @@ from common.enums import WalnutSideEnum
 from common.either import Either, Left, Right
 from domain_layer.domain_error import DomainError, InvalidImageError, MissingSideError, ValidationError
 from domain_layer.value_objects.image__value_object import ImageValueObject
+from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
 
 
 class _WalnutEntityBuilder:
@@ -33,9 +34,7 @@ class _WalnutEntityBuilder:
         self.top_embedding: Optional[np.ndarray] = None
         self.down_embedding: Optional[np.ndarray] = None
         self.paired_walnut_id: Optional[str] = None
-        self.length_mm: Optional[float] = None
-        self.width_mm: Optional[float] = None
-        self.height_mm: Optional[float] = None
+        self.dimensions: Optional[WalnutDimensionValueObject] = None
         self.processing_status: dict[str, bool] = {"embedding_generated": False, "validated": False}
 
 
@@ -75,9 +74,7 @@ class WalnutEntity:
         self.top_embedding: Optional[np.ndarray] = builder.top_embedding
         self.down_embedding: Optional[np.ndarray] = builder.down_embedding
         self.paired_walnut_id: Optional[str] = builder.paired_walnut_id
-        self.length_mm: Optional[float] = builder.length_mm
-        self.width_mm: Optional[float] = builder.width_mm
-        self.height_mm: Optional[float] = builder.height_mm
+        self.dimensions: Optional[WalnutDimensionValueObject] = builder.dimensions
         self.processing_status: dict[str, bool] = builder.processing_status
         self._initialized: bool = True
 
@@ -178,3 +175,13 @@ class WalnutEntity:
 
     def pair_with(self, walnut_id: str) -> None:
         self.paired_walnut_id: Optional[str] = walnut_id
+
+    def set_dimensions(self, dimensions: WalnutDimensionValueObject) -> Either[None, DomainError]:
+        """
+        Set walnut dimensions using the value object.
+        The value object ensures all invariants are satisfied.
+        """
+        if dimensions is None:
+            return Left(ValidationError("Dimensions cannot be None"))
+        self.dimensions = dimensions
+        return Right(None)

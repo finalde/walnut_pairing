@@ -1,5 +1,6 @@
 # domain_layer/value_objects/image__value_object.py
 from dataclasses import dataclass
+from typing import Optional
 
 from common.constants import UNKNOWN_IMAGE_FORMAT
 from common.enums import WalnutSideEnum
@@ -14,10 +15,10 @@ class ImageValueObject:
     height: int
     format: str
     hash: str
-    camera_distance_mm: float 
+    camera_distance_mm: Optional[float] = None
 
     @classmethod
-    def from_path(cls, path: str, side: WalnutSideEnum, camera_distance_mm: float) -> "ImageValueObject":
+    def from_path(cls, path: str, side: WalnutSideEnum, camera_distance_mm: Optional[float] = None) -> "ImageValueObject":
         img = Image.open(path)
         img_hash = str(hash(img.tobytes()))
         img_format = img.format or UNKNOWN_IMAGE_FORMAT

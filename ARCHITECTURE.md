@@ -42,6 +42,7 @@ webapi/                  # Web API application
    - Frameworks (ORM, web frameworks)
    - Logging libraries
    - External services
+   - **Business constants**: Domain rules (like min/max ranges) should be explicit i domain layer, not configurable parameters, configuraiton and configurable parameter belongs to applicaiton or infrastructure layer
 
 2. **Domain Layer Returns Either**: Domain operations return `Either[Success, DomainError]` instead of raising exceptions. Use `Left` for errors, `Right` for success.
 
@@ -83,7 +84,43 @@ class WalnutEntity:
 - No unique identity (equality by value)
 - Represents a descriptive aspect of the domain
 - File naming: `xxx__value_object.py`
-- Class naming: `XxxValueObject`
+- Class naming: `XxxValueObject` (must match file name pattern)
+
+**Naming Consistency Rule:**
+- **File name and class name must be consistent**: If file is `dimension__value_object.py`, class must be `DimensionValueObject` or `WalnutDimensionValueObject`
+- Pattern: `{DomainConcept}{FileType}` where FileType is `ValueObject`, `Entity`, `DomainService`, etc.
+- Example: `dimension__value_object.py` → `WalnutDimensionValueObject`
+
+**Value Object Validation:**
+- **Invariants belong in the value object**: Rules about the value itself are validated in the value object
+- **Use factory methods**: Create value objects via `create()` or `from_*()` class methods
+- **Return Either**: Factory methods return `Either[ValueObject, DomainError]` for explicit error handling
+- **Business constants**: Domain rules (like min/max ranges) should be class constants, not configurable parameters
+- **Semantic rules**: Include business relationships (e.g., "height cannot exceed length") in addition to numeric validation
+
+**Example:**
+```python
+@dataclass(frozen=True)
+class WalnutDimensionValueObject:
+    length_mm: float
+    width_mm: float
+    height_mm: float
+    
+    MIN_MM = 20.0  # Business constant
+    MAX_MM = 50.0  # Business constant
+    
+    @classmethod
+    def create(cls, length_mm: float, width_mm: float, height_mm: float) -> Either["WalnutDimensionValueObject", DomainError]:
+        # Validate all invariants here
+        if min(length_mm, width_mm, height_mm) <= 0:
+            return Left(ValidationError("All dimensions must be positive"))
+        # ... more validation
+        return Right(cls(length_mm, width_mm, height_mm))
+```
+
+**Value Object vs Entity Validation:**
+- **Value Object**: Validates intrinsic properties of the value itself (e.g., "dimensions must be positive")
+- **Entity**: Validates contextual rules involving multiple values or entities (e.g., "extra large walnut must have length >= 45mm")
 
 ### Domain Services
 
@@ -339,6 +376,16 @@ All files follow the pattern: `xxx__file_type.py`
 - `__file_reader.py`: File readers
 - `__service.py`: Infrastructure services (external capabilities like image processing)
 - `__al.py`: Application layer services
+
+**Naming Consistency Rule:**
+- **File name and class name must be consistent**: The class name must match the file name pattern
+- Pattern: `{DomainConcept}{FileType}` where FileType corresponds to the file suffix
+- Examples:
+  - `dimension__value_object.py` → `WalnutDimensionValueObject` or `DimensionValueObject`
+  - `walnut__entity.py` → `WalnutEntity`
+  - `walnut__domain_service.py` → `WalnutDomainService`
+  - `walnut__command.py` → `CreateWalnutCommand`
+- This ensures consistency and makes it easy to find classes by file name
 
 ## Important Rules
 
