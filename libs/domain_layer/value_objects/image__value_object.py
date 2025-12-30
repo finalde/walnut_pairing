@@ -14,10 +14,10 @@ class ImageValueObject:
     height: int
     format: str
     hash: str
-    camera_distance_mm: float | None = None
+    camera_distance_mm: float 
 
     @classmethod
-    def from_path(cls, path: str, side: WalnutSideEnum, camera_distance_mm: float | None = None) -> "ImageValueObject":
+    def from_path(cls, path: str, side: WalnutSideEnum, camera_distance_mm: float) -> "ImageValueObject":
         img = Image.open(path)
         img_hash = str(hash(img.tobytes()))
         img_format = img.format or UNKNOWN_IMAGE_FORMAT

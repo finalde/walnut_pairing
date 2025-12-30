@@ -92,6 +92,7 @@ class WalnutMapper(IWalnutMapper):
                 height=image_file_dao.height,
                 format=img_format,
                 hash=image_file_dao.checksum,
+                camera_distance_mm=image_file_dao.camera_distance_mm,
             )
             image_value_objects[side_enum] = image_vo
 

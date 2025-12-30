@@ -70,6 +70,7 @@ class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
                 height=img_dto.height,
                 format="JPEG",
                 hash=img_dto.checksum,
+                camera_distance_mm=150,
             )
             images_dict[side_lower] = image_vo
 
