@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
 from common.constants import UNKNOWN_IMAGE_FORMAT
 from common.enums import WalnutSideEnum
 from PIL import Image
@@ -15,11 +16,14 @@ class ImageValueObject:
     height: int
     format: str
     hash: str
+    embedding: np.ndarray
     camera_distance_mm: Optional[float] = None
 
     @classmethod
-    def from_path(cls, path: str, side: WalnutSideEnum, camera_distance_mm: Optional[float] = None) -> "ImageValueObject":
+    def from_path(
+        cls, path: str, side: WalnutSideEnum, embedding: np.ndarray, camera_distance_mm: Optional[float] = None
+    ) -> "ImageValueObject":
         img = Image.open(path)
         img_hash = str(hash(img.tobytes()))
         img_format = img.format or UNKNOWN_IMAGE_FORMAT
-        return cls(side=side, path=path, width=img.width, height=img.height, format=img_format, hash=img_hash, camera_distance_mm=camera_distance_mm)
+        return cls(side=side, path=path, width=img.width, height=img.height, format=img_format, hash=img_hash, embedding=embedding, camera_distance_mm=camera_distance_mm)

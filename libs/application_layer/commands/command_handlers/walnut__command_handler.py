@@ -2,10 +2,12 @@
 from pathlib import Path
 from typing import Dict
 
+from domain_layer.entities.walnut__entity import WalnutEntity
+from infrastructure_layer.data_access_objects import WalnutFileDAO
 import numpy as np
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
-from common.either import Left, Right
+from common.either import Either, Left, Right
 from common.interfaces import IAppConfig
 from common.logger import get_logger
 from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
@@ -14,7 +16,7 @@ from infrastructure_layer.services import IWalnutImageService
 
 from application_layer.mappers.walnut__mapper import IWalnutMapper
 from application_layer.services.walnut_image_loader import WalnutImageLoader
-from domain_layer.domain_error import ValidationError
+from domain_layer.domain_error import DomainError, ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.value_objects.image__value_object import ImageValueObject
 from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
@@ -64,6 +66,8 @@ class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
                 return
 
             side_enum = side_enum_map[side_lower]
+            # Generate fake embedding for this image
+            fake_embedding = np.random.rand(2048).astype(np.float32)
             image_vo = ImageValueObject(
                 side=side_enum,
                 path=img_dto.image_path,
@@ -71,6 +75,7 @@ class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
                 height=img_dto.height,
                 format="JPEG",
                 hash=img_dto.checksum,
+                embedding=fake_embedding,
                 camera_distance_mm=150,
             )
             images_dict[side_lower] = image_vo
@@ -82,14 +87,6 @@ class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
             return
 
         walnut_entity = entity_result.value
-
-        for side_enum in WalnutSideEnum:
-            fake_embedding = np.random.rand(2048).astype(np.float32)
-            embedding_result = walnut_entity.set_embedding(side_enum.value, fake_embedding)
-            if embedding_result.is_left():
-                error = embedding_result.value
-                self.logger.error("embedding_set_failed", walnut_id=walnut_entity.id, side=side_enum.value, error=str(error))
-                return
 
         walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,
@@ -125,7 +122,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             self.logger.error("image_directory_not_found", walnut_id=command.walnut_id, directory=str(image_directory))
             return
 
-        walnut_file_dao = WalnutImageLoader.load_walnut_from_directory(command.walnut_id, image_directory)
+        walnut_file_dao : WalnutFileDAO = WalnutImageLoader.load_walnut_from_directory(command.walnut_id, image_directory)
         if walnut_file_dao is None:
             self.logger.error("no_images_found", walnut_id=command.walnut_id, directory=str(image_directory))
             return
@@ -137,23 +134,56 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             directory=str(image_directory),
         )
 
-        entity_result = self.walnut_mapper.file_dao_to_entity(walnut_file_dao)
+        # First, create image value objects from file DAO
+        side_mapping: Dict[str, WalnutSideEnum] = {
+            "F": WalnutSideEnum.FRONT,
+            "B": WalnutSideEnum.BACK,
+            "L": WalnutSideEnum.LEFT,
+            "R": WalnutSideEnum.RIGHT,
+            "T": WalnutSideEnum.TOP,
+            "D": WalnutSideEnum.DOWN,
+        }
+
+        images_by_side: Dict[WalnutSideEnum, ImageValueObject] = {}
+        for image_file_dao in walnut_file_dao.images:
+            side_enum = side_mapping.get(image_file_dao.side_letter.upper())
+            if side_enum is None:
+                self.logger.error("invalid_side_letter", side_letter=image_file_dao.side_letter, walnut_id=command.walnut_id)
+                return
+            from PIL import Image
+            from common.constants import UNKNOWN_IMAGE_FORMAT
+            try:
+                with Image.open(image_file_dao.file_path) as img:
+                    img_format = img.format or UNKNOWN_IMAGE_FORMAT
+            except Exception as e:
+                self.logger.error("failed_to_load_image", path=str(image_file_dao.file_path), error=str(e))
+                return
+            
+            # Generate embedding for this image
+            embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path))
+            self.logger.debug("embedding_generated", walnut_id=command.walnut_id, side=side_enum.value)
+            
+            image_vo = ImageValueObject(
+                side=side_enum,
+                path=str(image_file_dao.file_path),
+                width=image_file_dao.width,
+                height=image_file_dao.height,
+                format=img_format,
+                hash=image_file_dao.checksum,
+                embedding=embedding,
+                camera_distance_mm=getattr(image_file_dao, "camera_distance_mm", None),
+            )
+            images_by_side[side_enum] = image_vo
+
+        images_dict: Dict[WalnutSideEnum, ImageValueObject] = images_by_side
+
+        entity_result: Either[WalnutEntity, DomainError] = WalnutDomainFactory.create_from_file_dao_images(images_by_side)
         if entity_result.is_left():
             error = entity_result.value
             self.logger.error("entity_creation_failed", walnut_id=command.walnut_id, error=str(error))
             return
 
-        walnut_entity = entity_result.value
-        self.logger.debug("entity_created", walnut_id=walnut_entity.id)
-
-        images_dict: Dict[WalnutSideEnum, ImageValueObject] = {
-            WalnutSideEnum.FRONT: walnut_entity.front,
-            WalnutSideEnum.BACK: walnut_entity.back,
-            WalnutSideEnum.LEFT: walnut_entity.left,
-            WalnutSideEnum.RIGHT: walnut_entity.right,
-            WalnutSideEnum.TOP: walnut_entity.top,
-            WalnutSideEnum.DOWN: walnut_entity.down,
-        }
+        walnut_entity: WalnutEntity = entity_result.value
 
         try:
             length_mm, width_mm, height_mm = self.walnut_image_service.estimate_dimensions(
@@ -189,16 +219,6 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
                 )
         except Exception as e:
             self.logger.error("dimension_estimation_failed", walnut_id=walnut_entity.id, error=str(e), exc_info=True)
-
-        for side_enum in WalnutSideEnum:
-            image_vo = images_dict[side_enum]
-            embedding = ImageEmbeddingDomainService.generate(image_vo.path)
-            embedding_result = walnut_entity.set_embedding(side_enum.value, embedding)
-            if embedding_result.is_left():
-                error = embedding_result.value
-                self.logger.error("embedding_set_failed", walnut_id=walnut_entity.id, side=side_enum.value, error=str(error))
-                return
-            self.logger.debug("embedding_generated", walnut_id=walnut_entity.id, side=side_enum.value)
 
         walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,

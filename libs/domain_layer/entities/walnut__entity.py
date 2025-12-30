@@ -27,15 +27,8 @@ class _WalnutEntityBuilder:
         self.right: ImageValueObject = right
         self.top: ImageValueObject = top
         self.down: ImageValueObject = down
-        self.front_embedding: Optional[np.ndarray] = None
-        self.back_embedding: Optional[np.ndarray] = None
-        self.left_embedding: Optional[np.ndarray] = None
-        self.right_embedding: Optional[np.ndarray] = None
-        self.top_embedding: Optional[np.ndarray] = None
-        self.down_embedding: Optional[np.ndarray] = None
-        self.paired_walnut_id: Optional[str] = None
         self.dimensions: Optional[WalnutDimensionValueObject] = None
-        self.processing_status: dict[str, bool] = {"embedding_generated": False, "validated": False}
+        self.processing_status: dict[str, bool] = {"embedding_generated": True, "validated": False}
 
 
 class WalnutEntity:
@@ -67,13 +60,6 @@ class WalnutEntity:
         self.right: ImageValueObject = builder.right
         self.top: ImageValueObject = builder.top
         self.down: ImageValueObject = builder.down
-        self.front_embedding: Optional[np.ndarray] = builder.front_embedding
-        self.back_embedding: Optional[np.ndarray] = builder.back_embedding
-        self.left_embedding: Optional[np.ndarray] = builder.left_embedding
-        self.right_embedding: Optional[np.ndarray] = builder.right_embedding
-        self.top_embedding: Optional[np.ndarray] = builder.top_embedding
-        self.down_embedding: Optional[np.ndarray] = builder.down_embedding
-        self.paired_walnut_id: Optional[str] = builder.paired_walnut_id
         self.dimensions: Optional[WalnutDimensionValueObject] = builder.dimensions
         self.processing_status: dict[str, bool] = builder.processing_status
         self._initialized: bool = True
@@ -163,18 +149,6 @@ class WalnutEntity:
         entity = WalnutEntity._create_instance(front, back, left, right, top, down)
         entity.processing_status["validated"] = True
         return Right(entity)
-
-    def set_embedding(self, side: str, embedding: np.ndarray) -> Either[None, DomainError]:
-        valid_sides = {side_enum.value for side_enum in WalnutSideEnum}
-        if side not in valid_sides:
-            return Left(ValidationError(f"Invalid side: {side}. Must be one of {valid_sides}"))
-        setattr(self, f"{side}_embedding", embedding)
-        all_set = all(getattr(self, f"{side_enum.value}_embedding") is not None for side_enum in WalnutSideEnum)
-        self.processing_status["embedding_generated"] = all_set
-        return Right(None)
-
-    def pair_with(self, walnut_id: str) -> None:
-        self.paired_walnut_id: Optional[str] = walnut_id
 
     def set_dimensions(self, dimensions: WalnutDimensionValueObject) -> Either[None, DomainError]:
         """

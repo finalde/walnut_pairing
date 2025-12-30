@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 from typing import Dict
 
+import numpy as np
 from application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER, UNKNOWN_IMAGE_FORMAT
 from common.enums import WalnutSideEnum
@@ -77,6 +78,8 @@ class WalnutMapper(IWalnutMapper):
         if missing_sides:
             return Left[WalnutEntity, DomainError][WalnutEntity, DomainError](MissingSideError([s.value for s in missing_sides]))
 
+        from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
+
         image_value_objects: Dict[WalnutSideEnum, ImageValueObject] = {}
         for side_enum, image_file_dao in images_by_side.items():
             try:
@@ -85,6 +88,9 @@ class WalnutMapper(IWalnutMapper):
             except Exception as e:
                 return Left[WalnutEntity, DomainError](ValidationError(f"Failed to load image {image_file_dao.file_path}: {e}"))
 
+            # Generate embedding for this image
+            embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path))
+
             image_vo = ImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),
@@ -92,6 +98,7 @@ class WalnutMapper(IWalnutMapper):
                 height=image_file_dao.height,
                 format=img_format,
                 hash=image_file_dao.checksum,
+                embedding=embedding,
                 camera_distance_mm=image_file_dao.camera_distance_mm,
             )
             image_value_objects[side_enum] = image_vo
@@ -130,15 +137,6 @@ class WalnutMapper(IWalnutMapper):
             WalnutSideEnum.DOWN: walnut_entity.down,
         }
 
-        embedding_mapping = {
-            WalnutSideEnum.FRONT: walnut_entity.front_embedding,
-            WalnutSideEnum.BACK: walnut_entity.back_embedding,
-            WalnutSideEnum.LEFT: walnut_entity.left_embedding,
-            WalnutSideEnum.RIGHT: walnut_entity.right_embedding,
-            WalnutSideEnum.TOP: walnut_entity.top_embedding,
-            WalnutSideEnum.DOWN: walnut_entity.down_embedding,
-        }
-
         for side_enum, image_vo in side_mapping.items():
             image_dao = self.image_value_object_to_dao(
                 image_vo,
@@ -147,7 +145,8 @@ class WalnutMapper(IWalnutMapper):
                 updated_by=updated_by,
             )
 
-            embedding = embedding_mapping[side_enum]
+            # Get embedding from ImageValueObject
+            embedding = image_vo.embedding
             if embedding is not None:
                 embedding_dao = WalnutImageEmbeddingDBDAO(
                     image_id=0,

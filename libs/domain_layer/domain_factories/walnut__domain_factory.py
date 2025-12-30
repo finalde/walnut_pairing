@@ -1,6 +1,7 @@
 # domain_layer/domain_factories/walnut__domain_factory.py
 from typing import Dict
 
+import numpy as np
 from common.enums import WalnutSideEnum
 from common.either import Either, Left
 from domain_layer.domain_error import DomainError, MissingSideError
