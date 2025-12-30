@@ -1,139 +1,130 @@
 # infrastructure_layer/file_readers/walnut_image__file_reader.py
+"""File reader to load walnut images from filesystem and create file DAOs."""
+import hashlib
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from pathlib import Path
+from typing import List, Optional
 
-from common.interfaces import IDatabaseConnection
-
-from ..data_access_objects import (
-    WalnutImageDBDAO,
-)
-
-if TYPE_CHECKING:
-    from ..db_readers.walnut_image_embedding__db_reader import IWalnutImageEmbeddingDBReader
+from common.enums import WalnutSideEnum
+from common.logger import get_logger
+from infrastructure_layer.data_access_objects.walnut__file_dao import WalnutFileDAO, WalnutImageFileDAO
+from PIL import Image
 
 
 class IWalnutImageFileReader(ABC):
     """Interface for reading walnut image data from filesystem."""
 
     @abstractmethod
-    def get_by_id(self, image_id: int) -> Optional[WalnutImageDBDAO]:
-        """Get a walnut image by its ID."""
-        pass
+    def load_walnut_from_directory(self, walnut_id: str, image_directory: Path) -> Optional[WalnutFileDAO]:
+        """
+        Load a walnut's images from a directory and create a file DAO.
 
-    @abstractmethod
-    def get_by_walnut_id(self, walnut_id: str) -> List[WalnutImageDBDAO]:
-        """Get all images for a specific walnut."""
-        pass
+        Args:
+            walnut_id: The ID of the walnut (e.g., "0001")
+            image_directory: Path to the directory containing images
 
-    @abstractmethod
-    def get_by_walnut_id_with_embeddings(self, walnut_id: str) -> List[WalnutImageDBDAO]:
-        """Get all images for a specific walnut with their embeddings loaded."""
-        pass
-
-    @abstractmethod
-    def get_by_id_with_embedding(self, image_id: int) -> Optional[WalnutImageDBDAO]:
-        """Get a walnut image by ID with its embedding loaded."""
+        Returns:
+            WalnutFileDAO with all images loaded, or None if directory doesn't exist
+        """
         pass
 
 
 class WalnutImageFileReader(IWalnutImageFileReader):
-    """Implementation of IWalnutImageFileReader for reading walnut image data from filesystem."""
+    """Loads walnut images from filesystem and creates file DAOs."""
 
-    def __init__(
-        self,
-        db_connection: IDatabaseConnection,
-        embedding_reader: "IWalnutImageEmbeddingDBReader",
-    ) -> None:
+    # Mapping from side enum to file name letter
+    SIDE_TO_LETTER = {
+        WalnutSideEnum.FRONT: "F",
+        WalnutSideEnum.BACK: "B",
+        WalnutSideEnum.LEFT: "L",
+        WalnutSideEnum.RIGHT: "R",
+        WalnutSideEnum.TOP: "T",
+        WalnutSideEnum.DOWN: "D",
+    }
+
+    LETTER_TO_SIDE = {v: k for k, v in SIDE_TO_LETTER.items()}
+
+    def __init__(self) -> None:
+        """Initialize the file reader."""
+        self.logger = get_logger(__name__)
+
+    @staticmethod
+    def _calculate_checksum(file_path: Path) -> str:
+        """Calculate MD5 checksum of a file."""
+        hash_md5 = hashlib.md5()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+
+    def _parse_filename(self, file_path: Path) -> Optional[str]:
         """
-        Initialize the reader with a database connection and embedding reader.
+        Parse filename to extract side letter.
+        Expected format: {walnut_id}_{SIDE_LETTER}_{number}.jpg
+        Example: 0001_F_1.jpg -> "F"
+        """
+        parts = file_path.stem.split("_")
+        if len(parts) >= 2:
+            letter = parts[1].upper()
+            if letter in self.LETTER_TO_SIDE:
+                return letter
+        return None
+
+    def load_walnut_from_directory(self, walnut_id: str, image_directory: Path) -> Optional[WalnutFileDAO]:
+        """
+        Load a walnut's images from a directory and create a file DAO.
 
         Args:
-            db_connection: IDatabaseConnection instance (injected via DI container)
-            embedding_reader: IWalnutImageEmbeddingDBReader instance (injected via DI container).
+            walnut_id: The ID of the walnut (e.g., "0001")
+            image_directory: Path to the directory containing images
+
+        Returns:
+            WalnutFileDAO with all images loaded, or None if directory doesn't exist
         """
-        self.db_connection: IDatabaseConnection = db_connection
-        self.embedding_reader: "IWalnutImageEmbeddingDBReader" = embedding_reader
-
-    def get_by_id(self, image_id: int) -> Optional[WalnutImageDBDAO]:
-        """Get a walnut image by its ID without embedding."""
-        with self.db_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, walnut_id, side, image_path, width, height, checksum,
-                       created_at, created_by, updated_at, updated_by
-                FROM walnut_image
-                WHERE id = %s
-                """,
-                (image_id,),
-            )
-            row = cursor.fetchone()
-            if row is None:
-                return None
-
-            return WalnutImageDBDAO(
-                id=row[0],
-                walnut_id=row[1],
-                side=row[2],
-                image_path=row[3],
-                width=row[4],
-                height=row[5],
-                checksum=row[6],
-                created_at=row[7],
-                created_by=row[8],
-                updated_at=row[9],
-                updated_by=row[10],
-            )
-
-    def get_by_walnut_id(self, walnut_id: str) -> List[WalnutImageDBDAO]:
-        """Get all images for a specific walnut without embeddings."""
-        with self.db_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, walnut_id, side, image_path, width, height, checksum,
-                       created_at, created_by, updated_at, updated_by
-                FROM walnut_image
-                WHERE walnut_id = %s
-                ORDER BY side
-                """,
-                (walnut_id,),
-            )
-            rows = cursor.fetchall()
-            return [
-                WalnutImageDBDAO(
-                    id=row[0],
-                    walnut_id=row[1],
-                    side=row[2],
-                    image_path=row[3],
-                    width=row[4],
-                    height=row[5],
-                    checksum=row[6],
-                    created_at=row[7],
-                    created_by=row[8],
-                    updated_at=row[9],
-                    updated_by=row[10],
-                )
-                for row in rows
-            ]
-
-    def get_by_walnut_id_with_embeddings(self, walnut_id: str) -> List[WalnutImageDBDAO]:
-        """Get all images for a specific walnut with their embeddings loaded."""
-        images = self.get_by_walnut_id(walnut_id)
-
-        # Load embeddings for each image
-        for image in images:
-            if image.id is not None:
-                image.embedding = self.embedding_reader.get_by_image_id(image.id)
-
-        return images
-
-    def get_by_id_with_embedding(self, image_id: int) -> Optional[WalnutImageDBDAO]:
-        """Get a walnut image by ID with its embedding loaded."""
-        image = self.get_by_id(image_id)
-        if image is None:
+        if not image_directory.exists() or not image_directory.is_dir():
             return None
 
-        # Load embedding
-        if image.id is not None:
-            image.embedding = self.embedding_reader.get_by_image_id(image.id)
+        images: List[WalnutImageFileDAO] = []
 
-        return image
+        # Look for image files matching the pattern
+        for file_path in image_directory.glob(f"{walnut_id}_*.jpg"):
+            side_letter = self._parse_filename(file_path)
+            if side_letter is None:
+                continue
+
+            try:
+                # Load image to get dimensions
+                with Image.open(file_path) as img:
+                    width, height = img.size
+
+                # Get file size
+                file_size = file_path.stat().st_size
+
+                # Calculate checksum
+                checksum = self._calculate_checksum(file_path)
+
+                image_dao = WalnutImageFileDAO(
+                    file_path=file_path,
+                    side_letter=side_letter,
+                    width=width,
+                    height=height,
+                    file_size=file_size,
+                    checksum=checksum,
+                )
+                images.append(image_dao)
+            except Exception as e:
+                self.logger.warning(
+                    "image_load_error",
+                    file_path=str(file_path),
+                    error=str(e),
+                )
+                continue
+
+        if not images:
+            return None
+
+        return WalnutFileDAO(
+            walnut_id=walnut_id,
+            image_directory=image_directory,
+            images=images,
+        )

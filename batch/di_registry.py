@@ -7,8 +7,10 @@ from application_layer.walnut__al import IWalnutAL, WalnutAL
 from common.interfaces import IAppConfig
 from infrastructure_layer.db_readers import (
     IWalnutDBReader,
+    IWalnutImageDBReader,
     IWalnutImageEmbeddingDBReader,
     WalnutDBReader,
+    WalnutImageDBReader,
     WalnutImageEmbeddingDBReader,
 )
 from infrastructure_layer.db_writers import (
@@ -53,6 +55,7 @@ class DIRegistry:
 
 DIRegistry.register(IAppConfig, AppConfig)
 DIRegistry.register(IWalnutImageEmbeddingDBReader, WalnutImageEmbeddingDBReader)
+DIRegistry.register(IWalnutImageDBReader, WalnutImageDBReader)
 DIRegistry.register(IWalnutImageFileReader, WalnutImageFileReader)
 DIRegistry.register(IWalnutDBReader, WalnutDBReader)
 DIRegistry.register(IWalnutImageEmbeddingDBWriter, WalnutImageEmbeddingDBWriter)

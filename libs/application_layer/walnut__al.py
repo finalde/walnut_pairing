@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from application_layer.mappers.walnut__mapper import IWalnutMapper
-from application_layer.services.walnut_image_loader import WalnutImageLoader
+from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
 from common.interfaces import IAppConfig, IDatabaseConnection
@@ -58,6 +58,7 @@ class WalnutAL(IWalnutAL):
         walnut_reader: IWalnutDBReader,
         walnut_writer: IWalnutDBWriter,
         walnut_mapper: IWalnutMapper,
+        walnut_image_file_reader: IWalnutImageFileReader,
     ) -> None:
         self.app_config: IAppConfig = app_config
         self.db_connection: IDatabaseConnection = db_connection
@@ -65,6 +66,7 @@ class WalnutAL(IWalnutAL):
         self.walnut_reader: IWalnutDBReader = walnut_reader
         self.walnut_writer: IWalnutDBWriter = walnut_writer
         self.walnut_mapper: IWalnutMapper = walnut_mapper
+        self.walnut_image_file_reader: IWalnutImageFileReader = walnut_image_file_reader
         self.logger = get_logger(__name__)
 
     def generate_embeddings(self) -> None:
@@ -164,7 +166,7 @@ class WalnutAL(IWalnutAL):
         if not image_directory.exists():
             raise FileNotFoundError(f"Image directory not found: {image_directory}")
 
-        walnut_file_dao = WalnutImageLoader.load_walnut_from_directory(walnut_id, image_directory)
+        walnut_file_dao = self.walnut_image_file_reader.load_walnut_from_directory(walnut_id, image_directory)
         if walnut_file_dao is None:
             raise ValueError(f"No valid images found in directory: {image_directory}")
 

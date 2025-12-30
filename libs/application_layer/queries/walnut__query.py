@@ -5,9 +5,9 @@ from typing import List, Optional
 
 from application_layer.dtos.walnut__dto import WalnutDTO
 from application_layer.mappers.walnut__mapper import IWalnutMapper
-from application_layer.services.walnut_image_loader import WalnutImageLoader
 from common.interfaces import IAppConfig
 from infrastructure_layer.db_readers import IWalnutDBReader
+from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
 
 
 class IWalnutQuery(ABC):
@@ -30,10 +30,12 @@ class WalnutQuery(IWalnutQuery):
         walnut_reader: IWalnutDBReader,
         walnut_mapper: IWalnutMapper,
         app_config: IAppConfig,
+        walnut_image_file_reader: IWalnutImageFileReader,
     ) -> None:
         self.walnut_reader: IWalnutDBReader = walnut_reader
         self.walnut_mapper: IWalnutMapper = walnut_mapper
         self.app_config: IAppConfig = app_config
+        self.walnut_image_file_reader: IWalnutImageFileReader = walnut_image_file_reader
 
     def get_by_id(self, walnut_id: str) -> Optional[WalnutDTO]:
         walnut_dao = self.walnut_reader.get_by_id(walnut_id)
@@ -52,7 +54,7 @@ class WalnutQuery(IWalnutQuery):
         if not image_directory.exists():
             return None
 
-        walnut_file_dao = WalnutImageLoader.load_walnut_from_directory(walnut_id, image_directory)
+        walnut_file_dao = self.walnut_image_file_reader.load_walnut_from_directory(walnut_id, image_directory)
         if walnut_file_dao is None:
             return None
 

@@ -15,7 +15,7 @@ from infrastructure_layer.db_writers import IWalnutDBWriter
 from infrastructure_layer.services import IWalnutImageService
 
 from application_layer.mappers.walnut__mapper import IWalnutMapper
-from application_layer.services.walnut_image_loader import WalnutImageLoader
+from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
 from domain_layer.domain_error import DomainError, ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.value_objects.image__value_object import ImageValueObject
@@ -107,11 +107,13 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
         walnut_writer: IWalnutDBWriter,
         walnut_mapper: IWalnutMapper,
         walnut_image_service: IWalnutImageService,
+        walnut_image_file_reader: IWalnutImageFileReader,
     ) -> None:
         self.app_config: IAppConfig = app_config
         self.walnut_writer: IWalnutDBWriter = walnut_writer
         self.walnut_mapper: IWalnutMapper = walnut_mapper
         self.walnut_image_service: IWalnutImageService = walnut_image_service
+        self.walnut_image_file_reader: IWalnutImageFileReader = walnut_image_file_reader
         self.logger = get_logger(__name__)
 
     def handle(self, command: CreateWalnutFromImagesCommand) -> None:
@@ -122,7 +124,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             self.logger.error("image_directory_not_found", walnut_id=command.walnut_id, directory=str(image_directory))
             return
 
-        walnut_file_dao : WalnutFileDAO = WalnutImageLoader.load_walnut_from_directory(command.walnut_id, image_directory)
+        walnut_file_dao: WalnutFileDAO = self.walnut_image_file_reader.load_walnut_from_directory(command.walnut_id, image_directory)
         if walnut_file_dao is None:
             self.logger.error("no_images_found", walnut_id=command.walnut_id, directory=str(image_directory))
             return

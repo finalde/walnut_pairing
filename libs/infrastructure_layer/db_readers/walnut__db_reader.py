@@ -7,7 +7,7 @@ from common.interfaces import IDatabaseConnection
 from ..data_access_objects import WalnutDBDAO
 
 if TYPE_CHECKING:
-    from ..file_readers.walnut_image__file_reader import IWalnutImageFileReader
+    from .walnut_image__db_reader import IWalnutImageDBReader
 
 
 class IWalnutDBReader(ABC):
@@ -39,17 +39,17 @@ class WalnutDBReader(IWalnutDBReader):
     def __init__(
         self,
         db_connection: IDatabaseConnection,
-        image_reader: "IWalnutImageFileReader",
+        image_reader: "IWalnutImageDBReader",
     ) -> None:
         """
         Initialize the reader with a database connection and image reader.
 
         Args:
             db_connection: IDatabaseConnection instance (injected via DI container)
-            image_reader: IWalnutImageFileReader instance (injected via DI container).
+            image_reader: IWalnutImageDBReader instance (injected via DI container).
         """
         self.db_connection: IDatabaseConnection = db_connection
-        self.image_reader: "IWalnutImageFileReader" = image_reader
+        self.image_reader: "IWalnutImageDBReader" = image_reader
 
     def get_by_id(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by its ID with related images and embeddings loaded."""
