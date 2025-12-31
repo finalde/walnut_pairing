@@ -55,12 +55,12 @@ class WalnutDBWriter(IWalnutDBWriter):
 
     def save_with_images(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """
-        Save a walnut with all its images and embeddings using SQLAlchemy ORM.
+        Save or update a walnut with all its images and embeddings using SQLAlchemy ORM.
         This is the ORM-like save that cascades to images and embeddings.
         Returns walnut with all IDs populated.
 
-        If the walnut already exists, it will be deleted first (along with its images and embeddings)
-        due to CASCADE delete, then the new walnut will be inserted.
+        If the walnut already exists, it will be updated along with its images and embeddings.
+        If it doesn't exist, it will be inserted.
         """
         try:
             walnut_id = getattr(walnut, "id", None)
@@ -68,15 +68,20 @@ class WalnutDBWriter(IWalnutDBWriter):
                 # New object - use add() which will cascade to images and embeddings
                 self.session.add(walnut)
             else:
-                # Check if walnut exists - if so, delete it first (CASCADE will delete images/embeddings)
+                # Check if walnut exists
                 existing = self.session.get(WalnutDBDAO, walnut_id)
                 if existing is not None:
-                    # Delete existing walnut (CASCADE will delete images and embeddings)
-                    self.session.delete(existing)
-                    self.session.flush()  # Flush the delete
+                    # Update existing walnut - merge will update the walnut and handle related objects
+                    # First, delete existing images and embeddings (they will be recreated)
+                    for image in existing.images:
+                        if hasattr(image, "embedding") and image.embedding:
+                            self.session.delete(image.embedding)
+                        self.session.delete(image)
+                    self.session.flush()  # Flush the deletes
 
-                # Now add the new walnut with its images and embeddings
-                self.session.add(walnut)
+                # Merge the walnut (will update if exists, insert if new)
+                # This will also add/update the images and embeddings
+                walnut = self.session.merge(walnut)
 
             self.session.flush()  # Flush to get all generated IDs without committing
             self.session.commit()  # Commit the transaction

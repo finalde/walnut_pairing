@@ -79,7 +79,7 @@ class DimensionMeasurer(IDimensionMeasurer):
         # Save intermediate results
         if save_intermediate and image_vo and side_enum:
             self._save_contour(image, contour, image_vo, "03_contour", side_enum)
-            self._save_bbox(image, width_px, height_px, image_vo, "04_bbox", side_enum)
+            self._save_bbox(image, width_px, height_px, image_vo, "04_bbox", side_enum, contour=contour)
 
         return (width_px, height_px)
 
@@ -133,30 +133,50 @@ class DimensionMeasurer(IDimensionMeasurer):
         image_vo: ImageValueObject,
         step_name: str,
         side_enum: WalnutSideEnum,
+        contour: Optional[np.ndarray] = None,
     ) -> None:
-        """Save image with bounding box overlay."""
+        """Save image with bounding box overlay using actual contour position."""
         if original_image.ndim == 3:
             img = Image.fromarray(original_image)
         else:
             img = Image.fromarray(original_image, mode="L").convert("RGB")
 
-        # Calculate bounding box from contour (simplified - would need actual bbox from contour)
-        h, w = original_image.shape[:2]
-        center_x, center_y = w // 2, h // 2
-        bbox_w, bbox_h = int(width_px), int(height_px)
-
-        bbox = (
-            center_x - bbox_w // 2,
-            center_y - bbox_h // 2,
-            center_x + bbox_w // 2,
-            center_y + bbox_h // 2,
-        )
-
         draw = ImageDraw.Draw(img)
-        draw.rectangle(bbox, outline="green", width=2)
 
-        # Mark center
-        draw.ellipse([center_x - 5, center_y - 5, center_x + 5, center_y + 5], fill="yellow", outline="yellow")
+        if contour is not None and len(contour) > 0:
+            # Calculate bounding box from actual contour position (not assumed center)
+            min_y, min_x = contour.min(axis=0)
+            max_y, max_x = contour.max(axis=0)
+            
+            # Use actual bounding box from contour
+            bbox = (
+                int(min_x),
+                int(min_y),
+                int(max_x),
+                int(max_y),
+            )
+            
+            # Draw bounding box
+            draw.rectangle(bbox, outline="green", width=2)
+            
+            # Calculate and mark center of actual bounding box
+            center_x = int((min_x + max_x) / 2)
+            center_y = int((min_y + max_y) / 2)
+            draw.ellipse([center_x - 5, center_y - 5, center_x + 5, center_y + 5], fill="yellow", outline="yellow")
+        else:
+            # Fallback: use image center if no contour available
+            h, w = original_image.shape[:2]
+            center_x, center_y = w // 2, h // 2
+            bbox_w, bbox_h = int(width_px), int(height_px)
+            
+            bbox = (
+                center_x - bbox_w // 2,
+                center_y - bbox_h // 2,
+                center_x + bbox_w // 2,
+                center_y + bbox_h // 2,
+            )
+            draw.rectangle(bbox, outline="green", width=2)
+            draw.ellipse([center_x - 5, center_y - 5, center_x + 5, center_y + 5], fill="yellow", outline="yellow")
 
         output_path = self._get_intermediate_path(image_vo, step_name, side_enum)
         output_path.parent.mkdir(parents=True, exist_ok=True)

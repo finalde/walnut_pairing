@@ -105,7 +105,7 @@ class WalnutMapper(IWalnutMapper):
             )
             image_value_objects[side_enum] = image_vo
 
-        return WalnutDomainFactory.create_from_file_dao_images(image_value_objects)
+        return WalnutDomainFactory.create_from_file_dao_images(image_value_objects, walnut_id=walnut_file_dao.walnut_id)
 
     def entity_to_dao(
         self,

@@ -176,7 +176,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
 
         images_dict: Dict[WalnutSideEnum, ImageValueObject] = images_by_side
 
-        entity_result: Either[WalnutEntity, DomainError] = WalnutDomainFactory.create_from_file_dao_images(images_by_side)
+        entity_result: Either[WalnutEntity, DomainError] = WalnutDomainFactory.create_from_file_dao_images(images_by_side, walnut_id=command.walnut_id)
         if entity_result.is_left():
             error = entity_result.value
             self.logger.error("entity_creation_failed", walnut_id=command.walnut_id, error=str(error))

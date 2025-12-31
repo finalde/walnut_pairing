@@ -1,5 +1,5 @@
 # domain_layer/domain_factories/walnut__domain_factory.py
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 from common.either import Either, Left
@@ -11,7 +11,7 @@ from domain_layer.value_objects.image__value_object import ImageValueObject
 
 class WalnutDomainFactory:
     @staticmethod
-    def create_from_images(images: Dict[str, ImageValueObject]) -> Either[WalnutEntity, DomainError]:
+    def create_from_images(images: Dict[str, ImageValueObject], walnut_id: Optional[str] = None) -> Either[WalnutEntity, DomainError]:
         required_sides = {side_enum.value for side_enum in WalnutSideEnum}
         provided_sides = set(images.keys())
         missing_sides = required_sides - provided_sides
@@ -41,10 +41,11 @@ class WalnutDomainFactory:
             right=image_vos[WalnutSideEnum.RIGHT.value],
             top=image_vos[WalnutSideEnum.TOP.value],
             down=image_vos[WalnutSideEnum.DOWN.value],
+            walnut_id=walnut_id,
         )
 
     @staticmethod
-    def create_from_file_dao_images(images_by_side: Dict[WalnutSideEnum, ImageValueObject]) -> Either[WalnutEntity, DomainError]:
+    def create_from_file_dao_images(images_by_side: Dict[WalnutSideEnum, ImageValueObject], walnut_id: Optional[str] = None) -> Either[WalnutEntity, DomainError]:
         return WalnutEntity.create(
             front=images_by_side[WalnutSideEnum.FRONT],
             back=images_by_side[WalnutSideEnum.BACK],
@@ -52,4 +53,5 @@ class WalnutDomainFactory:
             right=images_by_side[WalnutSideEnum.RIGHT],
             top=images_by_side[WalnutSideEnum.TOP],
             down=images_by_side[WalnutSideEnum.DOWN],
+            walnut_id=walnut_id,
         )

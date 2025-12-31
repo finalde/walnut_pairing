@@ -19,8 +19,10 @@ class _WalnutEntityBuilder:
         right: ImageValueObject,
         top: ImageValueObject,
         down: ImageValueObject,
+        walnut_id: Optional[str] = None,
     ) -> None:
-        self._id: str = str(uuid.uuid4())
+        # Use provided ID or generate UUID if not provided
+        self._id: str = walnut_id if walnut_id is not None else str(uuid.uuid4())
         self.front: ImageValueObject = front
         self.back: ImageValueObject = back
         self.left: ImageValueObject = left
@@ -51,8 +53,9 @@ class WalnutEntity:
         right: ImageValueObject,
         top: ImageValueObject,
         down: ImageValueObject,
+        walnut_id: Optional[str] = None,
     ) -> None:
-        builder = _WalnutEntityBuilder(front, back, left, right, top, down)
+        builder = _WalnutEntityBuilder(front, back, left, right, top, down, walnut_id)
         self._id: str = builder._id
         self.front: ImageValueObject = builder.front
         self.back: ImageValueObject = builder.back
@@ -82,9 +85,10 @@ class WalnutEntity:
         right: ImageValueObject,
         top: ImageValueObject,
         down: ImageValueObject,
+        walnut_id: Optional[str] = None,
     ) -> "WalnutEntity":
         instance = object.__new__(cls)
-        instance.__init__(front, back, left, right, top, down)
+        instance.__init__(front, back, left, right, top, down, walnut_id)
         return instance
 
     @staticmethod
@@ -95,6 +99,7 @@ class WalnutEntity:
         right: ImageValueObject,
         top: ImageValueObject,
         down: ImageValueObject,
+        walnut_id: Optional[str] = None,
     ) -> Either["WalnutEntity", DomainError]:
         missing_sides = []
         if not front:
@@ -146,7 +151,7 @@ class WalnutEntity:
             if image_vo.format.upper() not in valid_formats:
                 return Left(ValidationError(f"Invalid image format '{image_vo.format}' for {side_enum.value} image"))
 
-        entity = WalnutEntity._create_instance(front, back, left, right, top, down)
+        entity = WalnutEntity._create_instance(front, back, left, right, top, down, walnut_id)
         entity.processing_status["validated"] = True
         return Right(entity)
 
