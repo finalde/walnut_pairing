@@ -26,7 +26,7 @@ from infrastructure_layer.services import IImageObjectFinder
 from common.constants import UNKNOWN_IMAGE_FORMAT
 from PIL import Image
 
-
+from common.interfaces import CameraConfig
 class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesCommand]):
     def __init__(
         self,
@@ -47,7 +47,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
         image_root = Path(self.app_config.image_root)
         image_directory = image_root / command.walnut_id
         image_intermediate_dir = str(image_root / command.walnut_id / "_intermediate")
-
+      
         walnut_file_dao: WalnutFileDAO = self.walnut_image_file_reader.load_walnut_from_directory(
             command.walnut_id, image_directory
         )
@@ -68,34 +68,17 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             if side_enum is None:
                 self.logger.error("invalid_side_letter", side_letter=image_file_dao.side_letter, walnut_id=command.walnut_id)
                 return
-            
+            camera_config: Optional[CameraConfig] = self.app_config.get_camera_config(side_enum)
             with Image.open(image_file_dao.file_path) as img:
                 img_format = img.format or UNKNOWN_IMAGE_FORMAT
-
             # Generate embedding for this image
             embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path))
-            
             # Find walnut object in image
             result: Optional[ObjectDetectionResult] = self.image_object_finder.find_object(
                 str(image_file_dao.file_path),
                 background_is_white=True,
                 intermediate_dir=image_intermediate_dir,
             )
-            if result is None:
-                self.logger.error("object_detection_failed", walnut_id=command.walnut_id, side=side_enum.value)
-                return
-
-            # Get camera configuration for this side - required, no defaults
-            camera_config = self.app_config.get_camera_config(side_enum)
-            if camera_config is None:
-                self.logger.error(
-                    "camera_config_not_found",
-                    walnut_id=command.walnut_id,
-                    side=side_enum.value,
-                    note="Camera configuration is required. Please configure cameras in config.yml",
-                )
-                return
-
             image_vo = ImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),
@@ -119,22 +102,6 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             return
 
         walnut_entity: WalnutEntity = entity_result.value
-
-        # Dimensions are automatically calculated during entity construction
-        if walnut_entity.dimensions is None:
-            self.logger.warning(
-                "dimensions_not_calculated",
-                walnut_id=walnut_entity.id,
-                note="Dimensions could not be calculated from image measurements. Walnut will be saved without dimensions.",
-            )
-        else:
-            self.logger.info(
-                "dimensions_calculated",
-                walnut_id=walnut_entity.id,
-                width_mm=walnut_entity.dimensions.width_mm,
-                height_mm=walnut_entity.dimensions.height_mm,
-                thickness_mm=walnut_entity.dimensions.thickness_mm,
-            )
 
         walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,

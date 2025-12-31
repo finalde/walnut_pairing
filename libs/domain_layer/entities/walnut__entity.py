@@ -109,8 +109,9 @@ class WalnutEntity:
         dimension_result = entity._calculate_dimensions()
         if dimension_result.is_right():
             entity.dimensions = dimension_result.value
-        
-        return Right(entity)
+            return Right(entity)
+        else:
+            return Left(dimension_result.value)
 
     def _calculate_dimensions(
         self,

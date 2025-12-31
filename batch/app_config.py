@@ -5,23 +5,10 @@ from typing import Dict, Optional
 
 import yaml
 from common.enums import WalnutSideEnum
-from common.interfaces import IAppConfig
+from common.interfaces import IAppConfig, DatabaseConfig, CameraConfig
 
 
-@dataclass
-class DatabaseConfig:
-    host: str
-    port: int
-    database: str
-    user: str
-    password: str
 
-
-@dataclass
-class CameraConfig:
-    """Configuration for a single camera."""
-    distance_mm: float
-    focal_length_px: float
 
 
 class AppConfig(IAppConfig):

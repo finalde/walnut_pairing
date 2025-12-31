@@ -3,18 +3,10 @@
 Common interfaces for dependency injection.
 """
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
 
-if TYPE_CHECKING:
-    try:
-        from batch.app_config import CameraConfig, DatabaseConfig
-        from common.enums import WalnutSideEnum
-    except ImportError:
-        from typing import Any
-
-        DatabaseConfig = Any
-        CameraConfig = Any
-        WalnutSideEnum = Any
+from common.enums import WalnutSideEnum
 
 
 @runtime_checkable
@@ -28,7 +20,20 @@ class IDatabaseConnection(Protocol):
     def close(self) -> None:
         """Close the database connection."""
         ...
+@dataclass
+class DatabaseConfig:
+    host: str
+    port: int
+    database: str
+    user: str
+    password: str
 
+
+@dataclass
+class CameraConfig:
+    """Configuration for a single camera."""
+    distance_mm: float
+    focal_length_px: float
 
 class IAppConfig(ABC):
     """Interface for application configuration."""
