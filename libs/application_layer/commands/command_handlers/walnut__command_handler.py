@@ -185,10 +185,25 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
         walnut_entity: WalnutEntity = entity_result.value
 
         try:
-            length_mm, width_mm, height_mm = self.walnut_image_service.estimate_dimensions(
+            # Get raw measurements from infrastructure layer
+            intermediate_dir = None
+            if command.save_intermediate_results:
+                image_root = Path(self.app_config.image_root)
+                intermediate_dir = str(image_root / command.walnut_id / "_intermediate")
+            
+            measurements = self.walnut_image_service.get_measurements_from_images(
                 images=images_dict,
-                save_intermediate_results=command.save_intermediate_results,
+                background_is_white=True,
+                intermediate_dir=intermediate_dir,
             )
+            
+            # Calculate dimensions using domain service
+            from domain_layer.domain_services.dimension__domain_service import DimensionDomainService
+            length_mm, width_mm, height_mm = DimensionDomainService.calculate_dimensions_from_measurements(
+                measurements=measurements,
+                focal_length_px=1000.0,  # TODO: Make this configurable
+            )
+            
             # Create value object from estimated dimensions - domain validation
             dimension_result = WalnutDimensionValueObject.create(length_mm=length_mm, width_mm=width_mm, height_mm=height_mm)
             if dimension_result.is_left():

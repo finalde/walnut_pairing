@@ -22,7 +22,7 @@ class WalnutDimensionValueObject:
 
     # Business constants - stable domain rules
     MIN_MM: float = 20.0
-    MAX_MM: float = 50.0
+    MAX_MM: float = 500.0
 
     @classmethod
     def create(cls, length_mm: float, width_mm: float, height_mm: float) -> Either["WalnutDimensionValueObject", DomainError]:

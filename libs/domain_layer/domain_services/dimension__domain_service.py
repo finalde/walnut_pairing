@@ -1,8 +1,18 @@
 # domain_layer/domain_services/dimension__domain_service.py
-from typing import Dict
+from dataclasses import dataclass
+from typing import Dict, List, Tuple
 
 import numpy as np
 from common.enums import WalnutSideEnum
+
+
+@dataclass
+class ViewMeasurement:
+    """Measurement from a single view."""
+    side: WalnutSideEnum
+    width_px: float
+    height_px: float
+    camera_distance_mm: float
 
 
 class DimensionDomainService:
@@ -19,8 +29,67 @@ class DimensionDomainService:
     MAX_DIMENSION_MM: float = 50.0
 
     @staticmethod
+    def calculate_dimensions_from_measurements(
+        measurements: List[ViewMeasurement],
+        focal_length_px: float,
+    ) -> Tuple[float, float, float]:
+        """
+        Calculate walnut dimensions from view measurements.
+        
+        Business rules:
+        - Maps each view to dimensions based on view orientation
+        - Aggregates measurements using median for robustness
+        - Requires minimum number of valid views per dimension
+        
+        Args:
+            measurements: List of measurements from different views
+            focal_length_px: Camera focal length in pixels
+            
+        Returns:
+            Tuple of (length_mm, width_mm, height_mm)
+        """
+        # Map measurements to dimensions based on view
+        pixel_measurements: Dict[str, List[float]] = {"length": [], "width": [], "height": []}
+        camera_distances: List[float] = []
+        
+        for measurement in measurements:
+            if measurement.width_px <= 0 or measurement.height_px <= 0:
+                continue  # Skip invalid measurements
+            
+            camera_distances.append(measurement.camera_distance_mm)
+            
+            # Business rule: Map each view to dimensions
+            contribution = DimensionDomainService._get_view_contribution(measurement.side)
+            
+            for dimension_name, measurement_type in contribution.items():
+                if measurement_type == "width":
+                    pixel_measurements[dimension_name].append(measurement.width_px)
+                elif measurement_type == "height":
+                    pixel_measurements[dimension_name].append(measurement.height_px)
+        
+        if not camera_distances:
+            return (0.0, 0.0, 0.0)
+        
+        # Calculate scale (mm per pixel)
+        avg_distance = sum(camera_distances) / len(camera_distances)
+        mm_per_px = avg_distance / focal_length_px if focal_length_px > 0 else 0.0
+        if mm_per_px <= 0:
+            return (0.0, 0.0, 0.0)
+        
+        # Aggregate dimensions
+        dimensions_mm = DimensionDomainService.aggregate_dimensions(
+            pixel_measurements, mm_per_px
+        )
+        
+        return (
+            dimensions_mm["length"],
+            dimensions_mm["width"],
+            dimensions_mm["height"],
+        )
+
+    @staticmethod
     def aggregate_dimensions(
-        pixel_measurements: Dict[str, list[float]],
+        pixel_measurements: Dict[str, List[float]],
         mm_per_pixel: float,
         min_valid_views: int = MIN_VALID_VIEWS,
     ) -> Dict[str, float]:
@@ -47,7 +116,7 @@ class DimensionDomainService:
         return result
 
     @staticmethod
-    def get_view_contribution(side: WalnutSideEnum) -> Dict[str, str]:
+    def _get_view_contribution(side: WalnutSideEnum) -> Dict[str, str]:
         """
         Business rule: What each view contributes to which dimension.
         Returns dict mapping dimension name to which measurement (width/height) to use.
