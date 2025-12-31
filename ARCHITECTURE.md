@@ -96,7 +96,6 @@ class WalnutEntity:
 - **Use factory methods**: Create value objects via `create()` or `from_*()` class methods
 - **Return Either**: Factory methods return `Either[ValueObject, DomainError]` for explicit error handling
 - **Business constants**: Domain rules (like min/max ranges) should be class constants, not configurable parameters
-- **Semantic rules**: Include business relationships (e.g., "height cannot exceed length") in addition to numeric validation
 
 **Example:**
 ```python

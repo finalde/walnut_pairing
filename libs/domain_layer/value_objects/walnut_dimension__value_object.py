@@ -13,7 +13,6 @@ class WalnutDimensionValueObject:
     Business invariants:
     - All dimensions must be positive
     - All dimensions must be within valid walnut size range (20-50mm)
-    - Z cannot exceed X (semantic rule)
     """
 
     x_mm: float
@@ -32,7 +31,6 @@ class WalnutDimensionValueObject:
         Business rules:
         - All dimensions must be positive
         - All dimensions must be within valid walnut size range
-        - Z cannot exceed X (semantic invariant)
         """
         # Check all dimensions are positive
         if min(x_mm, y_mm, z_mm) <= 0:
@@ -48,9 +46,5 @@ class WalnutDimensionValueObject:
                 return Left(
                     ValidationError(f"{name.upper()}-axis {value}mm is outside valid range [{cls.MIN_MM}, {cls.MAX_MM}]mm")
                 )
-        
-        # Semantic rule: z cannot exceed x
-        if z_mm > x_mm:
-            return Left(ValidationError("Z-axis cannot exceed X-axis"))
         
         return Right(cls(x_mm=x_mm, y_mm=y_mm, z_mm=z_mm))
