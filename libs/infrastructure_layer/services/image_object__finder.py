@@ -174,11 +174,14 @@ class ImageObjectFinder(IImageObjectFinder):
         image_height, image_width = image.shape[:2]
         
         # Detect all objects with detailed features
+        # Save intermediate files but not objects yet (we'll save objects after determining match)
         all_objects = self._find_all_objects_detailed(
             image_path=image_path,
             background_is_white=background_is_white,
-            intermediate_dir=intermediate_dir,
+            intermediate_dir=intermediate_dir,  # Save intermediate processing files
             min_area=MIN_AREA_FOR_DETECTION,
+            matched_object=None,  # Don't save objects yet
+            save_objects=False,  # Skip object saving for now
         )
         if not all_objects:
             return None
@@ -188,13 +191,23 @@ class ImageObjectFinder(IImageObjectFinder):
             all_objects, image_width, image_height
         )
         
+        # Determine matched object
         if not candidates:
-            # Fallback: return largest object if no candidates pass filters
-            return self._convert_to_result(max(all_objects, key=lambda o: o.area))
+            # Fallback: use largest object if no candidates pass filters
+            matched_obj = max(all_objects, key=lambda o: o.area)
+        else:
+            # Use best candidate (highest score)
+            matched_obj = max(candidates, key=lambda x: x[1])[0]
         
-        # Return best candidate (highest score)
-        best_obj = max(candidates, key=lambda x: x[1])[0]
-        return self._convert_to_result(best_obj)
+        # Now save all objects with match indicator
+        if intermediate_dir:
+            image = cv2.imread(image_path)
+            if image is not None:
+                self._save_all_objects_with_scores(
+                    image, all_objects, matched_obj, intermediate_dir, image_path
+                )
+        
+        return self._convert_to_result(matched_obj)
 
     def find_all_objects(
         self,
@@ -222,6 +235,8 @@ class ImageObjectFinder(IImageObjectFinder):
         intermediate_dir: Optional[str],
         background_is_white: bool = True,
         min_area: int = 300,
+        matched_object: Optional[DetectedObject] = None,
+        save_objects: bool = True,
     ) -> List[DetectedObject]:
         """
         Main processing pipeline to detect objects.
@@ -238,10 +253,9 @@ class ImageObjectFinder(IImageObjectFinder):
         9. Find contours
         10. Extract features
         """
-        out_dir = self._setup_output_directory(intermediate_dir)
-        
-        # Load and convert
+        # Load image first to get name for directory structure
         image = self._load_image(image_path)
+        out_dir = self._setup_output_directory(intermediate_dir, image_path)
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         
         # Create brown mask and apply to image
@@ -275,7 +289,7 @@ class ImageObjectFinder(IImageObjectFinder):
         )
         
         objects = self._extract_objects_from_contours(
-            contours, gray, edges, hsv, image, min_area, out_dir
+            contours, gray, edges, hsv, image, min_area, out_dir, matched_object, save_objects
         )
         
         # Save final overlay
@@ -297,10 +311,22 @@ class ImageObjectFinder(IImageObjectFinder):
             raise ValueError(f"Cannot read image: {image_path}")
         return image
 
-    def _setup_output_directory(self, intermediate_dir: Optional[str]) -> Optional[Path]:
-        """Setup output directory for intermediate files."""
+    def _setup_output_directory(
+        self, intermediate_dir: Optional[str], image_path: str
+    ) -> Optional[Path]:
+        """
+        Setup output directory for intermediate files.
+        
+        Structure: {intermediate_dir}/{image_name}/
+        Example: _intermediate/00001_T/
+        """
         if intermediate_dir:
-            out_dir = Path(intermediate_dir)
+            # Get image name without extension (e.g., "00001_T" from "00001_T.jpg")
+            image_path_obj = Path(image_path)
+            image_name = image_path_obj.stem
+            
+            # Create nested directory: {intermediate_dir}/{image_name}/
+            out_dir = Path(intermediate_dir) / image_name
             out_dir.mkdir(parents=True, exist_ok=True)
             return out_dir
         return None
@@ -417,6 +443,8 @@ class ImageObjectFinder(IImageObjectFinder):
         image: np.ndarray,
         min_area: int,
         out_dir: Optional[Path],
+        matched_object: Optional[DetectedObject],
+        save_objects: bool = True,
     ) -> List[DetectedObject]:
         """Extract DetectedObject from contours."""
         objects = []
@@ -429,9 +457,10 @@ class ImageObjectFinder(IImageObjectFinder):
             obj = self._analyze_contour(contour, gray, edges, hsv, image)
             objects.append(obj)
             
-            # Save per-object visualization
-            if out_dir:
-                self._save_object_debug(image, contour, idx, out_dir)
+            # Save per-object visualization with scores (if enabled)
+            if save_objects and out_dir:
+                is_match = matched_object is not None and self._is_same_object(obj, matched_object)
+                self._save_object_debug(image, obj, idx, out_dir, is_match)
         
         return objects
 
@@ -613,18 +642,66 @@ class ImageObjectFinder(IImageObjectFinder):
     def _save_object_debug(
         self,
         image: np.ndarray,
-        contour: np.ndarray,
+        obj: DetectedObject,
         index: int,
         out_dir: Path,
+        is_match: bool = False,
     ) -> None:
-        """Save debug visualization for a single object."""
-        debug_img = image.copy()
-        cv2.drawContours(debug_img, [contour], -1, (0, 255, 0), 2)
+        """
+        Save debug visualization for a single object with scores in filename.
         
-        x, y, w, h = cv2.boundingRect(contour)
+        Filename format: object_{index:02d}_brownscore_{brown:.2f}_texturescore_{texture:.1f}_circularity_{circ:.2f}_area_{area:.0f}{_match}.png
+        """
+        debug_img = image.copy()
+        cv2.drawContours(debug_img, [obj.contour], -1, (0, 255, 0), 2)
+        
+        x, y, w, h = cv2.boundingRect(obj.contour)
         cv2.rectangle(debug_img, (x, y), (x + w, y + h), (255, 0, 0), 2)
         
-        cv2.imwrite(str(out_dir / f"object_{index:02d}.png"), debug_img)
+        # Build filename with scores
+        filename = (
+            f"object_{index:02d}_"
+            f"brownscore_{obj.brown_score:.2f}_"
+            f"texturescore_{obj.texture_score:.1f}_"
+            f"circularity_{obj.circularity:.2f}_"
+            f"area_{obj.area:.0f}"
+        )
+        if is_match:
+            filename += "_match"
+        filename += ".png"
+        
+        cv2.imwrite(str(out_dir / filename), debug_img)
+
+    def _save_all_objects_with_scores(
+        self,
+        image: np.ndarray,
+        all_objects: List[DetectedObject],
+        matched_obj: DetectedObject,
+        intermediate_dir: str,
+        image_path: str,
+    ) -> None:
+        """Save all objects with scores, marking the matched one."""
+        # Get output directory
+        image_path_obj = Path(image_path)
+        image_name = image_path_obj.stem
+        out_dir = Path(intermediate_dir) / image_name
+        out_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save all objects
+        for idx, obj in enumerate(all_objects):
+            is_match = self._is_same_object(obj, matched_obj)
+            self._save_object_debug(image, obj, idx, out_dir, is_match)
+
+    def _is_same_object(self, obj1: DetectedObject, obj2: DetectedObject) -> bool:
+        """Check if two objects are the same (by comparing contour area and center)."""
+        # Compare by area and center position (with small tolerance)
+        area_diff = abs(obj1.area - obj2.area) / max(obj1.area, obj2.area, 1.0)
+        center_diff = (
+            abs(obj1.center_x - obj2.center_x) + abs(obj1.center_y - obj2.center_y)
+        )
+        
+        # Same object if area is very similar and centers are close
+        return area_diff < 0.01 and center_diff < 5.0
 
 
 # =========================

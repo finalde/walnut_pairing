@@ -19,8 +19,12 @@ def main():
     
     # Test images
     test_images = [
-        image_root / "00001_T.jpg",  # Front
-        # image_root / "00001_T.jpg",  # Top
+        image_root / "00001_T.jpg",  # Top
+        image_root / "00001_D.jpg",  # Down
+        image_root / "00001_L.jpg",  # Left
+        image_root / "00001_R.jpg",  # Right
+        image_root / "00001_F.jpg",  # Front
+        image_root / "00001_B.jpg",  # Back
     ]
     
     for image_path in test_images:
