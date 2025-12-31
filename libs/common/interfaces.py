@@ -3,15 +3,18 @@
 Common interfaces for dependency injection.
 """
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     try:
-        from batch.app_config import DatabaseConfig
+        from batch.app_config import CameraConfig, DatabaseConfig
+        from common.enums import WalnutSideEnum
     except ImportError:
         from typing import Any
 
         DatabaseConfig = Any
+        CameraConfig = Any
+        WalnutSideEnum = Any
 
 
 @runtime_checkable
@@ -40,6 +43,17 @@ class IAppConfig(ABC):
     @abstractmethod
     def database(self) -> "DatabaseConfig":
         """Get the database configuration."""
+        pass
+
+    @property
+    @abstractmethod
+    def cameras(self) -> Dict["WalnutSideEnum", "CameraConfig"]:
+        """Get camera configurations by side."""
+        pass
+
+    @abstractmethod
+    def get_camera_config(self, side: "WalnutSideEnum") -> Optional["CameraConfig"]:
+        """Get camera configuration for a specific side."""
         pass
 
 

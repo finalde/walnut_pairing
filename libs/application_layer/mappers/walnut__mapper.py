@@ -1,12 +1,14 @@
 # application_layer/mappers/walnut__mapper.py
 from abc import ABC, abstractmethod
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 from application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER, UNKNOWN_IMAGE_FORMAT
 from common.either import Either, Left
 from common.enums import WalnutSideEnum
+from common.interfaces import IAppConfig
+from common.logger import get_logger
 from domain_layer.domain_error import DomainError, MissingSideError, ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.entities.walnut__entity import WalnutEntity
@@ -56,6 +58,9 @@ class IWalnutMapper(ABC):
 
 
 class WalnutMapper(IWalnutMapper):
+    def __init__(self, app_config: IAppConfig) -> None:
+        self.app_config: IAppConfig = app_config
+
     def file_dao_to_entity(self, walnut_file_dao: WalnutFileDAO) -> Either[WalnutEntity, DomainError]:
         side_mapping: Dict[str, WalnutSideEnum] = {
             "F": WalnutSideEnum.FRONT,
@@ -93,6 +98,16 @@ class WalnutMapper(IWalnutMapper):
             # Generate embedding for this image
             embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path))
 
+            # Get camera configuration for this side - required, no defaults
+            camera_config = self.app_config.get_camera_config(side_enum)
+            if camera_config is None:
+                return Left[WalnutEntity, DomainError](
+                    ValidationError(f"Camera configuration not found for side '{side_enum.value}'. Please configure cameras in config.yml")
+                )
+            
+            camera_distance_mm = camera_config.distance_mm
+            focal_length_px = camera_config.focal_length_px
+
             image_vo = ImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),
@@ -101,7 +116,10 @@ class WalnutMapper(IWalnutMapper):
                 format=img_format,
                 hash=image_file_dao.checksum,
                 embedding=embedding,
-                camera_distance_mm=image_file_dao.camera_distance_mm,
+                camera_distance_mm=camera_distance_mm,
+                focal_length_px=focal_length_px,
+                walnut_width_px=0.0,  # Will be set by object finder in command handler
+                walnut_height_px=0.0,  # Will be set by object finder in command handler
             )
             image_value_objects[side_enum] = image_vo
 

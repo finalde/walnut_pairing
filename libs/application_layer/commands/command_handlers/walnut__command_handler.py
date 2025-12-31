@@ -85,6 +85,17 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
                 self.logger.error("object_detection_failed", walnut_id=command.walnut_id, side=side_enum.value)
                 return
 
+            # Get camera configuration for this side - required, no defaults
+            camera_config = self.app_config.get_camera_config(side_enum)
+            if camera_config is None:
+                self.logger.error(
+                    "camera_config_not_found",
+                    walnut_id=command.walnut_id,
+                    side=side_enum.value,
+                    note="Camera configuration is required. Please configure cameras in config.yml",
+                )
+                return
+
             image_vo = ImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),
@@ -93,7 +104,8 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
                 format=img_format,
                 hash=image_file_dao.checksum,
                 embedding=embedding,
-                camera_distance_mm=300,
+                camera_distance_mm=camera_config.distance_mm,
+                focal_length_px=camera_config.focal_length_px,
                 walnut_width_px=result.width_px,
                 walnut_height_px=result.height_px,
             )

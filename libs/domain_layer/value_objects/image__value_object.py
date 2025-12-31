@@ -18,6 +18,7 @@ class ImageValueObject:
     hash: str
     embedding: np.ndarray
     camera_distance_mm: float
+    focal_length_px: float
     walnut_width_px: float
     walnut_height_px: float
 
@@ -28,6 +29,7 @@ class ImageValueObject:
         side: WalnutSideEnum, 
         embedding: np.ndarray, 
         camera_distance_mm: float,
+        focal_length_px: float,
         walnut_width_px: float,
         walnut_height_px: float,
     ) -> "ImageValueObject":
@@ -43,6 +45,7 @@ class ImageValueObject:
             hash=img_hash,
             embedding=embedding,
             camera_distance_mm=camera_distance_mm,
+            focal_length_px=focal_length_px,
             walnut_width_px=walnut_width_px,
             walnut_height_px=walnut_height_px,
         )

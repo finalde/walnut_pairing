@@ -114,7 +114,6 @@ class WalnutEntity:
 
     def _calculate_dimensions(
         self,
-        focal_length_px: float = 1000.0,
         min_valid_views: int = 2,
     ) -> Either[WalnutDimensionValueObject, DomainError]:
         """
@@ -124,6 +123,7 @@ class WalnutEntity:
         - Maps each view to dimensions based on view orientation
         - Aggregates measurements using median for robustness
         - Requires minimum number of valid views per dimension
+        - Uses camera parameters (distance and focal length) from each image
         
         Returns:
             Either with WalnutDimensionValueObject or DomainError
@@ -132,6 +132,7 @@ class WalnutEntity:
         # Mapping: length -> x, width -> y, height -> z
         pixel_measurements: Dict[str, list[float]] = {"x": [], "y": [], "z": []}
         camera_distances: list[float] = []
+        focal_lengths: list[float] = []
         
         images = {
             WalnutSideEnum.FRONT: self.front,
@@ -148,6 +149,7 @@ class WalnutEntity:
                 continue  # Skip images without valid measurements
             
             camera_distances.append(image_vo.camera_distance_mm)
+            focal_lengths.append(image_vo.focal_length_px)
             
             # Business rule: Map each view to dimensions
             # length -> x, width -> y, height -> z
@@ -162,9 +164,11 @@ class WalnutEntity:
         if not camera_distances:
             return Left(ValidationError("No valid measurements found in images"))
         
-        # Calculate scale (mm per pixel)
+        # Calculate scale (mm per pixel) using average camera parameters
+        # Business rule: Use average distance and focal length across all cameras
         avg_distance = sum(camera_distances) / len(camera_distances)
-        mm_per_px = avg_distance / focal_length_px if focal_length_px > 0 else 0.0
+        avg_focal_length = sum(focal_lengths) / len(focal_lengths)
+        mm_per_px = avg_distance / avg_focal_length if avg_focal_length > 0 else 0.0
         if mm_per_px <= 0:
             return Left(ValidationError("Invalid camera parameters for dimension calculation"))
         

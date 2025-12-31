@@ -28,8 +28,6 @@ from infrastructure_layer.file_readers import (
 from infrastructure_layer.services import (
     IImageObjectFinder,
     ImageObjectFinder,
-    IWalnutImageService,
-    WalnutImageService,
 )
 
 from batch.app_config import AppConfig
@@ -70,4 +68,3 @@ DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IWalnutMapper, WalnutMapper)
 DIRegistry.register(IWalnutQuery, WalnutQuery)
 DIRegistry.register(IImageObjectFinder, ImageObjectFinder)
-DIRegistry.register(IWalnutImageService, WalnutImageService)
