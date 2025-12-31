@@ -192,14 +192,15 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             # Create value object from estimated dimensions - domain validation
             dimension_result = WalnutDimensionValueObject.create(length_mm=length_mm, width_mm=width_mm, height_mm=height_mm)
             if dimension_result.is_left():
-                # Domain validation failed - log error and stop, don't persist to DB
-                self.logger.error(
+                # Domain validation failed - log warning, intermediate results already saved, don't persist to DB
+                self.logger.warning(
                     "dimension_validation_failed",
                     walnut_id=walnut_entity.id,
                     error=str(dimension_result.value),
                     length_mm=length_mm,
                     width_mm=width_mm,
                     height_mm=height_mm,
+                    note="Intermediate results saved, but walnut not persisted due to invalid dimensions",
                 )
                 return
 
