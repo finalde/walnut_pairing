@@ -10,9 +10,9 @@ DROP TABLE IF EXISTS walnut;
 CREATE TABLE walnut (
     id TEXT PRIMARY KEY,
     description text not null,
-    x_mm DOUBLE PRECISION,
-    y_mm DOUBLE PRECISION,
-    z_mm DOUBLE PRECISION,
+    width_mm DOUBLE PRECISION,
+    height_mm DOUBLE PRECISION,
+    thickness_mm DOUBLE PRECISION,
     created_at TIMESTAMP DEFAULT NOW() not null,
     created_by TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW() not null,

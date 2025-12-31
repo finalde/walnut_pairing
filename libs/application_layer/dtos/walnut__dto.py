@@ -24,9 +24,9 @@ class WalnutDTO:
     created_by: str
     updated_at: datetime
     updated_by: str
-    x_mm: Optional[float] = None
-    y_mm: Optional[float] = None
-    z_mm: Optional[float] = None
+    width_mm: Optional[float] = None
+    height_mm: Optional[float] = None
+    thickness_mm: Optional[float] = None
     images: List[WalnutImageDTO] = None
 
     def __post_init__(self) -> None:

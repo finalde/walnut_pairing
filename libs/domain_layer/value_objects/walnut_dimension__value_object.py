@@ -12,19 +12,24 @@ class WalnutDimensionValueObject:
 
     Business invariants:
     - All dimensions must be positive
-    - All dimensions must be within valid walnut size range (20-50mm)
+    - All dimensions must be within valid walnut size range (20-500mm)
+    
+    Domain semantics:
+    - width: measured from FRONT/BACK/TOP/DOWN views
+    - height: measured from FRONT/BACK/LEFT/RIGHT views
+    - thickness: measured from LEFT/RIGHT/TOP/DOWN views
     """
 
-    x_mm: float
-    y_mm: float
-    z_mm: float
+    width_mm: float
+    height_mm: float
+    thickness_mm: float
 
     # Business constants - stable domain rules
     MIN_MM: float = 20.0
     MAX_MM: float = 500.0
 
     @classmethod
-    def create(cls, x_mm: float, y_mm: float, z_mm: float) -> Either["WalnutDimensionValueObject", DomainError]:
+    def create(cls, width_mm: float, height_mm: float, thickness_mm: float) -> Either["WalnutDimensionValueObject", DomainError]:
         """
         Create walnut dimensions value object with validation.
 
@@ -33,18 +38,18 @@ class WalnutDimensionValueObject:
         - All dimensions must be within valid walnut size range
         """
         # Check all dimensions are positive
-        if min(x_mm, y_mm, z_mm) <= 0:
+        if min(width_mm, height_mm, thickness_mm) <= 0:
             return Left(ValidationError("All dimensions must be positive"))
 
         # Check each dimension is within valid range
         for name, value in {
-            "x": x_mm,
-            "y": y_mm,
-            "z": z_mm,
+            "width": width_mm,
+            "height": height_mm,
+            "thickness": thickness_mm,
         }.items():
             if not (cls.MIN_MM <= value <= cls.MAX_MM):
                 return Left(
-                    ValidationError(f"{name.upper()}-axis {value}mm is outside valid range [{cls.MIN_MM}, {cls.MAX_MM}]mm")
+                    ValidationError(f"{name.capitalize()} {value}mm is outside valid range [{cls.MIN_MM}, {cls.MAX_MM}]mm")
                 )
         
-        return Right(cls(x_mm=x_mm, y_mm=y_mm, z_mm=z_mm))
+        return Right(cls(width_mm=width_mm, height_mm=height_mm, thickness_mm=thickness_mm))

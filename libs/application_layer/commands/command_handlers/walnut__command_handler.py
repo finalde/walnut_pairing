@@ -131,9 +131,9 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             self.logger.info(
                 "dimensions_calculated",
                 walnut_id=walnut_entity.id,
-                x_mm=walnut_entity.dimensions.x_mm,
-                y_mm=walnut_entity.dimensions.y_mm,
-                z_mm=walnut_entity.dimensions.z_mm,
+                width_mm=walnut_entity.dimensions.width_mm,
+                height_mm=walnut_entity.dimensions.height_mm,
+                thickness_mm=walnut_entity.dimensions.thickness_mm,
             )
 
         walnut_dao = self.walnut_mapper.entity_to_dao(
@@ -150,7 +150,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             "walnut_saved",
             walnut_id=walnut_entity.id,
             image_count=len(saved_walnut.images),
-            x_mm=saved_walnut.x_mm,
-            y_mm=saved_walnut.y_mm,
-            z_mm=saved_walnut.z_mm,
+            width_mm=saved_walnut.width_mm,
+            height_mm=saved_walnut.height_mm,
+            thickness_mm=saved_walnut.thickness_mm,
         )

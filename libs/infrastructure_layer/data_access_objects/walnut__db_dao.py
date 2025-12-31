@@ -23,9 +23,9 @@ class WalnutDBDAO(Base):
     created_by: Mapped[str] = mapped_column(String, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
     updated_by: Mapped[str] = mapped_column(String, nullable=False)
-    x_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    y_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
-    z_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    width_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    height_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    thickness_mm: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     # Relationships
     # Using string literal - SQLAlchemy resolves it by class name at runtime

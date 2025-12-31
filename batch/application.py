@@ -60,9 +60,9 @@ class Application:
                         "walnut_processed_successfully",
                         walnut_id=saved_walnut.walnut_id,
                         image_count=len(saved_walnut.images),
-                        x_mm=saved_walnut.x_mm,
-                        y_mm=saved_walnut.y_mm,
-                        z_mm=saved_walnut.z_mm,
+                        width_mm=saved_walnut.width_mm,
+                        height_mm=saved_walnut.height_mm,
+                        thickness_mm=saved_walnut.thickness_mm,
                     )
                 else:
                     self.logger.warning("walnut_not_found_after_processing", walnut_id=walnut_id)
