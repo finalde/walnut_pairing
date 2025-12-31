@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 from PIL import Image
@@ -41,6 +41,30 @@ class IImageObjectFinder(ABC):
         
         Returns:
             ObjectDetectionResult with contour, area, dimensions, or None if no object found
+        """
+        pass
+
+    @abstractmethod
+    def find_all_objects(
+        self,
+        image_path: str,
+        background_is_white: bool = True,
+        save_intermediate_results: bool = False,
+        output_prefix: Optional[str] = None,
+        min_contour_size: int = 10,
+    ) -> List[ObjectDetectionResult]:
+        """
+        Find all objects/components in an image.
+        
+        Args:
+            image_path: Path to the image file
+            background_is_white: Whether background is white (default: True)
+            save_intermediate_results: If True, saves intermediate images
+            output_prefix: Optional prefix for intermediate file names
+            min_contour_size: Minimum number of points for a valid contour (default: 10)
+        
+        Returns:
+            List of ObjectDetectionResult objects, sorted by area (largest first)
         """
         pass
 
@@ -101,6 +125,82 @@ class ImageObjectFinder(IImageObjectFinder):
             center_x=center_x,
             center_y=center_y,
         )
+
+    def find_all_objects(
+        self,
+        image_path: str,
+        background_is_white: bool = True,
+        save_intermediate_results: bool = False,
+        output_prefix: Optional[str] = None,
+        min_contour_size: int = 10,
+    ) -> List[ObjectDetectionResult]:
+        """Find all objects/components in an image."""
+        # Load image
+        img = Image.open(image_path).convert("RGB")
+        image = np.array(img)
+        h, w = image.shape[:2]
+
+        # Convert to grayscale
+        gray = self._to_grayscale(image)
+        if save_intermediate_results:
+            self._save_image(gray, image_path, "grayscale", output_prefix)
+
+        # Simple thresholding
+        threshold = np.percentile(gray, 50)
+        if background_is_white:
+            mask = (gray < threshold).astype(np.uint8) * 255
+        else:
+            mask = (gray > threshold).astype(np.uint8) * 255
+
+        if save_intermediate_results:
+            self._save_image(mask, image_path, "mask", output_prefix)
+
+        # Find all contours
+        all_contours = self._find_all_contours(mask, h, w, min_contour_size)
+
+        # Convert contours to ObjectDetectionResult objects
+        results = []
+        for contour in all_contours:
+            if len(contour) == 0:
+                continue
+
+            min_y, min_x = contour.min(axis=0)
+            max_y, max_x = contour.max(axis=0)
+            width_px = float(max_x - min_x)
+            height_px = float(max_y - min_y)
+            center_x = float((min_x + max_x) / 2)
+            center_y = float((min_y + max_y) / 2)
+            area = float(len(contour))
+
+            results.append(
+                ObjectDetectionResult(
+                    contour=contour,
+                    area=area,
+                    width_px=width_px,
+                    height_px=height_px,
+                    center_x=center_x,
+                    center_y=center_y,
+                )
+            )
+
+        # Sort by area (largest first)
+        results.sort(key=lambda x: x.area, reverse=True)
+
+        return results
+
+    def _find_all_contours(self, mask: np.ndarray, h: int, w: int, min_contour_size: int = 10) -> List[np.ndarray]:
+        """Find all contours using simple flood-fill."""
+        visited = np.zeros_like(mask, dtype=bool)
+        all_contours = []
+
+        for y in range(h):
+            for x in range(w):
+                if mask[y, x] > 0 and not visited[y, x]:
+                    contour = self._flood_fill(mask, visited, x, y, h, w)
+                    if len(contour) > min_contour_size:
+                        all_contours.append(contour)
+
+        return all_contours
 
     def _to_grayscale(self, image: np.ndarray) -> np.ndarray:
         """Convert image to grayscale."""
