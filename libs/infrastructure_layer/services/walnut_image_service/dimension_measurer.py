@@ -68,8 +68,15 @@ class DimensionMeasurer(IDimensionMeasurer):
         if save_intermediate and image_vo and side_enum:
             self._save_image(mask, image_vo, "02_mask", side_enum)
 
-        # Find largest contour
-        contour = self.contour_finder.find_largest_contour(mask, min_contour_size=min_contour_size)
+        # Find largest contour (pass image info for intermediate saving)
+        contour = self.contour_finder.find_largest_contour(
+            mask,
+            min_contour_size=min_contour_size,
+            original_image=image if save_intermediate else None,
+            image_vo=image_vo if save_intermediate else None,
+            side_enum=side_enum if save_intermediate else None,
+            save_intermediate=save_intermediate,
+        )
         if contour is None:
             return (0.0, 0.0)
 
