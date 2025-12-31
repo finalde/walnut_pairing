@@ -101,55 +101,6 @@ class WalnutEntity:
         down: ImageValueObject,
         walnut_id: Optional[str] = None,
     ) -> Either["WalnutEntity", DomainError]:
-        missing_sides = []
-        if not front:
-            missing_sides.append("front")
-        if not back:
-            missing_sides.append("back")
-        if not left:
-            missing_sides.append("left")
-        if not right:
-            missing_sides.append("right")
-        if not top:
-            missing_sides.append("top")
-        if not down:
-            missing_sides.append("down")
-
-        if missing_sides:
-            return Left(MissingSideError(missing_sides))
-
-        for side_name, image_vo in [
-            ("front", front),
-            ("back", back),
-            ("left", left),
-            ("right", right),
-            ("top", top),
-            ("down", down),
-        ]:
-            if image_vo.width <= 0 or image_vo.height <= 0:
-                return Left(InvalidImageError(side_name, f"Invalid dimensions: {image_vo.width}x{image_vo.height}"))
-            if image_vo.width > 10000 or image_vo.height > 10000:
-                return Left(InvalidImageError(side_name, f"Dimensions too large: {image_vo.width}x{image_vo.height}"))
-
-        image_map = {
-            "front": front,
-            "back": back,
-            "left": left,
-            "right": right,
-            "top": top,
-            "down": down,
-        }
-
-        for side_enum in WalnutSideEnum:
-            image_vo = image_map[side_enum.value]
-            if not image_vo.path:
-                return Left(ValidationError(f"Missing path for {side_enum.value} image"))
-
-        valid_formats = {"JPEG", "JPG", "PNG", "BMP", "TIFF"}
-        for side_enum in WalnutSideEnum:
-            image_vo = image_map[side_enum.value]
-            if image_vo.format.upper() not in valid_formats:
-                return Left(ValidationError(f"Invalid image format '{image_vo.format}' for {side_enum.value} image"))
 
         entity = WalnutEntity._create_instance(front, back, left, right, top, down, walnut_id)
         entity.processing_status["validated"] = True

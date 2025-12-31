@@ -48,9 +48,4 @@ class WalnutDimensionValueObject:
                 return Left(
                     ValidationError(f"{name.capitalize()} {value}mm is outside valid range [{cls.MIN_MM}, {cls.MAX_MM}]mm")
                 )
-
-        # Semantic rule: height cannot exceed length
-        if height_mm > length_mm:
-            return Left(ValidationError("Height cannot exceed length"))
-
         return Right(cls(length_mm=length_mm, width_mm=width_mm, height_mm=height_mm))
