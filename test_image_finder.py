@@ -19,7 +19,7 @@ def main():
     
     # Test images
     test_images = [
-        image_root / "00001_F.jpg",  # Front
+        image_root / "00001_T.jpg",  # Front
         # image_root / "00001_T.jpg",  # Top
     ]
     
