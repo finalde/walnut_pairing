@@ -129,7 +129,8 @@ class WalnutEntity:
             Either with WalnutDimensionValueObject or DomainError
         """
         # Collect measurements from all images
-        pixel_measurements: Dict[str, list[float]] = {"length": [], "width": [], "height": []}
+        # Mapping: length -> x, width -> y, height -> z
+        pixel_measurements: Dict[str, list[float]] = {"x": [], "y": [], "z": []}
         camera_distances: list[float] = []
         
         images = {
@@ -149,13 +150,14 @@ class WalnutEntity:
             camera_distances.append(image_vo.camera_distance_mm)
             
             # Business rule: Map each view to dimensions
+            # length -> x, width -> y, height -> z
             contribution = self._get_view_contribution(side_enum)
             
-            for dimension_name, measurement_type in contribution.items():
+            for axis_name, measurement_type in contribution.items():
                 if measurement_type == "width":
-                    pixel_measurements[dimension_name].append(image_vo.walnut_width_px)
+                    pixel_measurements[axis_name].append(image_vo.walnut_width_px)
                 elif measurement_type == "height":
-                    pixel_measurements[dimension_name].append(image_vo.walnut_height_px)
+                    pixel_measurements[axis_name].append(image_vo.walnut_height_px)
         
         if not camera_distances:
             return Left(ValidationError("No valid measurements found in images"))
@@ -171,9 +173,9 @@ class WalnutEntity:
         
         # Create value object with validation
         return WalnutDimensionValueObject.create(
-            length_mm=dimensions_mm["length"],
-            width_mm=dimensions_mm["width"],
-            height_mm=dimensions_mm["height"],
+            x_mm=dimensions_mm["x"],
+            y_mm=dimensions_mm["y"],
+            z_mm=dimensions_mm["z"],
         )
 
     def _aggregate_dimensions(
@@ -190,17 +192,17 @@ class WalnutEntity:
         """
         result = {}
         
-        for dimension in ["length", "width", "height"]:
-            pixel_values = pixel_measurements.get(dimension, [])
+        for axis in ["x", "y", "z"]:
+            pixel_values = pixel_measurements.get(axis, [])
             # Filter out zeros (failed measurements)
             valid_pixel_values = [v for v in pixel_values if v > 0]
             
             if len(valid_pixel_values) < min_valid_views:
-                result[dimension] = 0.0
+                result[axis] = 0.0
             else:
                 # Use median for robustness (business rule)
                 median_pixels = float(np.median(valid_pixel_values))
-                result[dimension] = median_pixels * mm_per_pixel
+                result[axis] = median_pixels * mm_per_pixel
         
         return result
 
@@ -208,14 +210,15 @@ class WalnutEntity:
     def _get_view_contribution(side: WalnutSideEnum) -> Dict[str, str]:
         """
         Business rule: What each view contributes to which dimension.
-        Returns dict mapping dimension name to which measurement (width/height) to use.
+        Returns dict mapping axis name (x, y, z) to which measurement (width/height) to use.
+        Mapping: length -> x, width -> y, height -> z
         """
         mapping = {
-            WalnutSideEnum.FRONT: {"length": "width", "height": "height"},
-            WalnutSideEnum.BACK: {"length": "width", "height": "height"},
-            WalnutSideEnum.LEFT: {"width": "width", "height": "height"},
-            WalnutSideEnum.RIGHT: {"width": "width", "height": "height"},
-            WalnutSideEnum.TOP: {"length": "width", "width": "height"},
-            WalnutSideEnum.DOWN: {"length": "width", "width": "height"},
+            WalnutSideEnum.FRONT: {"x": "width", "z": "height"},
+            WalnutSideEnum.BACK: {"x": "width", "z": "height"},
+            WalnutSideEnum.LEFT: {"y": "width", "z": "height"},
+            WalnutSideEnum.RIGHT: {"y": "width", "z": "height"},
+            WalnutSideEnum.TOP: {"x": "width", "y": "height"},
+            WalnutSideEnum.DOWN: {"x": "width", "y": "height"},
         }
         return mapping.get(side, {})

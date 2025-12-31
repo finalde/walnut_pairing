@@ -46,10 +46,11 @@ class DimensionDomainService:
             focal_length_px: Camera focal length in pixels
             
         Returns:
-            Tuple of (length_mm, width_mm, height_mm)
+            Tuple of (x_mm, y_mm, z_mm)
         """
         # Map measurements to dimensions based on view
-        pixel_measurements: Dict[str, List[float]] = {"length": [], "width": [], "height": []}
+        # Mapping: length -> x, width -> y, height -> z
+        pixel_measurements: Dict[str, List[float]] = {"x": [], "y": [], "z": []}
         camera_distances: List[float] = []
         
         for measurement in measurements:
@@ -57,13 +58,14 @@ class DimensionDomainService:
             camera_distances.append(measurement.camera_distance_mm)
             
             # Business rule: Map each view to dimensions
+            # length -> x, width -> y, height -> z
             contribution = DimensionDomainService._get_view_contribution(measurement.side)
             
-            for dimension_name, measurement_type in contribution.items():
+            for axis_name, measurement_type in contribution.items():
                 if measurement_type == "width":
-                    pixel_measurements[dimension_name].append(measurement.width_px)
+                    pixel_measurements[axis_name].append(measurement.width_px)
                 elif measurement_type == "height":
-                    pixel_measurements[dimension_name].append(measurement.height_px)
+                    pixel_measurements[axis_name].append(measurement.height_px)
         
         if not camera_distances:
             return (0.0, 0.0, 0.0)
@@ -80,9 +82,9 @@ class DimensionDomainService:
         )
         
         return (
-            dimensions_mm["length"],
-            dimensions_mm["width"],
-            dimensions_mm["height"],
+            dimensions_mm["x"],
+            dimensions_mm["y"],
+            dimensions_mm["z"],
         )
 
     @staticmethod
@@ -99,17 +101,17 @@ class DimensionDomainService:
         """
         result = {}
 
-        for dimension in ["length", "width", "height"]:
-            pixel_values = pixel_measurements.get(dimension, [])
+        for axis in ["x", "y", "z"]:
+            pixel_values = pixel_measurements.get(axis, [])
             # Filter out zeros (failed measurements)
             valid_pixel_values = [v for v in pixel_values if v > 0]
 
             if len(valid_pixel_values) < min_valid_views:
-                result[dimension] = 0.0
+                result[axis] = 0.0
             else:
                 # Use median for robustness (business rule)
                 median_pixels = float(np.median(valid_pixel_values))
-                result[dimension] = median_pixels * mm_per_pixel
+                result[axis] = median_pixels * mm_per_pixel
 
         return result
 
@@ -117,14 +119,15 @@ class DimensionDomainService:
     def _get_view_contribution(side: WalnutSideEnum) -> Dict[str, str]:
         """
         Business rule: What each view contributes to which dimension.
-        Returns dict mapping dimension name to which measurement (width/height) to use.
+        Returns dict mapping axis name (x, y, z) to which measurement (width/height) to use.
+        Mapping: length -> x, width -> y, height -> z
         """
         mapping = {
-            WalnutSideEnum.FRONT: {"length": "width", "height": "height"},
-            WalnutSideEnum.BACK: {"length": "width", "height": "height"},
-            WalnutSideEnum.LEFT: {"width": "width", "height": "height"},
-            WalnutSideEnum.RIGHT: {"width": "width", "height": "height"},
-            WalnutSideEnum.TOP: {"length": "width", "width": "height"},
-            WalnutSideEnum.DOWN: {"length": "width", "width": "height"},
+            WalnutSideEnum.FRONT: {"x": "width", "z": "height"},
+            WalnutSideEnum.BACK: {"x": "width", "z": "height"},
+            WalnutSideEnum.LEFT: {"y": "width", "z": "height"},
+            WalnutSideEnum.RIGHT: {"y": "width", "z": "height"},
+            WalnutSideEnum.TOP: {"x": "width", "y": "height"},
+            WalnutSideEnum.DOWN: {"x": "width", "y": "height"},
         }
         return mapping.get(side, {})

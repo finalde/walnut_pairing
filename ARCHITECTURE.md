@@ -102,20 +102,20 @@ class WalnutEntity:
 ```python
 @dataclass(frozen=True)
 class WalnutDimensionValueObject:
-    length_mm: float
-    width_mm: float
-    height_mm: float
+    x_mm: float
+    y_mm: float
+    z_mm: float
     
     MIN_MM = 20.0  # Business constant
     MAX_MM = 50.0  # Business constant
     
     @classmethod
-    def create(cls, length_mm: float, width_mm: float, height_mm: float) -> Either["WalnutDimensionValueObject", DomainError]:
+    def create(cls, x_mm: float, y_mm: float, z_mm: float) -> Either["WalnutDimensionValueObject", DomainError]:
         # Validate all invariants here
-        if min(length_mm, width_mm, height_mm) <= 0:
+        if min(x_mm, y_mm, z_mm) <= 0:
             return Left(ValidationError("All dimensions must be positive"))
         # ... more validation
-        return Right(cls(length_mm, width_mm, height_mm))
+        return Right(cls(x_mm, y_mm, z_mm))
 ```
 
 **Value Object vs Entity Validation:**

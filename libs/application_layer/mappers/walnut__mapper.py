@@ -116,18 +116,18 @@ class WalnutMapper(IWalnutMapper):
         model_name: str = DEFAULT_EMBEDDING_MODEL,
     ) -> WalnutDBDAO:
         # Extract dimensions from value object if present
-        length_mm = walnut_entity.dimensions.length_mm if walnut_entity.dimensions else None
-        width_mm = walnut_entity.dimensions.width_mm if walnut_entity.dimensions else None
-        height_mm = walnut_entity.dimensions.height_mm if walnut_entity.dimensions else None
+        x_mm = walnut_entity.dimensions.x_mm if walnut_entity.dimensions else None
+        y_mm = walnut_entity.dimensions.y_mm if walnut_entity.dimensions else None
+        z_mm = walnut_entity.dimensions.z_mm if walnut_entity.dimensions else None
 
         walnut_dao = WalnutDBDAO(
             id=walnut_entity.id,
             description=description,
             created_by=created_by,
             updated_by=updated_by,
-            length_mm=length_mm,
-            width_mm=width_mm,
-            height_mm=height_mm,
+            x_mm=x_mm,
+            y_mm=y_mm,
+            z_mm=z_mm,
         )
 
         side_mapping = {
@@ -203,9 +203,9 @@ class WalnutMapper(IWalnutMapper):
             created_by=walnut_dao.created_by,
             updated_at=walnut_dao.updated_at,
             updated_by=walnut_dao.updated_by,
-            length_mm=walnut_dao.length_mm,
-            width_mm=walnut_dao.width_mm,
-            height_mm=walnut_dao.height_mm,
+            x_mm=walnut_dao.x_mm,
+            y_mm=walnut_dao.y_mm,
+            z_mm=walnut_dao.z_mm,
             images=images,
         )
 
@@ -233,8 +233,8 @@ class WalnutMapper(IWalnutMapper):
             created_by=SYSTEM_USER,
             updated_at=datetime.now(),
             updated_by=SYSTEM_USER,
-            length_mm=None,
-            width_mm=None,
-            height_mm=None,
+            x_mm=None,
+            y_mm=None,
+            z_mm=None,
             images=images,
         )
