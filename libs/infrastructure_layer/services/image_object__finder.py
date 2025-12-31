@@ -1,6 +1,7 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import cv2
 import numpy as np
@@ -11,7 +12,19 @@ import numpy as np
 # =========================
 
 @dataclass
+class ObjectDetectionResult:
+    """Result of object detection in an image."""
+    contour: np.ndarray
+    area: float
+    width_px: float
+    height_px: float
+    center_x: float
+    center_y: float
+
+
+@dataclass
 class DetectedObject:
+    """Extended result with additional features."""
     contour: np.ndarray
     area: float
     width_px: float
@@ -24,26 +37,131 @@ class DetectedObject:
 
 
 # =========================
+# Interface
+# =========================
+
+class IImageObjectFinder(ABC):
+    """Interface for finding objects in images."""
+
+    @abstractmethod
+    def find_object(
+        self,
+        image_path: str,
+        background_is_white: bool = True,
+        intermediate_dir: Optional[str] = None,
+    ) -> Optional[ObjectDetectionResult]:
+        """
+        Find the largest object in an image.
+        
+        Args:
+            image_path: Path to the image file
+            background_is_white: Whether background is white (default: True)
+            intermediate_dir: Optional directory path to save intermediate images (grayscale, mask, contour)
+        
+        Returns:
+            ObjectDetectionResult with contour, area, dimensions, or None if no object found
+        """
+        pass
+
+    @abstractmethod
+    def find_all_objects(
+        self,
+        image_path: str,
+        background_is_white: bool = True,
+        min_contour_size: int = 10,
+    ) -> List[ObjectDetectionResult]:
+        """
+        Find all objects/components in an image.
+        
+        Args:
+            image_path: Path to the image file
+            background_is_white: Whether background is white (default: True)
+            min_contour_size: Minimum number of points for a valid contour (default: 10)
+        
+        Returns:
+            List of ObjectDetectionResult objects, sorted by area (largest first)
+        """
+        pass
+
+
+# =========================
 # Main finder
 # =========================
 
-class WalnutObjectFinder:
+class ImageObjectFinder(IImageObjectFinder):
     """
     Simple, debuggable object finder.
     Finds ALL objects, computes shape + texture features,
     and saves ALL intermediate results.
     """
 
+    def find_object(
+        self,
+        image_path: str,
+        background_is_white: bool = True,
+        intermediate_dir: Optional[str] = None,
+    ) -> Optional[ObjectDetectionResult]:
+        """Find the largest object in an image."""
+        all_objects = self._find_all_objects_detailed(
+            image_path=image_path,
+            background_is_white=background_is_white,
+            intermediate_dir=intermediate_dir,
+            min_area=300,
+        )
+        if not all_objects:
+            return None
+        
+        # Convert DetectedObject to ObjectDetectionResult
+        first_obj = all_objects[0]
+        return ObjectDetectionResult(
+            contour=first_obj.contour,
+            area=first_obj.area,
+            width_px=first_obj.width_px,
+            height_px=first_obj.height_px,
+            center_x=first_obj.center_x,
+            center_y=first_obj.center_y,
+        )
+
     def find_all_objects(
         self,
         image_path: str,
-        intermediate_dir: str,
+        background_is_white: bool = True,
+        min_contour_size: int = 10,
+        intermediate_dir: Optional[str] = None,
+    ) -> List[ObjectDetectionResult]:
+        """Find all objects/components in an image."""
+        # Use internal method that returns DetectedObject
+        detected_objects = self._find_all_objects_detailed(
+            image_path=image_path,
+            intermediate_dir=intermediate_dir,
+            background_is_white=background_is_white,
+            min_area=min_contour_size,
+        )
+        
+        # Convert DetectedObject to ObjectDetectionResult
+        return [
+            ObjectDetectionResult(
+                contour=obj.contour,
+                area=obj.area,
+                width_px=obj.width_px,
+                height_px=obj.height_px,
+                center_x=obj.center_x,
+                center_y=obj.center_y,
+            )
+            for obj in detected_objects
+        ]
+
+    def _find_all_objects_detailed(
+        self,
+        image_path: str,
+        intermediate_dir: Optional[str],
         background_is_white: bool = True,
         min_area: int = 300,
     ) -> List[DetectedObject]:
 
-        out_dir = Path(intermediate_dir)
-        out_dir.mkdir(parents=True, exist_ok=True)
+        out_dir = Path(intermediate_dir) if intermediate_dir else None
+        if out_dir:
+            out_dir.mkdir(parents=True, exist_ok=True)
 
         # 1. Load
         image = cv2.imread(image_path)
@@ -52,11 +170,13 @@ class WalnutObjectFinder:
 
         # 2. Grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite(str(out_dir / "01_gray.png"), gray)
+        if out_dir:
+            cv2.imwrite(str(out_dir / "01_gray.png"), gray)
 
         # 3. Edge-preserving blur (keeps walnut texture)
         blur = cv2.bilateralFilter(gray, 9, 75, 75)
-        cv2.imwrite(str(out_dir / "02_blur.png"), blur)
+        if out_dir:
+            cv2.imwrite(str(out_dir / "02_blur.png"), blur)
 
         # 4. Adaptive threshold (plate-safe)
         thresh = cv2.adaptiveThreshold(
@@ -67,16 +187,19 @@ class WalnutObjectFinder:
             blockSize=31,
             C=5,
         )
-        cv2.imwrite(str(out_dir / "03_threshold.png"), thresh)
+        if out_dir:
+            cv2.imwrite(str(out_dir / "03_threshold.png"), thresh)
 
         # 5. Morphological cleanup
         kernel = np.ones((5, 5), np.uint8)
         cleaned = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-        cv2.imwrite(str(out_dir / "04_cleaned.png"), cleaned)
+        if out_dir:
+            cv2.imwrite(str(out_dir / "04_cleaned.png"), cleaned)
 
         # 6. Edge map (texture inspection)
         edges = cv2.Canny(gray, 50, 150)
-        cv2.imwrite(str(out_dir / "05_edges.png"), edges)
+        if out_dir:
+            cv2.imwrite(str(out_dir / "05_edges.png"), edges)
 
         # 7. Find contours
         contours, _ = cv2.findContours(
@@ -94,17 +217,19 @@ class WalnutObjectFinder:
             objects.append(obj)
 
             # Save per-object visualization
-            self._save_object_debug(
-                image=image,
-                contour=contour,
-                index=idx,
-                out_dir=out_dir,
-            )
+            if out_dir:
+                self._save_object_debug(
+                    image=image,
+                    contour=contour,
+                    index=idx,
+                    out_dir=out_dir,
+                )
 
         # 8. Save all contours overlay
-        overlay = image.copy()
-        cv2.drawContours(overlay, [o.contour for o in objects], -1, (0, 0, 255), 2)
-        cv2.imwrite(str(out_dir / "06_all_contours.png"), overlay)
+        if out_dir:
+            overlay = image.copy()
+            cv2.drawContours(overlay, [o.contour for o in objects], -1, (0, 0, 255), 2)
+            cv2.imwrite(str(out_dir / "06_all_contours.png"), overlay)
 
         # Sort by area (largest first)
         return sorted(objects, key=lambda o: o.area, reverse=True)
@@ -193,9 +318,9 @@ class WalnutObjectFinder:
 # =========================
 
 if __name__ == "__main__":
-    finder = WalnutObjectFinder()
+    finder = ImageObjectFinder()
 
-    results = finder.find_all_objects(
+    results = finder._find_all_objects_detailed(
         image_path="walnut.jpg",
         intermediate_dir="debug_output",
         background_is_white=True,

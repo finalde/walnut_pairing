@@ -2,6 +2,7 @@ torch>=2.1.0
 torchvision>=0.16.0
 Pillow>=10.0.0
 numpy>=1.26.0
+opencv-python>=4.8.0  # OpenCV for computer vision operations
 psycopg2-binary>=2.9.0  # PostgreSQL adapter for Python
 dependency-injector>=4.41.0  # Dependency injection framework
 SQLAlchemy>=2.0.0  # ORM framework
