@@ -1,278 +1,210 @@
-# infrastructure_layer/services/image_object__finder.py
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
+import cv2
 import numpy as np
-from PIL import Image
 
+
+# =========================
+# Data structure
+# =========================
 
 @dataclass
-class ObjectDetectionResult:
-    """Result of object detection in an image."""
+class DetectedObject:
     contour: np.ndarray
     area: float
     width_px: float
     height_px: float
     center_x: float
     center_y: float
+    aspect_ratio: float
+    circularity: float
+    texture_score: float
 
 
-class IImageObjectFinder(ABC):
-    """Interface for finding objects in images."""
+# =========================
+# Main finder
+# =========================
 
-    @abstractmethod
-    def find_object(
-        self,
-        image_path: str,
-        background_is_white: bool = True,
-        intermediate_dir: Optional[str] = None,
-    ) -> Optional[ObjectDetectionResult]:
-        """
-        Find the largest object in an image.
-        
-        Args:
-            image_path: Path to the image file
-            background_is_white: Whether background is white (default: True)
-            intermediate_dir: Optional directory path to save intermediate images (grayscale, mask, contour)
-        
-        Returns:
-            ObjectDetectionResult with contour, area, dimensions, or None if no object found
-        """
-        pass
+class WalnutObjectFinder:
+    """
+    Simple, debuggable object finder.
+    Finds ALL objects, computes shape + texture features,
+    and saves ALL intermediate results.
+    """
 
-    @abstractmethod
     def find_all_objects(
         self,
         image_path: str,
+        intermediate_dir: str,
         background_is_white: bool = True,
-        min_contour_size: int = 10,
-    ) -> List[ObjectDetectionResult]:
-        """
-        Find all objects/components in an image.
-        
-        Args:
-            image_path: Path to the image file
-            background_is_white: Whether background is white (default: True)
-            min_contour_size: Minimum number of points for a valid contour (default: 10)
-        
-        Returns:
-            List of ObjectDetectionResult objects, sorted by area (largest first)
-        """
-        pass
+        min_area: int = 300,
+    ) -> List[DetectedObject]:
 
+        out_dir = Path(intermediate_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
 
-class ImageObjectFinder(IImageObjectFinder):
-    """Simple service for finding objects in images using thresholding and contour detection."""
+        # 1. Load
+        image = cv2.imread(image_path)
+        if image is None:
+            raise ValueError(f"Cannot read image: {image_path}")
 
-    def find_object(
-        self,
-        image_path: str,
-        background_is_white: bool = True,
-        intermediate_dir: Optional[str] = None,
-    ) -> Optional[ObjectDetectionResult]:
-        """Find the largest object in an image."""
-        # Load image
-        img = Image.open(image_path).convert("RGB")
-        image = np.array(img)
-        h, w = image.shape[:2]
+        # 2. Grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite(str(out_dir / "01_gray.png"), gray)
 
-        # Convert to grayscale
-        gray = self._to_grayscale(image)
-        if intermediate_dir:
-            grayscale_path = self._get_intermediate_path(image_path, intermediate_dir, "grayscale")
-            self._save_image(gray, grayscale_path)
+        # 3. Edge-preserving blur (keeps walnut texture)
+        blur = cv2.bilateralFilter(gray, 9, 75, 75)
+        cv2.imwrite(str(out_dir / "02_blur.png"), blur)
 
-        # Simple thresholding
-        threshold = np.percentile(gray, 50)
-        if background_is_white:
-            mask = (gray < threshold).astype(np.uint8) * 255
-        else:
-            mask = (gray > threshold).astype(np.uint8) * 255
+        # 4. Adaptive threshold (plate-safe)
+        thresh = cv2.adaptiveThreshold(
+            blur,
+            255,
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+            cv2.THRESH_BINARY_INV if background_is_white else cv2.THRESH_BINARY,
+            blockSize=31,
+            C=5,
+        )
+        cv2.imwrite(str(out_dir / "03_threshold.png"), thresh)
 
-        if intermediate_dir:
-            mask_path = self._get_intermediate_path(image_path, intermediate_dir, "mask")
-            self._save_image(mask, mask_path)
+        # 5. Morphological cleanup
+        kernel = np.ones((5, 5), np.uint8)
+        cleaned = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+        cv2.imwrite(str(out_dir / "04_cleaned.png"), cleaned)
 
-        # Find largest contour
-        contour = self._find_largest_contour(mask, h, w)
-        if contour is None or len(contour) == 0:
-            return None
+        # 6. Edge map (texture inspection)
+        edges = cv2.Canny(gray, 50, 150)
+        cv2.imwrite(str(out_dir / "05_edges.png"), edges)
 
-        if intermediate_dir:
-            contour_path = self._get_intermediate_path(image_path, intermediate_dir, "contour")
-            self._save_contour(image, contour, contour_path)
-
-        # Calculate bounding box and properties
-        min_y, min_x = contour.min(axis=0)
-        max_y, max_x = contour.max(axis=0)
-        width_px = float(max_x - min_x)
-        height_px = float(max_y - min_y)
-        center_x = float((min_x + max_x) / 2)
-        center_y = float((min_y + max_y) / 2)
-        area = float(len(contour))
-
-        return ObjectDetectionResult(
-            contour=contour,
-            area=area,
-            width_px=width_px,
-            height_px=height_px,
-            center_x=center_x,
-            center_y=center_y,
+        # 7. Find contours
+        contours, _ = cv2.findContours(
+            cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
         )
 
-    def find_all_objects(
-        self,
-        image_path: str,
-        background_is_white: bool = True,
-        min_contour_size: int = 10,
-    ) -> List[ObjectDetectionResult]:
-        """Find all objects/components in an image."""
-        # Load image
-        img = Image.open(image_path).convert("RGB")
-        image = np.array(img)
-        h, w = image.shape[:2]
+        objects: List[DetectedObject] = []
 
-        # Convert to grayscale
-        gray = self._to_grayscale(image)
-
-        # Simple thresholding
-        threshold = np.percentile(gray, 50)
-        if background_is_white:
-            mask = (gray < threshold).astype(np.uint8) * 255
-        else:
-            mask = (gray > threshold).astype(np.uint8) * 255
-
-        # Find all contours
-        all_contours = self._find_all_contours(mask, h, w, min_contour_size)
-
-        # Convert contours to ObjectDetectionResult objects
-        results = []
-        for contour in all_contours:
-            if len(contour) == 0:
+        for idx, contour in enumerate(contours):
+            area = cv2.contourArea(contour)
+            if area < min_area:
                 continue
 
-            min_y, min_x = contour.min(axis=0)
-            max_y, max_x = contour.max(axis=0)
-            width_px = float(max_x - min_x)
-            height_px = float(max_y - min_y)
-            center_x = float((min_x + max_x) / 2)
-            center_y = float((min_y + max_y) / 2)
-            area = float(len(contour))
+            obj = self._analyze_contour(contour, gray, edges)
+            objects.append(obj)
 
-            results.append(
-                ObjectDetectionResult(
-                    contour=contour,
-                    area=area,
-                    width_px=width_px,
-                    height_px=height_px,
-                    center_x=center_x,
-                    center_y=center_y,
-                )
+            # Save per-object visualization
+            self._save_object_debug(
+                image=image,
+                contour=contour,
+                index=idx,
+                out_dir=out_dir,
             )
 
+        # 8. Save all contours overlay
+        overlay = image.copy()
+        cv2.drawContours(overlay, [o.contour for o in objects], -1, (0, 0, 255), 2)
+        cv2.imwrite(str(out_dir / "06_all_contours.png"), overlay)
+
         # Sort by area (largest first)
-        results.sort(key=lambda x: x.area, reverse=True)
+        return sorted(objects, key=lambda o: o.area, reverse=True)
 
-        return results
+    # =========================
+    # Feature extraction
+    # =========================
 
-    def _find_all_contours(self, mask: np.ndarray, h: int, w: int, min_contour_size: int = 10) -> List[np.ndarray]:
-        """Find all contours using simple flood-fill."""
-        visited = np.zeros_like(mask, dtype=bool)
-        all_contours = []
+    def _analyze_contour(
+        self,
+        contour: np.ndarray,
+        gray: np.ndarray,
+        edges: np.ndarray,
+    ) -> DetectedObject:
 
-        for y in range(h):
-            for x in range(w):
-                if mask[y, x] > 0 and not visited[y, x]:
-                    contour = self._flood_fill(mask, visited, x, y, h, w)
-                    if len(contour) > min_contour_size:
-                        all_contours.append(contour)
+        x, y, w, h = cv2.boundingRect(contour)
+        area = cv2.contourArea(contour)
 
-        return all_contours
+        center_x = x + w / 2
+        center_y = y + h / 2
 
-    def _to_grayscale(self, image: np.ndarray) -> np.ndarray:
-        """Convert image to grayscale."""
-        if len(image.shape) == 3:
-            return np.dot(image[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
-        return image.astype(np.uint8)
+        aspect_ratio = w / h if h > 0 else 0.0
 
-    def _find_largest_contour(self, mask: np.ndarray, h: int, w: int) -> Optional[np.ndarray]:
-        """Find largest contour using simple flood-fill."""
-        visited = np.zeros_like(mask, dtype=bool)
-        largest_contour = None
-        largest_area = 0
+        perimeter = cv2.arcLength(contour, True)
+        circularity = (
+            4 * np.pi * area / (perimeter ** 2)
+            if perimeter > 0 else 0.0
+        )
 
-        for y in range(h):
-            for x in range(w):
-                if mask[y, x] > 0 and not visited[y, x]:
-                    contour = self._flood_fill(mask, visited, x, y, h, w)
-                    if len(contour) > 10:
-                        area = len(contour)
-                        if area > largest_area:
-                            largest_area = area
-                            largest_contour = contour
+        texture_score = self._texture_score(contour, edges)
 
-        return largest_contour
+        return DetectedObject(
+            contour=contour,
+            area=float(area),
+            width_px=float(w),
+            height_px=float(h),
+            center_x=float(center_x),
+            center_y=float(center_y),
+            aspect_ratio=float(aspect_ratio),
+            circularity=float(circularity),
+            texture_score=float(texture_score),
+        )
 
-    def _flood_fill(self, mask: np.ndarray, visited: np.ndarray, start_x: int, start_y: int, h: int, w: int) -> np.ndarray:
-        """Simple flood-fill to extract connected component."""
-        stack = [(start_x, start_y)]
-        points = []
+    def _texture_score(
+        self,
+        contour: np.ndarray,
+        edges: np.ndarray,
+    ) -> float:
+        """
+        Measures how textured an object is.
+        Plate → low edges
+        Walnut → high edges
+        """
+        mask = np.zeros(edges.shape, dtype=np.uint8)
+        cv2.drawContours(mask, [contour], -1, 255, -1)
 
-        while stack:
-            x, y = stack.pop()
-            if x < 0 or x >= w or y < 0 or y >= h:
-                continue
-            if visited[y, x] or mask[y, x] == 0:
-                continue
+        edge_pixels = edges[mask == 255]
+        return float(len(edge_pixels))
 
-            visited[y, x] = True
-            points.append([y, x])
+    # =========================
+    # Debug helpers
+    # =========================
 
-            for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                stack.append((x + dx, y + dy))
+    def _save_object_debug(
+        self,
+        image: np.ndarray,
+        contour: np.ndarray,
+        index: int,
+        out_dir: Path,
+    ) -> None:
 
-        return np.array(points) if points else np.array([])
+        debug_img = image.copy()
+        cv2.drawContours(debug_img, [contour], -1, (0, 255, 0), 2)
 
-    def _save_image(self, image_array: np.ndarray, output_path: str) -> None:
-        """Save image to specified path."""
-        if image_array.ndim == 2:
-            img = Image.fromarray(image_array, mode="L")
-        else:
-            img = Image.fromarray(image_array)
+        x, y, w, h = cv2.boundingRect(contour)
+        cv2.rectangle(debug_img, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-        from pathlib import Path
+        cv2.imwrite(
+            str(out_dir / f"object_{index:02d}.png"),
+            debug_img,
+        )
 
-        path = Path(output_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        img.save(path)
 
-    def _save_contour(self, image: np.ndarray, contour: np.ndarray, output_path: str) -> None:
-        """Save image with contour overlay to specified path."""
-        if image.ndim == 3:
-            img = Image.fromarray(image)
-        else:
-            img = Image.fromarray(image, mode="L").convert("RGB")
+# =========================
+# Example usage
+# =========================
 
-        from PIL import ImageDraw
+if __name__ == "__main__":
+    finder = WalnutObjectFinder()
 
-        draw = ImageDraw.Draw(img)
-        if len(contour) > 0:
-            points = [(int(pt[1]), int(pt[0])) for pt in contour]
-            if len(points) > 2:
-                draw.polygon(points, outline="red", width=2)
+    results = finder.find_all_objects(
+        image_path="walnut.jpg",
+        intermediate_dir="debug_output",
+        background_is_white=True,
+    )
 
-        path = Path(output_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        img.save(path)
-
-    def _get_intermediate_path(self, image_path: str, intermediate_dir: str, step_name: str) -> str:
-        """Generate path for intermediate result file."""
-        original_path = Path(image_path)
-        intermediate_path = Path(intermediate_dir)
-        stem = original_path.stem
-        suffix = original_path.suffix
-        filename = f"{stem}_intermediate_{step_name}{suffix}"
-        return str(intermediate_path / filename)
-
+    for i, r in enumerate(results):
+        print(
+            f"[{i}] area={r.area:.0f}, "
+            f"circularity={r.circularity:.2f}, "
+            f"texture={r.texture_score:.0f}, "
+            f"aspect_ratio={r.aspect_ratio:.2f}"
+        )
