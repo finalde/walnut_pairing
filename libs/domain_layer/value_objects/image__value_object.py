@@ -17,11 +17,19 @@ class ImageValueObject:
     format: str
     hash: str
     embedding: np.ndarray
-    camera_distance_mm: Optional[float] = None
+    camera_distance_mm: float
+    walnut_width_px: float
+    walnut_height_px: float
+
 
     @classmethod
     def from_path(
-        cls, path: str, side: WalnutSideEnum, embedding: np.ndarray, camera_distance_mm: Optional[float] = None
+        cls, path: str, 
+        side: WalnutSideEnum, 
+        embedding: np.ndarray, 
+        camera_distance_mm: float,
+        walnut_width_px: float,
+        walnut_height_px: float,
     ) -> "ImageValueObject":
         img = Image.open(path)
         img_hash = str(hash(img.tobytes()))
@@ -35,4 +43,6 @@ class ImageValueObject:
             hash=img_hash,
             embedding=embedding,
             camera_distance_mm=camera_distance_mm,
+            walnut_width_px=walnut_width_px,
+            walnut_height_px=walnut_height_px,
         )

@@ -15,7 +15,6 @@ class WalnutImageFileDAO:
     height: int
     file_size: int
     checksum: str  # File hash/checksum
-    camera_distance_mm: float | None = None  # Optional camera distance in mm
 
 
 @dataclass
