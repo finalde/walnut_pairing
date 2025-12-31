@@ -133,10 +133,10 @@ class WalnutMapper(IWalnutMapper):
         updated_by: str = SYSTEM_USER,
         model_name: str = DEFAULT_EMBEDDING_MODEL,
     ) -> WalnutDBDAO:
-        # Extract dimensions from value object if present
-        width_mm = walnut_entity.dimensions.width_mm if walnut_entity.dimensions else None
-        height_mm = walnut_entity.dimensions.height_mm if walnut_entity.dimensions else None
-        thickness_mm = walnut_entity.dimensions.thickness_mm if walnut_entity.dimensions else None
+        # Extract dimensions from value object (always present - entity is only created with valid dimensions)
+        width_mm = walnut_entity.dimensions.width_mm
+        height_mm = walnut_entity.dimensions.height_mm
+        thickness_mm = walnut_entity.dimensions.thickness_mm
 
         walnut_dao = WalnutDBDAO(
             id=walnut_entity.id,

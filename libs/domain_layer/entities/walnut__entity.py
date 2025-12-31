@@ -10,29 +10,6 @@ from domain_layer.value_objects.image__value_object import ImageValueObject
 from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
 
 
-class _WalnutEntityBuilder:
-    def __init__(
-        self,
-        front: ImageValueObject,
-        back: ImageValueObject,
-        left: ImageValueObject,
-        right: ImageValueObject,
-        top: ImageValueObject,
-        down: ImageValueObject,
-        walnut_id: Optional[str] = None,
-    ) -> None:
-        # Use provided ID or generate UUID if not provided
-        self._id: str = walnut_id if walnut_id is not None else str(uuid.uuid4())
-        self.front: ImageValueObject = front
-        self.back: ImageValueObject = back
-        self.left: ImageValueObject = left
-        self.right: ImageValueObject = right
-        self.top: ImageValueObject = top
-        self.down: ImageValueObject = down
-        self.dimensions: Optional[WalnutDimensionValueObject] = None
-        self.processing_status: dict[str, bool] = {"embedding_generated": True, "validated": False}
-
-
 class WalnutEntity:
     def __new__(
         cls,
@@ -53,18 +30,17 @@ class WalnutEntity:
         right: ImageValueObject,
         top: ImageValueObject,
         down: ImageValueObject,
-        walnut_id: Optional[str] = None,
+        walnut_id: str,
+        dimensions: WalnutDimensionValueObject,
     ) -> None:
-        builder = _WalnutEntityBuilder(front, back, left, right, top, down, walnut_id)
-        self._id: str = builder._id
-        self.front: ImageValueObject = builder.front
-        self.back: ImageValueObject = builder.back
-        self.left: ImageValueObject = builder.left
-        self.right: ImageValueObject = builder.right
-        self.top: ImageValueObject = builder.top
-        self.down: ImageValueObject = builder.down
-        self.dimensions: Optional[WalnutDimensionValueObject] = builder.dimensions
-        self.processing_status: dict[str, bool] = builder.processing_status
+        self._id: str = walnut_id
+        self.front: ImageValueObject = front
+        self.back: ImageValueObject = back
+        self.left: ImageValueObject = left
+        self.right: ImageValueObject = right
+        self.top: ImageValueObject = top
+        self.down: ImageValueObject = down
+        self.dimensions: WalnutDimensionValueObject = dimensions
         self._initialized: bool = True
 
     def __setattr__(self, name: str, value: object) -> None:
@@ -76,21 +52,6 @@ class WalnutEntity:
     def id(self) -> str:
         return self._id
 
-    @classmethod
-    def _create_instance(
-        cls,
-        front: ImageValueObject,
-        back: ImageValueObject,
-        left: ImageValueObject,
-        right: ImageValueObject,
-        top: ImageValueObject,
-        down: ImageValueObject,
-        walnut_id: Optional[str] = None,
-    ) -> "WalnutEntity":
-        instance = object.__new__(cls)
-        instance.__init__(front, back, left, right, top, down, walnut_id)
-        return instance
-
     @staticmethod
     def create(
         front: ImageValueObject,
@@ -101,19 +62,50 @@ class WalnutEntity:
         down: ImageValueObject,
         walnut_id: Optional[str] = None,
     ) -> Either["WalnutEntity", DomainError]:
-
-        entity = WalnutEntity._create_instance(front, back, left, right, top, down, walnut_id)
-        entity.processing_status["validated"] = True
+        """
+        Create a WalnutEntity with complete validation.
         
-        # Calculate dimensions automatically if all images have measurements
-        dimension_result = entity._calculate_dimensions()
-        if dimension_result.is_right():
-            entity.dimensions = dimension_result.value
+        Business rule: Entity is only created if all validations pass, including dimension calculation.
+        If dimensions cannot be calculated, the entity is not created and an error is returned.
+        """
+        # Generate ID if not provided
+        entity_id: str = walnut_id if walnut_id is not None else str(uuid.uuid4())
+        
+        # Calculate dimensions - this must succeed for entity to be created
+        dimension_result = WalnutEntity._calculate_dimensions(
+            front=front,
+            back=back,
+            left=left,
+            right=right,
+            top=top,
+            down=down,
+        )
+        if dimension_result.is_left():
+            return dimension_result
+        
+        # All validations passed, create the complete entity
+        entity = object.__new__(WalnutEntity)
+        entity.__init__(
+            front=front,
+            back=back,
+            left=left,
+            right=right,
+            top=top,
+            down=down,
+            walnut_id=entity_id,
+            dimensions=dimension_result.value,
+        )
         
         return Right(entity)
 
+    @staticmethod
     def _calculate_dimensions(
-        self,
+        front: ImageValueObject,
+        back: ImageValueObject,
+        left: ImageValueObject,
+        right: ImageValueObject,
+        top: ImageValueObject,
+        down: ImageValueObject,
         min_valid_views: int = 2,
     ) -> Either[WalnutDimensionValueObject, DomainError]:
         """
@@ -140,12 +132,12 @@ class WalnutEntity:
         focal_lengths: list[float] = []
         
         images = {
-            WalnutSideEnum.FRONT: self.front,
-            WalnutSideEnum.BACK: self.back,
-            WalnutSideEnum.LEFT: self.left,
-            WalnutSideEnum.RIGHT: self.right,
-            WalnutSideEnum.TOP: self.top,
-            WalnutSideEnum.DOWN: self.down,
+            WalnutSideEnum.FRONT: front,
+            WalnutSideEnum.BACK: back,
+            WalnutSideEnum.LEFT: left,
+            WalnutSideEnum.RIGHT: right,
+            WalnutSideEnum.TOP: top,
+            WalnutSideEnum.DOWN: down,
         }
         
         for side_enum, image_vo in images.items():
@@ -158,7 +150,7 @@ class WalnutEntity:
             
             # Business rule: Map each view to walnut dimensions
             # Image x, y (pixel measurements) → walnut width, height, thickness
-            contribution = self._get_view_contribution(side_enum)
+            contribution = WalnutEntity._get_view_contribution(side_enum)
             
             for walnut_dimension, image_measurement_type in contribution.items():
                 if image_measurement_type == ImageMeasurementTypeEnum.WIDTH:
@@ -178,7 +170,7 @@ class WalnutEntity:
             return Left(ValidationError("Invalid camera parameters for dimension calculation"))
         
         # Aggregate dimensions
-        dimensions_mm = self._aggregate_dimensions(pixel_measurements, mm_per_px, min_valid_views)
+        dimensions_mm = WalnutEntity._aggregate_dimensions(pixel_measurements, mm_per_px, min_valid_views)
         
         # Create value object with validation
         return WalnutDimensionValueObject.create(
@@ -187,8 +179,8 @@ class WalnutEntity:
             thickness_mm=dimensions_mm[WalnutDimensionTypeEnum.THICKNESS],
         )
 
+    @staticmethod
     def _aggregate_dimensions(
-        self,
         pixel_measurements: Dict[WalnutDimensionTypeEnum, list[float]],
         mm_per_pixel: float,
         min_valid_views: int = 2,
