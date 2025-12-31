@@ -6,12 +6,12 @@ from common.either import Either, Left
 from common.enums import WalnutSideEnum
 from domain_layer.domain_error import DomainError, MissingSideError
 from domain_layer.entities.walnut__entity import WalnutEntity
-from domain_layer.value_objects.image__value_object import ImageValueObject
+from domain_layer.value_objects.walnut_image__value_object import WalnutImageValueObject
 
 
 class WalnutDomainFactory:
     @staticmethod
-    def create_from_images(images: Dict[str, ImageValueObject], walnut_id: Optional[str] = None) -> Either[WalnutEntity, DomainError]:
+    def create_from_images(images: Dict[str, WalnutImageValueObject], walnut_id: Optional[str] = None) -> Either[WalnutEntity, DomainError]:
         required_sides = {side_enum.value for side_enum in WalnutSideEnum}
         provided_sides = set(images.keys())
         missing_sides = required_sides - provided_sides
@@ -45,7 +45,7 @@ class WalnutDomainFactory:
         )
 
     @staticmethod
-    def create_from_file_dao_images(images_by_side: Dict[WalnutSideEnum, ImageValueObject], walnut_id: Optional[str] = None) -> Either[WalnutEntity, DomainError]:
+    def create_from_file_dao_images(images_by_side: Dict[WalnutSideEnum, WalnutImageValueObject], walnut_id: Optional[str] = None) -> Either[WalnutEntity, DomainError]:
         return WalnutEntity.create(
             front=images_by_side[WalnutSideEnum.FRONT],
             back=images_by_side[WalnutSideEnum.BACK],

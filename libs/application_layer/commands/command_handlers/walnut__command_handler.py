@@ -17,7 +17,7 @@ from domain_layer.domain_error import DomainError, ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
 from domain_layer.entities.walnut__entity import WalnutEntity
-from domain_layer.value_objects.image__value_object import ImageValueObject
+from domain_layer.value_objects.walnut_image__value_object import WalnutImageValueObject
 from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
 from infrastructure_layer.data_access_objects import WalnutFileDAO
 from infrastructure_layer.db_writers import IWalnutDBWriter
@@ -62,7 +62,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             "D": WalnutSideEnum.DOWN,
         }
 
-        images_by_side: Dict[WalnutSideEnum, ImageValueObject] = {}
+        images_by_side: Dict[WalnutSideEnum, WalnutImageValueObject] = {}
         for image_file_dao in walnut_file_dao.images:
             side_enum = side_mapping.get(image_file_dao.side_letter.upper())
             if side_enum is None:
@@ -79,7 +79,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
                 background_is_white=True,
                 intermediate_dir=image_intermediate_dir,
             )
-            image_vo = ImageValueObject(
+            image_vo = WalnutImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),
                 width=image_file_dao.width,

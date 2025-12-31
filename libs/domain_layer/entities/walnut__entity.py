@@ -6,40 +6,40 @@ import numpy as np
 from common.either import Either, Left, Right
 from common.enums import ImageMeasurementTypeEnum, WalnutDimensionTypeEnum, WalnutSideEnum
 from domain_layer.domain_error import DomainError, InvalidImageError, MissingSideError, ValidationError
-from domain_layer.value_objects.image__value_object import ImageValueObject
+from domain_layer.value_objects.walnut_image__value_object import WalnutImageValueObject
 from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
 
 
 class WalnutEntity:
     def __new__(
         cls,
-        front: ImageValueObject,
-        back: ImageValueObject,
-        left: ImageValueObject,
-        right: ImageValueObject,
-        top: ImageValueObject,
-        down: ImageValueObject,
+        front: WalnutImageValueObject,
+        back: WalnutImageValueObject,
+        left: WalnutImageValueObject,
+        right: WalnutImageValueObject,
+        top: WalnutImageValueObject,
+        down: WalnutImageValueObject,
     ) -> "WalnutEntity":
         raise RuntimeError("WalnutEntity cannot be instantiated directly. Use WalnutEntity.create() instead.")
 
     def __init__(
         self,
-        front: ImageValueObject,
-        back: ImageValueObject,
-        left: ImageValueObject,
-        right: ImageValueObject,
-        top: ImageValueObject,
-        down: ImageValueObject,
+        front: WalnutImageValueObject,
+        back: WalnutImageValueObject,
+        left: WalnutImageValueObject,
+        right: WalnutImageValueObject,
+        top: WalnutImageValueObject,
+        down: WalnutImageValueObject,
         walnut_id: str,
         dimensions: WalnutDimensionValueObject,
     ) -> None:
         self._id: str = walnut_id
-        self.front: ImageValueObject = front
-        self.back: ImageValueObject = back
-        self.left: ImageValueObject = left
-        self.right: ImageValueObject = right
-        self.top: ImageValueObject = top
-        self.down: ImageValueObject = down
+        self.front: WalnutImageValueObject = front
+        self.back: WalnutImageValueObject = back
+        self.left: WalnutImageValueObject = left
+        self.right: WalnutImageValueObject = right
+        self.top: WalnutImageValueObject = top
+        self.down: WalnutImageValueObject = down
         self.dimensions: WalnutDimensionValueObject = dimensions
         self._initialized: bool = True
 
@@ -54,12 +54,12 @@ class WalnutEntity:
 
     @staticmethod
     def create(
-        front: ImageValueObject,
-        back: ImageValueObject,
-        left: ImageValueObject,
-        right: ImageValueObject,
-        top: ImageValueObject,
-        down: ImageValueObject,
+        front: WalnutImageValueObject,
+        back: WalnutImageValueObject,
+        left: WalnutImageValueObject,
+        right: WalnutImageValueObject,
+        top: WalnutImageValueObject,
+        down: WalnutImageValueObject,
         walnut_id: Optional[str] = None,
     ) -> Either["WalnutEntity", DomainError]:
         """
@@ -100,12 +100,12 @@ class WalnutEntity:
 
     @staticmethod
     def _calculate_dimensions(
-        front: ImageValueObject,
-        back: ImageValueObject,
-        left: ImageValueObject,
-        right: ImageValueObject,
-        top: ImageValueObject,
-        down: ImageValueObject,
+        front: WalnutImageValueObject,
+        back: WalnutImageValueObject,
+        left: WalnutImageValueObject,
+        right: WalnutImageValueObject,
+        top: WalnutImageValueObject,
+        down: WalnutImageValueObject,
         min_valid_views: int = 2,
     ) -> Either[WalnutDimensionValueObject, DomainError]:
         """

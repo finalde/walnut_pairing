@@ -151,7 +151,7 @@ class ImageEmbeddingDomainService:
 ```python
 class WalnutDomainFactory:
     @staticmethod
-    def create_from_images(images: Dict[str, ImageValueObject]) -> Either[WalnutEntity, DomainError]:
+    def create_from_images(images: Dict[str, WalnutImageValueObject]) -> Either[WalnutEntity, DomainError]:
         return WalnutEntity.create(...)
 ```
 
@@ -279,7 +279,7 @@ class WalnutQuery(IWalnutQuery):
 ```python
 class WalnutMapper(IWalnutMapper):
     def file_dao_to_entity(self, file_dao: WalnutFileDAO) -> Either[WalnutEntity, DomainError]:
-        # Convert to ImageValueObjects
+        # Convert to WalnutImageValueObjects
         # Use WalnutDomainFactory.create_from_file_dao_images()
         pass
     

@@ -12,7 +12,7 @@ from common.logger import get_logger
 from domain_layer.domain_error import DomainError, MissingSideError, ValidationError
 from domain_layer.domain_factories.walnut__domain_factory import WalnutDomainFactory
 from domain_layer.entities.walnut__entity import WalnutEntity
-from domain_layer.value_objects.image__value_object import ImageValueObject
+from domain_layer.value_objects.walnut_image__value_object import WalnutImageValueObject
 from infrastructure_layer.data_access_objects import (
     WalnutDBDAO,
     WalnutImageDBDAO,
@@ -41,7 +41,7 @@ class IWalnutMapper(ABC):
     @abstractmethod
     def image_value_object_to_dao(
         self,
-        image_vo: ImageValueObject,
+        image_vo: WalnutImageValueObject,
         walnut_entity: WalnutEntity,
         created_by: str,
         updated_by: str,
@@ -87,7 +87,7 @@ class WalnutMapper(IWalnutMapper):
 
         from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
 
-        image_value_objects: Dict[WalnutSideEnum, ImageValueObject] = {}
+        image_value_objects: Dict[WalnutSideEnum, WalnutImageValueObject] = {}
         for side_enum, image_file_dao in images_by_side.items():
             try:
                 with Image.open(image_file_dao.file_path) as img:
@@ -108,7 +108,7 @@ class WalnutMapper(IWalnutMapper):
             camera_distance_mm = camera_config.distance_mm
             focal_length_px = camera_config.focal_length_px
 
-            image_vo = ImageValueObject(
+            image_vo = WalnutImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),
                 width=image_file_dao.width,
@@ -165,7 +165,7 @@ class WalnutMapper(IWalnutMapper):
                 updated_by=updated_by,
             )
 
-            # Get embedding from ImageValueObject
+            # Get embedding from WalnutImageValueObject
             embedding = image_vo.embedding
             if embedding is not None:
                 embedding_dao = WalnutImageEmbeddingDBDAO(
@@ -183,7 +183,7 @@ class WalnutMapper(IWalnutMapper):
 
     def image_value_object_to_dao(
         self,
-        image_vo: ImageValueObject,
+        image_vo: WalnutImageValueObject,
         walnut_entity: WalnutEntity,
         created_by: str = SYSTEM_USER,
         updated_by: str = SYSTEM_USER,
@@ -195,6 +195,10 @@ class WalnutMapper(IWalnutMapper):
             width=image_vo.width,
             height=image_vo.height,
             checksum=image_vo.hash,
+            walnut_width_px=image_vo.walnut_width_px,
+            walnut_height_px=image_vo.walnut_height_px,
+            camera_distance_mm=image_vo.camera_distance_mm,
+            focal_length_px=image_vo.focal_length_px,
             created_by=created_by,
             updated_by=updated_by,
         )

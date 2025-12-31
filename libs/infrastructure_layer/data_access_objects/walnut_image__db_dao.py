@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 from common.constants import CONSTRAINT_UQ_WALNUT_SIDE, TABLE_WALNUT
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base__db_dao import Base
@@ -26,6 +26,10 @@ class WalnutImageDBDAO(Base):
     width: Mapped[int] = mapped_column(Integer, nullable=False)
     height: Mapped[int] = mapped_column(Integer, nullable=False)
     checksum: Mapped[str] = mapped_column(String, nullable=False)
+    walnut_width_px: Mapped[float] = mapped_column(Float, nullable=False)
+    walnut_height_px: Mapped[float] = mapped_column(Float, nullable=False)
+    camera_distance_mm: Mapped[float] = mapped_column(Float, nullable=False)
+    focal_length_px: Mapped[float] = mapped_column(Float, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
     created_by: Mapped[str] = mapped_column(String, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
