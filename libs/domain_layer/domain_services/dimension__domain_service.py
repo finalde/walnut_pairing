@@ -53,8 +53,6 @@ class DimensionDomainService:
         camera_distances: List[float] = []
         
         for measurement in measurements:
-            if measurement.width_px <= 0 or measurement.height_px <= 0:
-                continue  # Skip invalid measurements
             
             camera_distances.append(measurement.camera_distance_mm)
             

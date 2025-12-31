@@ -42,7 +42,6 @@ class CommandDispatcher(ICommandDispatcher):
         from infrastructure_layer.db_writers import IWalnutDBWriter
 
         from .command_handlers.walnut__command_handler import (
-            CreateFakeWalnutHandler,
             CreateWalnutFromImagesHandler,
         )
         from .command_objects.walnut__command import (
@@ -51,8 +50,6 @@ class CommandDispatcher(ICommandDispatcher):
         )
 
         dispatcher = cls()
-        create_fake_handler = dependency_provider.resolve(CreateFakeWalnutHandler)
-        dispatcher.register_handler(CreateFakeWalnutCommand, create_fake_handler)
 
         create_from_images_handler = dependency_provider.resolve(CreateWalnutFromImagesHandler)
         dispatcher.register_handler(CreateWalnutFromImagesCommand, create_from_images_handler)

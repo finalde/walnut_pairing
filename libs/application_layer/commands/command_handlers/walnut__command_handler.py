@@ -2,7 +2,6 @@
 from pathlib import Path
 from typing import Dict, Optional
 
-from domain_layer.domain_services.dimension__domain_service import ViewMeasurement
 from infrastructure_layer.services.image_object__finder import ObjectDetectionResult
 import numpy as np
 from application_layer.commands.command_handlers.base__command_handler import ICommandHandler
@@ -23,7 +22,7 @@ from domain_layer.value_objects.walnut_dimension__value_object import WalnutDime
 from infrastructure_layer.data_access_objects import WalnutFileDAO
 from infrastructure_layer.db_writers import IWalnutDBWriter
 from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutImageFileReader
-from infrastructure_layer.services import IImageObjectFinder, IWalnutImageService
+from infrastructure_layer.services import IImageObjectFinder
 from common.constants import UNKNOWN_IMAGE_FORMAT
 from PIL import Image
 
@@ -34,14 +33,12 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
         app_config: IAppConfig,
         walnut_writer: IWalnutDBWriter,
         walnut_mapper: IWalnutMapper,
-        walnut_image_service: IWalnutImageService,
         walnut_image_file_reader: IWalnutImageFileReader,
         image_object_finder: IImageObjectFinder,
     ) -> None:
         self.app_config: IAppConfig = app_config
         self.walnut_writer: IWalnutDBWriter = walnut_writer
         self.walnut_mapper: IWalnutMapper = walnut_mapper
-        self.walnut_image_service: IWalnutImageService = walnut_image_service
         self.walnut_image_file_reader: IWalnutImageFileReader = walnut_image_file_reader
         self.image_object_finder: IImageObjectFinder = image_object_finder
         self.logger = get_logger(__name__)
@@ -77,8 +74,10 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
 
             # Generate embedding for this image
             embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path))
+            
+            # Find walnut object in image
             result: Optional[ObjectDetectionResult] = self.image_object_finder.find_object(
-                image_vo.path,
+                str(image_file_dao.file_path),
                 background_is_white=True,
                 intermediate_dir=image_intermediate_dir,
             )
@@ -109,59 +108,21 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
 
         walnut_entity: WalnutEntity = entity_result.value
 
-        try:
-            image_root = Path(self.app_config.image_root)
-            intermediate_dir = str(image_root / command.walnut_id / "_intermediate")
-            
-            measurements = self.walnut_image_service.get_measurements_from_images(
-                images=images_by_side,
-                background_is_white=True,
-                intermediate_dir=intermediate_dir,
-            )
-            
-            # Calculate dimensions using domain service
-            from domain_layer.domain_services.dimension__domain_service import DimensionDomainService
-            length_mm, width_mm, height_mm = DimensionDomainService.calculate_dimensions_from_measurements(
-                measurements=measurements,
-                focal_length_px=1000.0,  # TODO: Make this configurable
-            )
-            
-            # Create value object from estimated dimensions - domain validation
-            dimension_result = WalnutDimensionValueObject.create(length_mm=length_mm, width_mm=width_mm, height_mm=height_mm)
-            if dimension_result.is_left():
-                # Domain validation failed - log warning, intermediate results already saved, don't persist to DB
-                self.logger.warning(
-                    "dimension_validation_failed",
-                    walnut_id=walnut_entity.id,
-                    error=str(dimension_result.value),
-                    length_mm=length_mm,
-                    width_mm=width_mm,
-                    height_mm=height_mm,
-                    note="Intermediate results saved, but walnut not persisted due to invalid dimensions",
-                )
-                return
-
-            # Validation passed, set dimensions on entity
-            set_result = walnut_entity.set_dimensions(dimension_result.value)
-            if set_result.is_left():
-                # Domain error setting dimensions - log error and stop
-                self.logger.error(
-                    "dimension_set_failed",
-                    walnut_id=walnut_entity.id,
-                    error=str(set_result.value),
-                )
-                return
-
-            self.logger.info(
-                "dimensions_estimated",
+        # Dimensions are automatically calculated during entity construction
+        if walnut_entity.dimensions is None:
+            self.logger.warning(
+                "dimensions_not_calculated",
                 walnut_id=walnut_entity.id,
-                length_mm=length_mm,
-                width_mm=width_mm,
-                height_mm=height_mm,
+                note="Dimensions could not be calculated from image measurements. Walnut will be saved without dimensions.",
             )
-        except Exception as e:
-            self.logger.error("dimension_estimation_failed", walnut_id=walnut_entity.id, error=str(e), exc_info=True)
-            return
+        else:
+            self.logger.info(
+                "dimensions_calculated",
+                walnut_id=walnut_entity.id,
+                length_mm=walnut_entity.dimensions.length_mm,
+                width_mm=walnut_entity.dimensions.width_mm,
+                height_mm=walnut_entity.dimensions.height_mm,
+            )
 
         walnut_dao = self.walnut_mapper.entity_to_dao(
             walnut_entity,

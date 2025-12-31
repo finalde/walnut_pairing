@@ -71,14 +71,13 @@ def _preserve_success_level(logger: Any, method_name: str, event_dict: dict[str,
 
 
 def _format_log_message(logger: Any, event_dict: dict[str, Any], use_colors: bool = True) -> str:
-    """Format log message as [LEVEL] pathname:lineno - message
+    """Format log message as [LEVEL] File "path", line number - message
     
-    Cursor recognizes clickable patterns like:
-    - /absolute/path/to/file.py:123
-    - relative/path/file.py:123
-    - file.py:123
+    Cursor recognizes clickable patterns in Python traceback format:
+    - File "/absolute/path/to/file.py", line 123
+    - File "relative/path/file.py", line 123
     
-    The pathname:lineno must appear as a contiguous pattern without extra formatting.
+    This format matches Python traceback style which Cursor recognizes.
     """
     level = event_dict.get("level", "info")
     event = event_dict.get("event", "")
@@ -88,9 +87,8 @@ def _format_log_message(logger: Any, event_dict: dict[str, Any], use_colors: boo
     # Get display level and color
     display_level, level_color = _get_level_and_color(level)
     
-    # Build clickable file path in format Cursor recognizes: pathname:lineno
-    # Cursor recognizes: /absolute/path:line, relative/path:line, or filename:line
-    # IMPORTANT: The pathname:lineno must be contiguous without extra characters
+    # Build clickable file path in Python traceback format: File "path", line number
+    # Cursor recognizes: File "/path/to/file.py", line 123
     clickable_location = ""
     if filename and lineno:
         # Use absolute path for better clickability
@@ -99,14 +97,13 @@ def _format_log_message(logger: Any, event_dict: dict[str, Any], use_colors: boo
         else:
             abs_path = filename
         
-        # Format: pathname:lineno (Cursor recognizes this exact pattern)
-        # No extra characters, just path:line
-        clickable_location = f"{abs_path}:{lineno}"
+        # Format: File "path", line number (Python traceback style that Cursor recognizes)
+        clickable_location = f'File "{abs_path}", line {lineno}'
     elif filename:
         abs_path = os.path.abspath(filename) if not os.path.isabs(filename) else filename
-        clickable_location = abs_path
+        clickable_location = f'File "{abs_path}"'
     elif lineno:
-        clickable_location = f"line:{lineno}"
+        clickable_location = f"line {lineno}"
     
     # Build log body from remaining context
     context_parts = []
@@ -118,12 +115,9 @@ def _format_log_message(logger: Any, event_dict: dict[str, Any], use_colors: boo
     if context_parts:
         log_body = f"{event} " + " ".join(context_parts)
     
-    # Format: [LEVEL][pathname:lineno] - message
-    # Cursor recognizes pathname:lineno pattern even inside brackets
-    # The pathname:lineno must appear as a contiguous string that Cursor can recognize
+    # Format: [LEVEL] File "path", line number - message
     if use_colors:
         if clickable_location:
-            # Format: [LEVEL][pathname:lineno] - message
             formatted = f"[{level_color}{display_level}{RESET}][{clickable_location}] - {log_body}"
         else:
             formatted = f"[{level_color}{display_level}{RESET}] - {log_body}"

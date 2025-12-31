@@ -1,6 +1,6 @@
 # domain_layer/entities/walnut__entity.py
 import uuid
-from typing import Optional
+from typing import Dict, Optional
 
 import numpy as np
 from common.either import Either, Left, Right
@@ -153,14 +153,118 @@ class WalnutEntity:
 
         entity = WalnutEntity._create_instance(front, back, left, right, top, down, walnut_id)
         entity.processing_status["validated"] = True
+        
+        # Calculate dimensions automatically if all images have measurements
+        dimension_result = entity._calculate_dimensions()
+        if dimension_result.is_right():
+            entity.dimensions = dimension_result.value
+        
         return Right(entity)
 
-    def set_dimensions(self, dimensions: WalnutDimensionValueObject) -> Either[None, DomainError]:
+    def _calculate_dimensions(
+        self,
+        focal_length_px: float = 1000.0,
+        min_valid_views: int = 2,
+    ) -> Either[WalnutDimensionValueObject, DomainError]:
         """
-        Set walnut dimensions using the value object.
-        The value object ensures all invariants are satisfied.
+        Calculate walnut dimensions from image measurements.
+        
+        Business rules:
+        - Maps each view to dimensions based on view orientation
+        - Aggregates measurements using median for robustness
+        - Requires minimum number of valid views per dimension
+        
+        Returns:
+            Either with WalnutDimensionValueObject or DomainError
         """
-        if dimensions is None:
-            return Left(ValidationError("Dimensions cannot be None"))
-        self.dimensions = dimensions
-        return Right(None)
+        # Collect measurements from all images
+        pixel_measurements: Dict[str, list[float]] = {"length": [], "width": [], "height": []}
+        camera_distances: list[float] = []
+        
+        images = {
+            WalnutSideEnum.FRONT: self.front,
+            WalnutSideEnum.BACK: self.back,
+            WalnutSideEnum.LEFT: self.left,
+            WalnutSideEnum.RIGHT: self.right,
+            WalnutSideEnum.TOP: self.top,
+            WalnutSideEnum.DOWN: self.down,
+        }
+        
+        for side_enum, image_vo in images.items():
+            # Check if image has measurements
+            if image_vo.walnut_width_px <= 0 or image_vo.walnut_height_px <= 0:
+                continue  # Skip images without valid measurements
+            
+            camera_distances.append(image_vo.camera_distance_mm)
+            
+            # Business rule: Map each view to dimensions
+            contribution = self._get_view_contribution(side_enum)
+            
+            for dimension_name, measurement_type in contribution.items():
+                if measurement_type == "width":
+                    pixel_measurements[dimension_name].append(image_vo.walnut_width_px)
+                elif measurement_type == "height":
+                    pixel_measurements[dimension_name].append(image_vo.walnut_height_px)
+        
+        if not camera_distances:
+            return Left(ValidationError("No valid measurements found in images"))
+        
+        # Calculate scale (mm per pixel)
+        avg_distance = sum(camera_distances) / len(camera_distances)
+        mm_per_px = avg_distance / focal_length_px if focal_length_px > 0 else 0.0
+        if mm_per_px <= 0:
+            return Left(ValidationError("Invalid camera parameters for dimension calculation"))
+        
+        # Aggregate dimensions
+        dimensions_mm = self._aggregate_dimensions(pixel_measurements, mm_per_px, min_valid_views)
+        
+        # Create value object with validation
+        return WalnutDimensionValueObject.create(
+            length_mm=dimensions_mm["length"],
+            width_mm=dimensions_mm["width"],
+            height_mm=dimensions_mm["height"],
+        )
+
+    def _aggregate_dimensions(
+        self,
+        pixel_measurements: Dict[str, list[float]],
+        mm_per_pixel: float,
+        min_valid_views: int = 2,
+    ) -> Dict[str, float]:
+        """
+        Aggregate pixel measurements into final dimensions in mm.
+        
+        Business rule: Use median for robustness against outliers.
+        Business rule: Require minimum number of valid views.
+        """
+        result = {}
+        
+        for dimension in ["length", "width", "height"]:
+            pixel_values = pixel_measurements.get(dimension, [])
+            # Filter out zeros (failed measurements)
+            valid_pixel_values = [v for v in pixel_values if v > 0]
+            
+            if len(valid_pixel_values) < min_valid_views:
+                result[dimension] = 0.0
+            else:
+                # Use median for robustness (business rule)
+                median_pixels = float(np.median(valid_pixel_values))
+                result[dimension] = median_pixels * mm_per_pixel
+        
+        return result
+
+    @staticmethod
+    def _get_view_contribution(side: WalnutSideEnum) -> Dict[str, str]:
+        """
+        Business rule: What each view contributes to which dimension.
+        Returns dict mapping dimension name to which measurement (width/height) to use.
+        """
+        mapping = {
+            WalnutSideEnum.FRONT: {"length": "width", "height": "height"},
+            WalnutSideEnum.BACK: {"length": "width", "height": "height"},
+            WalnutSideEnum.LEFT: {"width": "width", "height": "height"},
+            WalnutSideEnum.RIGHT: {"width": "width", "height": "height"},
+            WalnutSideEnum.TOP: {"length": "width", "width": "height"},
+            WalnutSideEnum.DOWN: {"length": "width", "width": "height"},
+        }
+        return mapping.get(side, {})

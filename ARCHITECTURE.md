@@ -191,18 +191,6 @@ class WalnutDomainFactory:
 - Maps entities to DAOs via mappers
 - Saves via infrastructure writers
 
-**Example:**
-```python
-class CreateFakeWalnutHandler(ICommandHandler[CreateFakeWalnutCommand]):
-    def __init__(self, walnut_writer: IWalnutDBWriter, walnut_mapper: IWalnutMapper):
-        ...
-    
-    def handle(self, command: CreateFakeWalnutCommand) -> None:
-        # 1. Create DTO from command
-        # 2. Use factory to create entity (returns Either)
-        # 3. Map entity to DAO
-        # 4. Save via writer
-```
 
 ### Queries
 
