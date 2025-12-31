@@ -206,6 +206,8 @@ class ImageObjectFinder(IImageObjectFinder):
                 self._save_all_objects_with_scores(
                     image, all_objects, matched_obj, intermediate_dir, image_path
                 )
+                # Save matched object only (walnut with black background)
+                self._save_matched_object_only(image, matched_obj, intermediate_dir, image_path)
         
         return self._convert_to_result(matched_obj)
 
@@ -702,6 +704,39 @@ class ImageObjectFinder(IImageObjectFinder):
         
         # Same object if area is very similar and centers are close
         return area_diff < 0.01 and center_diff < 5.0
+
+    def _save_matched_object_only(
+        self,
+        image: np.ndarray,
+        matched_obj: DetectedObject,
+        intermediate_dir: str,
+        image_path: str,
+    ) -> None:
+        """
+        Save image with only the matched object (walnut) visible, rest is black background.
+        
+        Args:
+            image: Original image
+            matched_obj: The matched/selected object (walnut)
+            intermediate_dir: Directory to save intermediate files
+            image_path: Original image path (for getting image name)
+        """
+        # Get output directory
+        image_path_obj = Path(image_path)
+        image_name = image_path_obj.stem
+        out_dir = Path(intermediate_dir) / image_name
+        out_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create mask for only the matched object
+        mask = np.zeros(image.shape[:2], dtype=np.uint8)
+        cv2.drawContours(mask, [matched_obj.contour], -1, 255, -1)
+        
+        # Create result image: original image where mask is 255, black elsewhere
+        result = image.copy()
+        result[mask == 0] = [0, 0, 0]  # Set non-masked areas to black
+        
+        # Save the result
+        cv2.imwrite(str(out_dir / "01b_matched_walnut_only.png"), result)
 
 
 # =========================
