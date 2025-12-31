@@ -1,6 +1,7 @@
 # common/logger.py
 import inspect
 import logging
+import os
 import sys
 from typing import Any
 
@@ -14,22 +15,29 @@ GREEN = "\033[92m"
 WHITE = "\033[0m"
 RESET = "\033[0m"
 
+# Custom SUCCESS log level (between INFO=20 and WARNING=30)
+SUCCESS_LEVEL_NUM = 25
+logging.addLevelName(SUCCESS_LEVEL_NUM, "SUCCESS")
 
-def _get_color_for_level(level: str, event: str = "") -> str:
-    """Get ANSI color code for log level."""
+
+def _get_level_and_color(level: str) -> tuple[str, str]:
+    """Get display level name and ANSI color code for log level.
+    
+    Returns:
+        Tuple of (display_level, color_code)
+    """
     level_lower = level.lower()
-    event_lower = event.lower()
     
     if level_lower == "error" or level_lower == "critical":
-        return RED
+        return (level.upper(), RED)
     elif level_lower == "warning":
-        return YELLOW
+        return ("WARNING", YELLOW)
+    elif level_lower == "success":
+        return ("SUCCESS", GREEN)
     elif level_lower == "info":
-        # Check if this is a success message
-        is_success = any(keyword in event_lower for keyword in ["saved", "estimated", "created", "loaded", "generated"])
-        return GREEN if is_success else WHITE
+        return ("INFO", WHITE)
     else:  # debug
-        return WHITE
+        return ("DEBUG", WHITE)
 
 
 def _add_logger_name(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
@@ -53,29 +61,52 @@ def _add_logger_name(logger: Any, method_name: str, event_dict: dict[str, Any]) 
     return event_dict
 
 
+def _preserve_success_level(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+    """Preserve success level if explicitly set in context."""
+    # Check if level="success" was set in the event_dict (from bind or kwargs)
+    if "level" in event_dict and event_dict["level"] == "success":
+        # Keep it as success - add_log_level processor will override it, so we need to set it after
+        event_dict["_success_level"] = True
+    return event_dict
+
+
 def _format_log_message(logger: Any, event_dict: dict[str, Any], use_colors: bool = True) -> str:
-    """Format log message as [LogLevel: level][Place]: [log body]"""
-    level = event_dict.get("level", "info").upper()
+    """Format log message as [LEVEL] pathname:lineno - message
+    
+    Cursor recognizes clickable patterns like:
+    - /absolute/path/to/file.py:123
+    - relative/path/file.py:123
+    - file.py:123
+    
+    The pathname:lineno must appear as a contiguous pattern without extra formatting.
+    """
+    level = event_dict.get("level", "info")
     event = event_dict.get("event", "")
-    logger_name = event_dict.get("logger", "")
     filename = event_dict.get("filename", "")
     lineno = event_dict.get("lineno", "")
     
-    # Build place string (logger name, file name, line number)
-    place_parts = []
-    if logger_name:
-        place_parts.append(logger_name)
-    if filename:
-        # Extract just the filename without path
-        file_part = filename.split("/")[-1] if "/" in filename else filename
-        if lineno:
-            place_parts.append(f"{file_part}:{lineno}")
-        else:
-            place_parts.append(file_part)
-    elif lineno:
-        place_parts.append(f"line:{lineno}")
+    # Get display level and color
+    display_level, level_color = _get_level_and_color(level)
     
-    place = ".".join(place_parts) if place_parts else "unknown"
+    # Build clickable file path in format Cursor recognizes: pathname:lineno
+    # Cursor recognizes: /absolute/path:line, relative/path:line, or filename:line
+    # IMPORTANT: The pathname:lineno must be contiguous without extra characters
+    clickable_location = ""
+    if filename and lineno:
+        # Use absolute path for better clickability
+        if not os.path.isabs(filename):
+            abs_path = os.path.abspath(filename)
+        else:
+            abs_path = filename
+        
+        # Format: pathname:lineno (Cursor recognizes this exact pattern)
+        # No extra characters, just path:line
+        clickable_location = f"{abs_path}:{lineno}"
+    elif filename:
+        abs_path = os.path.abspath(filename) if not os.path.isabs(filename) else filename
+        clickable_location = abs_path
+    elif lineno:
+        clickable_location = f"line:{lineno}"
     
     # Build log body from remaining context
     context_parts = []
@@ -87,18 +118,36 @@ def _format_log_message(logger: Any, event_dict: dict[str, Any], use_colors: boo
     if context_parts:
         log_body = f"{event} " + " ".join(context_parts)
     
-    # Format: [LogLevel: level][Place]: [log body]
+    # Format: [LEVEL][pathname:lineno] - message
+    # Cursor recognizes pathname:lineno pattern even inside brackets
+    # The pathname:lineno must appear as a contiguous string that Cursor can recognize
     if use_colors:
-        level_color = _get_color_for_level(level, event)
-        formatted = f"[LogLevel: {level_color}{level}{RESET}][{place}]: {log_body}"
+        if clickable_location:
+            # Format: [LEVEL][pathname:lineno] - message
+            formatted = f"[{level_color}{display_level}{RESET}][{clickable_location}] - {log_body}"
+        else:
+            formatted = f"[{level_color}{display_level}{RESET}] - {log_body}"
     else:
-        formatted = f"[LogLevel: {level}][{place}]: {log_body}"
+        if clickable_location:
+            formatted = f"[{display_level}][{clickable_location}] - {log_body}"
+        else:
+            formatted = f"[{display_level}] - {log_body}"
     
     # Add exception info if present
     if "exc_info" in event_dict and event_dict["exc_info"]:
         formatted += f"\n{event_dict['exc_info']}"
     
     return formatted
+
+
+def _restore_success_level(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
+    """Restore success level after add_log_level processor runs."""
+    # If _success_level marker exists, override the level set by add_log_level
+    if event_dict.get("_success_level"):
+        event_dict["level"] = "success"
+        # Remove the marker
+        event_dict.pop("_success_level", None)
+    return event_dict
 
 
 class ColoredConsoleRenderer:
@@ -108,6 +157,13 @@ class ColoredConsoleRenderer:
         self.use_colors = use_colors
     
     def __call__(self, logger: Any, method_name: str, event_dict: dict[str, Any]) -> str:
+        # Check if success level was explicitly set in context
+        if "level" in event_dict and event_dict["level"] == "success":
+            event_dict["level"] = "success"
+        # Also check if it's in the logger's context
+        elif hasattr(logger, "_context") and logger._context.get("level") == "success":
+            event_dict["level"] = "success"
+        
         # Use colors if explicitly enabled (user wants colors)
         # TTY check is optional - if use_colors=True, apply colors
         return _format_log_message(logger, event_dict, use_colors=self.use_colors)
@@ -122,7 +178,9 @@ def configure_logging(log_level: str = "INFO", use_colors: bool = True) -> None:
 
     processors = [
         structlog.contextvars.merge_contextvars,
+        _preserve_success_level,  # Must run before add_log_level to preserve success level
         structlog.processors.add_log_level,
+        _restore_success_level,  # Restore success level after add_log_level runs
         _add_logger_name,
         structlog.processors.CallsiteParameterAdder(
             parameters=[
@@ -145,8 +203,27 @@ def configure_logging(log_level: str = "INFO", use_colors: bool = True) -> None:
     )
 
 
-def get_logger(name: str) -> structlog.BoundLogger:
+class SuccessLogger:
+    """Wrapper to add success method to structlog logger."""
+    
+    def __init__(self, logger: structlog.BoundLogger) -> None:
+        self._logger = logger
+    
+    def success(self, event: str, *args: Any, **kwargs: Any) -> None:
+        """Log a success message explicitly at SUCCESS level."""
+        # Bind level="success" to the logger context, then call info
+        # The renderer will detect the level="success" in the event_dict
+        bound_logger = self._logger.bind(level="success")
+        bound_logger.info(event, *args, **kwargs)
+    
+    def __getattr__(self, name: str) -> Any:
+        # Delegate all other methods to the underlying logger
+        return getattr(self._logger, name)
+
+
+def get_logger(name: str) -> Any:
     logger = structlog.get_logger(name)
     # Bind logger name to context so it's available in processors
     logger = logger.bind(logger=name)
-    return logger
+    # Wrap with SuccessLogger to add success method
+    return SuccessLogger(logger)
