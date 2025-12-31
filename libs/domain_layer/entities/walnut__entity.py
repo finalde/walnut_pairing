@@ -4,7 +4,7 @@ from typing import Dict, Optional
 
 import numpy as np
 from common.either import Either, Left, Right
-from common.enums import WalnutSideEnum
+from common.enums import ImageMeasurementTypeEnum, WalnutDimensionTypeEnum, WalnutSideEnum
 from domain_layer.domain_error import DomainError, InvalidImageError, MissingSideError, ValidationError
 from domain_layer.value_objects.image__value_object import ImageValueObject
 from domain_layer.value_objects.walnut_dimension__value_object import WalnutDimensionValueObject
@@ -109,9 +109,8 @@ class WalnutEntity:
         dimension_result = entity._calculate_dimensions()
         if dimension_result.is_right():
             entity.dimensions = dimension_result.value
-            return Right(entity)
-        else:
-            return Left(dimension_result.value)
+        
+        return Right(entity)
 
     def _calculate_dimensions(
         self,
@@ -132,7 +131,11 @@ class WalnutEntity:
         """
         # Collect measurements from all images
         # Mapping to walnut dimensions: width, height, thickness
-        pixel_measurements: Dict[str, list[float]] = {"width": [], "height": [], "thickness": []}
+        pixel_measurements: Dict[WalnutDimensionTypeEnum, list[float]] = {
+            WalnutDimensionTypeEnum.WIDTH: [],
+            WalnutDimensionTypeEnum.HEIGHT: [],
+            WalnutDimensionTypeEnum.THICKNESS: [],
+        }
         camera_distances: list[float] = []
         focal_lengths: list[float] = []
         
@@ -158,9 +161,9 @@ class WalnutEntity:
             contribution = self._get_view_contribution(side_enum)
             
             for walnut_dimension, image_measurement_type in contribution.items():
-                if image_measurement_type == "width":
+                if image_measurement_type == ImageMeasurementTypeEnum.WIDTH:
                     pixel_measurements[walnut_dimension].append(image_vo.walnut_width_px)
-                elif image_measurement_type == "height":
+                elif image_measurement_type == ImageMeasurementTypeEnum.HEIGHT:
                     pixel_measurements[walnut_dimension].append(image_vo.walnut_height_px)
         
         if not camera_distances:
@@ -179,26 +182,26 @@ class WalnutEntity:
         
         # Create value object with validation
         return WalnutDimensionValueObject.create(
-            width_mm=dimensions_mm["width"],
-            height_mm=dimensions_mm["height"],
-            thickness_mm=dimensions_mm["thickness"],
+            width_mm=dimensions_mm[WalnutDimensionTypeEnum.WIDTH],
+            height_mm=dimensions_mm[WalnutDimensionTypeEnum.HEIGHT],
+            thickness_mm=dimensions_mm[WalnutDimensionTypeEnum.THICKNESS],
         )
 
     def _aggregate_dimensions(
         self,
-        pixel_measurements: Dict[str, list[float]],
+        pixel_measurements: Dict[WalnutDimensionTypeEnum, list[float]],
         mm_per_pixel: float,
         min_valid_views: int = 2,
-    ) -> Dict[str, float]:
+    ) -> Dict[WalnutDimensionTypeEnum, float]:
         """
         Aggregate pixel measurements into final walnut dimensions in mm.
         
         Business rule: Use median for robustness against outliers.
         Business rule: Require minimum number of valid views.
         """
-        result = {}
+        result: Dict[WalnutDimensionTypeEnum, float] = {}
         
-        for walnut_dimension in ["width", "height", "thickness"]:
+        for walnut_dimension in [WalnutDimensionTypeEnum.WIDTH, WalnutDimensionTypeEnum.HEIGHT, WalnutDimensionTypeEnum.THICKNESS]:
             pixel_values = pixel_measurements.get(walnut_dimension, [])
             # Filter out zeros (failed measurements)
             valid_pixel_values = [v for v in pixel_values if v > 0]
@@ -213,7 +216,7 @@ class WalnutEntity:
         return result
 
     @staticmethod
-    def _get_view_contribution(side: WalnutSideEnum) -> Dict[str, str]:
+    def _get_view_contribution(side: WalnutSideEnum) -> Dict[WalnutDimensionTypeEnum, ImageMeasurementTypeEnum]:
         """
         Business rule: What each view contributes to which walnut dimension.
         
@@ -223,17 +226,35 @@ class WalnutEntity:
         - height: measured from FRONT/BACK/LEFT/RIGHT views
         - thickness: measured from LEFT/RIGHT/TOP/DOWN views
         
-        Returns dict mapping walnut dimension (width/height/thickness) to image measurement (width/height).
+        Returns dict mapping walnut dimension to image measurement type.
         """
-        mapping = {
+        mapping: Dict[WalnutSideEnum, Dict[WalnutDimensionTypeEnum, ImageMeasurementTypeEnum]] = {
             # FRONT/BACK: image x → walnut width, image y → walnut height
-            WalnutSideEnum.FRONT: {"width": "width", "height": "height"},
-            WalnutSideEnum.BACK: {"width": "width", "height": "height"},
+            WalnutSideEnum.FRONT: {
+                WalnutDimensionTypeEnum.WIDTH: ImageMeasurementTypeEnum.WIDTH,
+                WalnutDimensionTypeEnum.HEIGHT: ImageMeasurementTypeEnum.HEIGHT,
+            },
+            WalnutSideEnum.BACK: {
+                WalnutDimensionTypeEnum.WIDTH: ImageMeasurementTypeEnum.WIDTH,
+                WalnutDimensionTypeEnum.HEIGHT: ImageMeasurementTypeEnum.HEIGHT,
+            },
             # LEFT/RIGHT: image x → walnut thickness, image y → walnut height
-            WalnutSideEnum.LEFT: {"thickness": "width", "height": "height"},
-            WalnutSideEnum.RIGHT: {"thickness": "width", "height": "height"},
+            WalnutSideEnum.LEFT: {
+                WalnutDimensionTypeEnum.THICKNESS: ImageMeasurementTypeEnum.WIDTH,
+                WalnutDimensionTypeEnum.HEIGHT: ImageMeasurementTypeEnum.HEIGHT,
+            },
+            WalnutSideEnum.RIGHT: {
+                WalnutDimensionTypeEnum.THICKNESS: ImageMeasurementTypeEnum.WIDTH,
+                WalnutDimensionTypeEnum.HEIGHT: ImageMeasurementTypeEnum.HEIGHT,
+            },
             # TOP/DOWN: image x → walnut width, image y → walnut thickness
-            WalnutSideEnum.TOP: {"width": "width", "thickness": "height"},
-            WalnutSideEnum.DOWN: {"width": "width", "thickness": "height"},
+            WalnutSideEnum.TOP: {
+                WalnutDimensionTypeEnum.WIDTH: ImageMeasurementTypeEnum.WIDTH,
+                WalnutDimensionTypeEnum.THICKNESS: ImageMeasurementTypeEnum.HEIGHT,
+            },
+            WalnutSideEnum.DOWN: {
+                WalnutDimensionTypeEnum.WIDTH: ImageMeasurementTypeEnum.WIDTH,
+                WalnutDimensionTypeEnum.THICKNESS: ImageMeasurementTypeEnum.HEIGHT,
+            },
         }
         return mapping.get(side, {})
