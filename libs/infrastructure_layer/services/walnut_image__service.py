@@ -52,8 +52,6 @@ class WalnutImageService(IWalnutImageService):
             result = self.object_finder.find_object(
                 images[side].path,
                 background_is_white=background_is_white,
-                save_intermediate_results=save_intermediate_results,
-                output_prefix=side.value.lower(),
             )
             if result and result.width_px > 0 and result.height_px > 0:
                 measurements["length"].append(result.width_px)
@@ -64,8 +62,6 @@ class WalnutImageService(IWalnutImageService):
             result = self.object_finder.find_object(
                 images[side].path,
                 background_is_white=background_is_white,
-                save_intermediate_results=save_intermediate_results,
-                output_prefix=side.value.lower(),
             )
             if result and result.width_px > 0 and result.height_px > 0:
                 measurements["width"].append(result.width_px)
@@ -76,8 +72,6 @@ class WalnutImageService(IWalnutImageService):
             result = self.object_finder.find_object(
                 images[side].path,
                 background_is_white=background_is_white,
-                save_intermediate_results=save_intermediate_results,
-                output_prefix=side.value.lower(),
             )
             if result and result.width_px > 0 and result.height_px > 0:
                 measurements["length"].append(result.width_px)

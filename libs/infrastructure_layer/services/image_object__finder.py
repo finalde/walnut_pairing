@@ -27,8 +27,7 @@ class IImageObjectFinder(ABC):
         self,
         image_path: str,
         background_is_white: bool = True,
-        save_intermediate_results: bool = False,
-        output_prefix: Optional[str] = None,
+        intermediate_dir: Optional[str] = None,
     ) -> Optional[ObjectDetectionResult]:
         """
         Find the largest object in an image.
@@ -36,8 +35,7 @@ class IImageObjectFinder(ABC):
         Args:
             image_path: Path to the image file
             background_is_white: Whether background is white (default: True)
-            save_intermediate_results: If True, saves intermediate images
-            output_prefix: Optional prefix for intermediate file names (e.g., "grayscale", "mask")
+            intermediate_dir: Optional directory path to save intermediate images (grayscale, mask, contour)
         
         Returns:
             ObjectDetectionResult with contour, area, dimensions, or None if no object found
@@ -49,8 +47,6 @@ class IImageObjectFinder(ABC):
         self,
         image_path: str,
         background_is_white: bool = True,
-        save_intermediate_results: bool = False,
-        output_prefix: Optional[str] = None,
         min_contour_size: int = 10,
     ) -> List[ObjectDetectionResult]:
         """
@@ -59,8 +55,6 @@ class IImageObjectFinder(ABC):
         Args:
             image_path: Path to the image file
             background_is_white: Whether background is white (default: True)
-            save_intermediate_results: If True, saves intermediate images
-            output_prefix: Optional prefix for intermediate file names
             min_contour_size: Minimum number of points for a valid contour (default: 10)
         
         Returns:
@@ -76,8 +70,7 @@ class ImageObjectFinder(IImageObjectFinder):
         self,
         image_path: str,
         background_is_white: bool = True,
-        save_intermediate_results: bool = False,
-        output_prefix: Optional[str] = None,
+        intermediate_dir: Optional[str] = None,
     ) -> Optional[ObjectDetectionResult]:
         """Find the largest object in an image."""
         # Load image
@@ -87,8 +80,9 @@ class ImageObjectFinder(IImageObjectFinder):
 
         # Convert to grayscale
         gray = self._to_grayscale(image)
-        if save_intermediate_results:
-            self._save_image(gray, image_path, "grayscale", output_prefix)
+        if intermediate_dir:
+            grayscale_path = self._get_intermediate_path(image_path, intermediate_dir, "grayscale")
+            self._save_image(gray, grayscale_path)
 
         # Simple thresholding
         threshold = np.percentile(gray, 50)
@@ -97,16 +91,18 @@ class ImageObjectFinder(IImageObjectFinder):
         else:
             mask = (gray > threshold).astype(np.uint8) * 255
 
-        if save_intermediate_results:
-            self._save_image(mask, image_path, "mask", output_prefix)
+        if intermediate_dir:
+            mask_path = self._get_intermediate_path(image_path, intermediate_dir, "mask")
+            self._save_image(mask, mask_path)
 
         # Find largest contour
         contour = self._find_largest_contour(mask, h, w)
         if contour is None or len(contour) == 0:
             return None
 
-        if save_intermediate_results:
-            self._save_contour(image, contour, image_path, output_prefix)
+        if intermediate_dir:
+            contour_path = self._get_intermediate_path(image_path, intermediate_dir, "contour")
+            self._save_contour(image, contour, contour_path)
 
         # Calculate bounding box and properties
         min_y, min_x = contour.min(axis=0)
@@ -130,8 +126,6 @@ class ImageObjectFinder(IImageObjectFinder):
         self,
         image_path: str,
         background_is_white: bool = True,
-        save_intermediate_results: bool = False,
-        output_prefix: Optional[str] = None,
         min_contour_size: int = 10,
     ) -> List[ObjectDetectionResult]:
         """Find all objects/components in an image."""
@@ -142,8 +136,6 @@ class ImageObjectFinder(IImageObjectFinder):
 
         # Convert to grayscale
         gray = self._to_grayscale(image)
-        if save_intermediate_results:
-            self._save_image(gray, image_path, "grayscale", output_prefix)
 
         # Simple thresholding
         threshold = np.percentile(gray, 50)
@@ -151,9 +143,6 @@ class ImageObjectFinder(IImageObjectFinder):
             mask = (gray < threshold).astype(np.uint8) * 255
         else:
             mask = (gray > threshold).astype(np.uint8) * 255
-
-        if save_intermediate_results:
-            self._save_image(mask, image_path, "mask", output_prefix)
 
         # Find all contours
         all_contours = self._find_all_contours(mask, h, w, min_contour_size)
@@ -246,19 +235,21 @@ class ImageObjectFinder(IImageObjectFinder):
 
         return np.array(points) if points else np.array([])
 
-    def _save_image(self, image_array: np.ndarray, original_path: str, step_name: str, prefix: Optional[str] = None) -> None:
-        """Save intermediate image."""
+    def _save_image(self, image_array: np.ndarray, output_path: str) -> None:
+        """Save image to specified path."""
         if image_array.ndim == 2:
             img = Image.fromarray(image_array, mode="L")
         else:
             img = Image.fromarray(image_array)
 
-        path = self._get_intermediate_path(original_path, step_name, prefix)
+        from pathlib import Path
+
+        path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         img.save(path)
 
-    def _save_contour(self, image: np.ndarray, contour: np.ndarray, original_path: str, prefix: Optional[str] = None) -> None:
-        """Save image with contour overlay."""
+    def _save_contour(self, image: np.ndarray, contour: np.ndarray, output_path: str) -> None:
+        """Save image with contour overlay to specified path."""
         if image.ndim == 3:
             img = Image.fromarray(image)
         else:
@@ -272,21 +263,16 @@ class ImageObjectFinder(IImageObjectFinder):
             if len(points) > 2:
                 draw.polygon(points, outline="red", width=2)
 
-        path = self._get_intermediate_path(original_path, "contour", prefix)
+        path = Path(output_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         img.save(path)
 
-    def _get_intermediate_path(self, image_path: str, step_name: str, prefix: Optional[str] = None) -> Path:
+    def _get_intermediate_path(self, image_path: str, intermediate_dir: str, step_name: str) -> str:
         """Generate path for intermediate result file."""
         original_path = Path(image_path)
-        intermediate_dir = original_path.parent / "_intermediate"
+        intermediate_path = Path(intermediate_dir)
         stem = original_path.stem
         suffix = original_path.suffix
-        
-        if prefix:
-            filename = f"{stem}_intermediate_{step_name}_{prefix}{suffix}"
-        else:
-            filename = f"{stem}_intermediate_{step_name}{suffix}"
-        
-        return intermediate_dir / filename
+        filename = f"{stem}_intermediate_{step_name}{suffix}"
+        return str(intermediate_path / filename)
 
