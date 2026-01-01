@@ -1,5 +1,6 @@
 # batch/di_registry.py
-from typing import Any, Dict, Type, TypeVar
+from abc import ABC
+from typing import Dict, Type, TypeVar
 
 from application_layer.mappers.walnut__mapper import IWalnutMapper, WalnutMapper
 from application_layer.mappers.walnut_comparison__mapper import IWalnutComparisonMapper, WalnutComparisonMapper
@@ -35,18 +36,65 @@ from infrastructure_layer.services import (
 
 from batch.app_config import AppConfig
 
-T = TypeVar("T")
+# TypeVar bound to ABC to ensure interface constraint
+TInterface = TypeVar("TInterface", bound=ABC)
+# TypeVar for implementation that must be a subclass of the interface
+TImplementation = TypeVar("TImplementation")
 
 
 class DIRegistry:
-    _registry: Dict[Type[Any], Type[Any]] = {}
+    _registry: Dict[Type[TInterface], Type[TImplementation]] = {}
 
     @classmethod
-    def register(cls, interface: Type[T], implementation: Type[T]) -> None:
+    def register(cls, interface: Type[TInterface], implementation: Type[TImplementation]) -> None:
+        """
+        Register an interface with its implementation.
+        
+        Args:
+            interface: The interface (ABC) type to register
+            implementation: The implementation class that must implement the interface
+            
+        Raises:
+            TypeError: If interface is not an ABC or implementation doesn't implement the interface
+        """
+        # Runtime validation: ensure interface is an ABC
+        if not issubclass(interface, ABC):
+            raise TypeError(
+                f"Interface {interface.__name__} must be an abstract base class (ABC). "
+                f"Use 'from abc import ABC' and inherit from ABC."
+            )
+        
+        # Runtime validation: ensure implementation is a subclass of interface
+        if not issubclass(implementation, interface):
+            raise TypeError(
+                f"Implementation {implementation.__name__} must implement interface {interface.__name__}. "
+                f"Ensure {implementation.__name__} inherits from {interface.__name__}."
+            )
+        
         cls._registry[interface] = implementation
 
     @classmethod
-    def get(cls, interface: Type[T]) -> Type[T]:
+    def get(cls, interface: Type[TInterface]) -> Type[TImplementation]:
+        """
+        Get the implementation for an interface.
+        
+        Args:
+            interface: The interface type to look up
+            
+        Returns:
+            The implementation class for the interface
+            
+        Raises:
+            KeyError: If interface is not registered
+            TypeError: If interface is not an ABC
+        """
+        # Runtime validation: ensure interface is an ABC
+        if not issubclass(interface, ABC):
+            raise TypeError(
+                f"Interface {interface.__name__} must be an abstract base class (ABC). "
+                f"Use 'from abc import ABC' and inherit from ABC."
+            )
+        
         if interface not in cls._registry:
             raise KeyError(
                 f"Interface {interface.__name__} is not registered. "
@@ -55,7 +103,18 @@ class DIRegistry:
         return cls._registry[interface]
 
     @classmethod
-    def is_registered(cls, interface: Type[Any]) -> bool:
+    def is_registered(cls, interface: Type[TInterface]) -> bool:
+        """
+        Check if an interface is registered.
+        
+        Args:
+            interface: The interface type to check
+            
+        Returns:
+            True if interface is registered, False otherwise
+        """
+        if not issubclass(interface, ABC):
+            return False
         return interface in cls._registry
 
 
