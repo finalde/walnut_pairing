@@ -44,7 +44,11 @@ class CommandDispatcher(ICommandDispatcher):
         from .command_handlers.walnut__command_handler import (
             CreateWalnutFromImagesHandler,
         )
+        from .command_handlers.walnut_comparison__command_handler import (
+            CompareWalnutsHandler,
+        )
         from .command_objects.walnut__command import (
+            CompareWalnutsCommand,
             CreateFakeWalnutCommand,
             CreateWalnutFromImagesCommand,
         )
@@ -53,4 +57,8 @@ class CommandDispatcher(ICommandDispatcher):
 
         create_from_images_handler = dependency_provider.resolve(CreateWalnutFromImagesHandler)
         dispatcher.register_handler(CreateWalnutFromImagesCommand, create_from_images_handler)
+
+        compare_walnuts_handler = dependency_provider.resolve(CompareWalnutsHandler)
+        dispatcher.register_handler(CompareWalnutsCommand, compare_walnuts_handler)
+
         return dispatcher

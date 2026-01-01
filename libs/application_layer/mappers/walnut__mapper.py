@@ -28,6 +28,11 @@ class IWalnutMapper(ABC):
         pass
 
     @abstractmethod
+    def dao_to_entity(self, walnut_dao: WalnutDBDAO) -> Either[WalnutEntity, DomainError]:
+        """Convert WalnutDBDAO to WalnutEntity."""
+        pass
+
+    @abstractmethod
     def entity_to_dao(
         self,
         walnut_entity: WalnutEntity,
@@ -124,6 +129,77 @@ class WalnutMapper(IWalnutMapper):
             image_value_objects[side_enum] = image_vo
 
         return WalnutDomainFactory.create_from_file_dao_images(image_value_objects, walnut_id=walnut_file_dao.walnut_id)
+
+    def dao_to_entity(self, walnut_dao: WalnutDBDAO) -> Either[WalnutEntity, DomainError]:
+        """
+        Convert WalnutDBDAO to WalnutEntity.
+        
+        Note: This method reconstructs the entity from database data.
+        It requires all 6 side images to be present in the DAO.
+        """
+        # Check if walnut has dimensions (required for entity creation)
+        if walnut_dao.width_mm is None or walnut_dao.height_mm is None or walnut_dao.thickness_mm is None:
+            return Left(ValidationError(f"Walnut {walnut_dao.id} does not have dimensions in database"))
+
+        # Group images by side
+        side_mapping: Dict[str, WalnutSideEnum] = {
+            "FRONT": WalnutSideEnum.FRONT,
+            "BACK": WalnutSideEnum.BACK,
+            "LEFT": WalnutSideEnum.LEFT,
+            "RIGHT": WalnutSideEnum.RIGHT,
+            "TOP": WalnutSideEnum.TOP,
+            "DOWN": WalnutSideEnum.DOWN,
+        }
+
+        images_by_side: Dict[WalnutSideEnum, WalnutImageDBDAO] = {}
+        for image_dao in walnut_dao.images:
+            side_enum = side_mapping.get(image_dao.side.upper())
+            if side_enum is None:
+                return Left(ValidationError(f"Invalid side '{image_dao.side}' for walnut {walnut_dao.id}"))
+            images_by_side[side_enum] = image_dao
+
+        # Check all required sides are present
+        required_sides = set[WalnutSideEnum](WalnutSideEnum)
+        missing_sides = required_sides - set[WalnutSideEnum](images_by_side.keys())
+        if missing_sides:
+            return Left(MissingSideError([s.value for s in missing_sides]))
+
+        # Convert image DAOs to value objects
+        from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
+
+        image_value_objects: Dict[WalnutSideEnum, WalnutImageValueObject] = {}
+        for side_enum, image_dao in images_by_side.items():
+            # Get camera configuration for this side
+            camera_config = self.app_config.get_camera_config(side_enum)
+            if camera_config is None:
+                return Left(
+                    ValidationError(f"Camera configuration not found for side '{side_enum.value}'. Please configure cameras in config.yml")
+                )
+
+            # Get embedding (generate if not present in database)
+            if image_dao.embedding and image_dao.embedding.embedding is not None:
+                embedding = image_dao.embedding.embedding
+            else:
+                # Generate embedding if not in database
+                embedding = ImageEmbeddingDomainService.generate(image_dao.image_path)
+
+            image_vo = WalnutImageValueObject(
+                side=side_enum,
+                path=image_dao.image_path,
+                width=image_dao.width,
+                height=image_dao.height,
+                format=UNKNOWN_IMAGE_FORMAT,  # Format not stored in DB
+                hash=image_dao.checksum,
+                embedding=embedding,
+                camera_distance_mm=camera_config.distance_mm,
+                focal_length_px=camera_config.focal_length_px,
+                walnut_width_px=image_dao.walnut_width_px,
+                walnut_height_px=image_dao.walnut_height_px,
+            )
+            image_value_objects[side_enum] = image_vo
+
+        # Create entity using domain factory
+        return WalnutDomainFactory.create_from_file_dao_images(image_value_objects, walnut_id=walnut_dao.id)
 
     def entity_to_dao(
         self,

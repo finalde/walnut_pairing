@@ -24,3 +24,14 @@ class CreateWalnutFromImagesCommand(ICommand):
     def __post_init__(self) -> None:
         if not self.walnut_id:
             raise ValueError("walnut_id is required")
+
+
+@dataclass
+class CompareWalnutsCommand(ICommand):
+    """
+    Command to compare walnuts and calculate similarity scores.
+    
+    Args:
+        walnut_ids: Optional list of walnut IDs to compare. If None or empty, compares all walnuts.
+    """
+    walnut_ids: Optional[list[str]] = None

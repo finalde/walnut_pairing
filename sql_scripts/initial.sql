@@ -2,6 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Drop tables if they exist (in reverse order of dependencies)
+DROP TABLE IF EXISTS walnut_comparison;
 DROP TABLE IF EXISTS walnut_image_embedding;
 DROP TABLE IF EXISTS walnut_image;
 DROP TABLE IF EXISTS walnut;
@@ -59,5 +60,30 @@ CREATE TABLE walnut_image_embedding (
     CONSTRAINT fk_image
         FOREIGN KEY (image_id)
         REFERENCES walnut_image(id)
+        ON DELETE CASCADE
+);
+
+-- Create walnut_comparison table
+CREATE TABLE walnut_comparison (
+    id BIGSERIAL PRIMARY KEY,
+    walnut_id TEXT NOT NULL,
+    compared_walnut_id TEXT NOT NULL,
+    width_diff_mm DOUBLE PRECISION NOT NULL,
+    height_diff_mm DOUBLE PRECISION NOT NULL,
+    thickness_diff_mm DOUBLE PRECISION NOT NULL,
+    similarity_score DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW() not null,
+    created_by TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT NOW() not null,
+    updated_by TEXT NOT NULL,
+
+    CONSTRAINT uq_walnut_comparison UNIQUE (walnut_id, compared_walnut_id),
+    CONSTRAINT fk_walnut
+        FOREIGN KEY (walnut_id)
+        REFERENCES walnut(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_compared_walnut
+        FOREIGN KEY (compared_walnut_id)
+        REFERENCES walnut(id)
         ON DELETE CASCADE
 );

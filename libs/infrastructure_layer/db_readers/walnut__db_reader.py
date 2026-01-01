@@ -56,7 +56,7 @@ class WalnutDBReader(IWalnutDBReader):
         with self.db_connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, description, created_at, created_by, updated_at, updated_by
+                SELECT id, description, width_mm, height_mm, thickness_mm, created_at, created_by, updated_at, updated_by
                 FROM walnut
                 WHERE id = %s
                 """,
@@ -69,10 +69,13 @@ class WalnutDBReader(IWalnutDBReader):
             walnut = WalnutDBDAO(
                 id=row[0],
                 description=row[1],
-                created_at=row[2],
-                created_by=row[3],
-                updated_at=row[4],
-                updated_by=row[5],
+                width_mm=row[2],
+                height_mm=row[3],
+                thickness_mm=row[4],
+                created_at=row[5],
+                created_by=row[6],
+                updated_at=row[7],
+                updated_by=row[8],
             )
 
             # Load related images with embeddings
@@ -85,7 +88,7 @@ class WalnutDBReader(IWalnutDBReader):
         with self.db_connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, description, created_at, created_by, updated_at, updated_by
+                SELECT id, description, width_mm, height_mm, thickness_mm, created_at, created_by, updated_at, updated_by
                 FROM walnut
                 ORDER BY created_at DESC
                 """
@@ -95,10 +98,13 @@ class WalnutDBReader(IWalnutDBReader):
                 WalnutDBDAO(
                     id=row[0],
                     description=row[1],
-                    created_at=row[2],
-                    created_by=row[3],
-                    updated_at=row[4],
-                    updated_by=row[5],
+                    width_mm=row[2],
+                    height_mm=row[3],
+                    thickness_mm=row[4],
+                    created_at=row[5],
+                    created_by=row[6],
+                    updated_at=row[7],
+                    updated_by=row[8],
                 )
                 for row in rows
             ]

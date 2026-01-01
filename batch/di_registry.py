@@ -2,6 +2,7 @@
 from typing import Any, Dict, Type, TypeVar
 
 from application_layer.mappers.walnut__mapper import IWalnutMapper, WalnutMapper
+from application_layer.mappers.walnut_comparison__mapper import IWalnutComparisonMapper, WalnutComparisonMapper
 from application_layer.queries import IWalnutQuery, WalnutQuery
 from application_layer.walnut__al import IWalnutAL, WalnutAL
 from common.interfaces import IAppConfig
@@ -14,9 +15,11 @@ from infrastructure_layer.db_readers import (
     WalnutImageEmbeddingDBReader,
 )
 from infrastructure_layer.db_writers import (
+    IWalnutComparisonDBWriter,
     IWalnutDBWriter,
     IWalnutImageDBWriter,
     IWalnutImageEmbeddingDBWriter,
+    WalnutComparisonDBWriter,
     WalnutDBWriter,
     WalnutImageDBWriter,
     WalnutImageEmbeddingDBWriter,
@@ -68,3 +71,5 @@ DIRegistry.register(IWalnutAL, WalnutAL)
 DIRegistry.register(IWalnutMapper, WalnutMapper)
 DIRegistry.register(IWalnutQuery, WalnutQuery)
 DIRegistry.register(IImageObjectFinder, ImageObjectFinder)
+DIRegistry.register(IWalnutComparisonDBWriter, WalnutComparisonDBWriter)
+DIRegistry.register(IWalnutComparisonMapper, WalnutComparisonMapper)

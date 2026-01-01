@@ -11,6 +11,10 @@ from .walnut_image_embedding__db_writer import (
     IWalnutImageEmbeddingDBWriter,
     WalnutImageEmbeddingDBWriter,
 )
+from .walnut_comparison__db_writer import (
+    IWalnutComparisonDBWriter,
+    WalnutComparisonDBWriter,
+)
 
 __all__ = [
     "IWalnutDBWriter",
@@ -19,4 +23,6 @@ __all__ = [
     "WalnutImageDBWriter",
     "IWalnutImageEmbeddingDBWriter",
     "WalnutImageEmbeddingDBWriter",
+    "IWalnutComparisonDBWriter",
+    "WalnutComparisonDBWriter",
 ]
