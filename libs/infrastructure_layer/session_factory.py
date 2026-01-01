@@ -2,7 +2,7 @@
 """SQLAlchemy session factory and database connection management."""
 from typing import Callable, Protocol
 
-from common.interfaces import IAppConfig
+from common.interfaces import DatabaseConfig, IAppConfig
 from infrastructure_layer.data_access_objects.base__db_dao import Base
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -19,17 +19,16 @@ class ISessionFactory(Protocol):
 class SessionFactory:
     """Factory for creating SQLAlchemy sessions."""
 
-    def __init__(self, app_config: IAppConfig) -> None:
+    def __init__(self, database_config: DatabaseConfig) -> None:
         """
         Initialize the session factory with database configuration.
 
         Args:
             app_config: Application configuration containing database settings
         """
-        db_config = app_config.database
         # Create database URL for SQLAlchemy
         database_url = (
-            f"postgresql://{db_config.user}:{db_config.password}" f"@{db_config.host}:{db_config.port}/{db_config.database}"
+            f"postgresql://{database_config.user}:{database_config.password}" f"@{database_config.host}:{database_config.port}/{database_config.database}"
         )
 
         # Create engine with pgvector support

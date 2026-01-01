@@ -7,7 +7,7 @@ from typing import Any, Dict, Type, get_args, get_origin, get_type_hints
 
 import psycopg2
 from application_layer.commands.command_dispatcher import ICommandDispatcher
-from common.interfaces import IAppConfig, IDatabaseConnection, IDependencyProvider
+from common.interfaces import DatabaseConfig, IAppConfig, IDatabaseConnection, IDependencyProvider
 from dependency_injector import containers, providers
 from infrastructure_layer.session_factory import SessionFactory
 from sqlalchemy.orm import Session
@@ -29,18 +29,23 @@ def create_app_config(config_path: str) -> IAppConfig:
     return AppConfig.load_from_yaml(path)
 
 
-def create_db_connection(app_config: IAppConfig) -> IDatabaseConnection:
+def get_database_config(app_config: IAppConfig) -> DatabaseConfig:
+    """Extract database configuration from app config."""
+    return app_config.database
+
+
+def create_db_connection(database_config: DatabaseConfig) -> IDatabaseConnection:
     return psycopg2.connect(
-        host=app_config.database.host,
-        port=app_config.database.port,
-        database=app_config.database.database,
-        user=app_config.database.user,
-        password=app_config.database.password,
+        host=database_config.host,
+        port=database_config.port,
+        database=database_config.database,
+        user=database_config.user,
+        password=database_config.password,
     )
 
 
-def create_session_factory(app_config: IAppConfig) -> SessionFactory:
-    return SessionFactory(app_config)
+def create_session_factory(database_config: DatabaseConfig) -> SessionFactory:
+    return SessionFactory(database_config)
 
 
 def create_session(session_factory: SessionFactory) -> Session:
@@ -125,10 +130,11 @@ class DependencyProviderWrapper(IDependencyProvider):
 
 
 class Container(containers.DeclarativeContainer):
-    config_path = providers.Configuration()
-    app_config = providers.Singleton(create_app_config, config_path=config_path)
-    db_connection = providers.Singleton(create_db_connection, app_config=app_config)
-    session_factory = providers.Singleton(create_session_factory, app_config=app_config)
+    config_path: providers.Configuration[str] = providers.Configuration()
+    app_config: providers.Singleton[IAppConfig] = providers.Singleton(create_app_config, config_path=config_path)
+    database_config: providers.Singleton[DatabaseConfig] = providers.Singleton(get_database_config, app_config=app_config)
+    db_connection = providers.Singleton(create_db_connection, database_config=database_config)
+    session_factory = providers.Singleton(create_session_factory, database_config=database_config)
     session = providers.Factory(create_session, session_factory=session_factory)
 
     def get_provider(self, interface_or_class: Type[Any]) -> Any:
