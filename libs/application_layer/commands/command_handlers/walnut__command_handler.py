@@ -46,7 +46,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
     def handle(self, command: CreateWalnutFromImagesCommand) -> None:
         image_root = Path(self.app_config.image_root)
         image_directory = image_root / command.walnut_id
-        image_intermediate_dir = str(image_root / command.walnut_id / "_intermediate")
+        image_intermediate_dir = str(image_root.parent / "_intermediate" / command.walnut_id)
       
         walnut_file_dao: WalnutFileDAO = self.walnut_image_file_reader.load_walnut_from_directory(
             command.walnut_id, image_directory

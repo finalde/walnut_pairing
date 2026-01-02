@@ -31,7 +31,7 @@ def main():
         if not image_path.exists():
             continue
         
-        intermediate_dir = image_path.parent / "_intermediate"
+        intermediate_dir = image_path.parent.parent / "_intermediate"
         
         finder.find_object(
             image_path=str(image_path),
