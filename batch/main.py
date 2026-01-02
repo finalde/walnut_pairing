@@ -8,7 +8,7 @@ sys.path.insert(0, str(project_root))
 from common.logger import configure_logging
 
 from batch.application import IApplication
-from batch.di_container import Container
+from batch.di_container import bootstrap_container
 
 
 def main() -> None:
@@ -16,10 +16,10 @@ def main() -> None:
 
     config_path = project_root / "batch/config.yml"
 
-    container = Container()
+    container = bootstrap_container()
     container.config_path.from_value(str(config_path))
 
-    app: IApplication = Container.application.__get__(container, Container)()
+    app: IApplication = container.application()
     app.run()
 
 
