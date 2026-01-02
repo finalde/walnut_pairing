@@ -35,6 +35,15 @@ class CameraConfig:
     distance_mm: float
     focal_length_px: float
 
+
+@dataclass
+class AlgorithmConfig:
+    """Configuration for walnut comparison algorithm weights."""
+    width_weight: float
+    height_weight: float
+    thickness_weight: float
+
+
 class IAppConfig(ABC):
     """Interface for application configuration."""
 
@@ -59,6 +68,12 @@ class IAppConfig(ABC):
     @abstractmethod
     def get_camera_config(self, side: "WalnutSideEnum") -> Optional["CameraConfig"]:
         """Get camera configuration for a specific side."""
+        pass
+
+    @property
+    @abstractmethod
+    def algorithm(self) -> Optional["AlgorithmConfig"]:
+        """Get algorithm comparison configuration (weights)."""
         pass
 
 

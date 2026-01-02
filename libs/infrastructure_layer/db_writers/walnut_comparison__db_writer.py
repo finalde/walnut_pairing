@@ -62,6 +62,9 @@ class WalnutComparisonDBWriter(IWalnutComparisonDBWriter):
             existing.height_diff_mm = comparison_dao.height_diff_mm
             existing.thickness_diff_mm = comparison_dao.thickness_diff_mm
             existing.similarity_score = comparison_dao.similarity_score
+            existing.width_weight = comparison_dao.width_weight
+            existing.height_weight = comparison_dao.height_weight
+            existing.thickness_weight = comparison_dao.thickness_weight
             existing.updated_by = comparison_dao.updated_by
             self.session.commit()
             self.session.refresh(existing)
@@ -94,6 +97,9 @@ class WalnutComparisonDBWriter(IWalnutComparisonDBWriter):
                 existing.height_diff_mm = comparison_dao.height_diff_mm
                 existing.thickness_diff_mm = comparison_dao.thickness_diff_mm
                 existing.similarity_score = comparison_dao.similarity_score
+                existing.width_weight = comparison_dao.width_weight
+                existing.height_weight = comparison_dao.height_weight
+                existing.thickness_weight = comparison_dao.thickness_weight
                 existing.updated_by = comparison_dao.updated_by
                 saved_comparisons.append(existing)
             else:

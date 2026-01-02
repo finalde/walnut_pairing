@@ -77,5 +77,9 @@ class Application:
    
         walnuts: List[WalnutEntity] = self.walnut_query.get_all_entities()
         walnut_ids = [walnut.id for walnut in walnuts]
-        compare_command = CompareWalnutsCommand(walnut_ids=walnut_ids)  # None means compare all walnuts
+        compare_command = CompareWalnutsCommand(
+            walnut_ids=walnut_ids, 
+            width_weight=self.app_config.algorithm.width_weight, 
+            height_weight=self.app_config.algorithm.height_weight, 
+            thickness_weight=self.app_config.algorithm.thickness_weight)  # None means compare all walnuts
         self.command_dispatcher.dispatch(compare_command)

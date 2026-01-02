@@ -10,17 +10,15 @@ class WalnutComparisonDomainService:
     Contains business rules about how walnuts are compared and similarity scores are calculated.
     """
 
-    # Similarity score weights (must sum to 1.0)
-    WIDTH_WEIGHT: float = 0.40   # 宽（正反面图最宽距离平均值）- 权重40%
-    HEIGHT_WEIGHT: float = 0.35  # 高（正反左右图纵向高平均值）- 权重35%
-    THICKNESS_WEIGHT: float = 0.25  # 肚（厚度顶底面棱水平视角纵向高平均值）- 权重25%
-
     @staticmethod
     def calculate_comparison(
         walnut1_id: str,
         walnut1_dimensions: WalnutDimensionValueObject,
         walnut2_id: str,
         walnut2_dimensions: WalnutDimensionValueObject,
+        width_weight: float,
+        height_weight: float,
+        thickness_weight: float,
     ) -> WalnutComparisonValueObject:
         """
         Calculate comparison between two walnuts.
@@ -62,9 +60,9 @@ class WalnutComparisonDomainService:
 
         # Calculate weighted similarity score
         similarity_score = 1.0 - (
-            WalnutComparisonDomainService.WIDTH_WEIGHT * width_diff_normalized +
-            WalnutComparisonDomainService.HEIGHT_WEIGHT * height_diff_normalized +
-            WalnutComparisonDomainService.THICKNESS_WEIGHT * thickness_diff_normalized
+            width_weight * width_diff_normalized +
+            height_weight * height_diff_normalized +
+            thickness_weight * thickness_diff_normalized
         )
 
         # Ensure score is between 0 and 1 (clip if necessary)
@@ -80,6 +78,9 @@ class WalnutComparisonDomainService:
             height_diff_mm=height_diff_mm,
             thickness_diff_mm=thickness_diff_mm,
             similarity_score=similarity_score,
+            width_weight=width_weight,
+            height_weight=height_weight,
+            thickness_weight=thickness_weight,
         )
 
         # Since we've validated inputs, this should always be Right

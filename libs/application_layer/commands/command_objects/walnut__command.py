@@ -35,3 +35,6 @@ class CompareWalnutsCommand(ICommand):
         walnut_ids: Optional list of walnut IDs to compare. If None or empty, compares all walnuts.
     """
     walnut_ids: Optional[list[str]] = field(default_factory=lambda: None)
+    width_weight: float = 0.0
+    height_weight: float = 0.0
+    thickness_weight: float = 0.0

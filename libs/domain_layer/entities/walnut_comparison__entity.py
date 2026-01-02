@@ -22,18 +22,28 @@ class WalnutComparisonEntity:
     def __new__(cls, walnuts: List[WalnutEntity]) -> "WalnutComparisonEntity":
         raise RuntimeError("WalnutComparisonEntity cannot be instantiated directly. Use WalnutComparisonEntity.create() instead.")
 
-    def __init__(self, walnuts: List[WalnutEntity]) -> None:
+    def __init__(self, walnuts: List[WalnutEntity], width_weight: float, height_weight: float, thickness_weight: float) -> None:
         self.walnuts: List[WalnutEntity] = walnuts
+        self.width_weight: float = width_weight
+        self.height_weight: float = height_weight
+        self.thickness_weight: float = thickness_weight
         self._initialized: bool = True
 
     @staticmethod
-    def create(walnuts: List[WalnutEntity]) -> Either["WalnutComparisonEntity", DomainError]:
+    def create(
+        walnuts: List[WalnutEntity],
+        width_weight: float,
+        height_weight: float,
+        thickness_weight: float,
+    ) -> Either["WalnutComparisonEntity", DomainError]:
         """
         Create a WalnutComparisonEntity with validation.
         
         Business rules:
         - Must have at least 2 walnuts
         - All walnuts must have valid dimensions
+        - Weights must be between 0 and 1
+        - Weights must sum to approximately 1.0
         """
         if len(walnuts) < 2:
             return Left(ValidationError("Need at least 2 walnuts to perform comparison"))
@@ -43,8 +53,20 @@ class WalnutComparisonEntity:
             if walnut.dimensions is None:
                 return Left(ValidationError(f"Walnut {walnut.id} does not have dimensions"))
 
+        # Validate weights
+        if not (0.0 <= width_weight <= 1.0):
+            return Left(ValidationError(f"Width weight must be between 0 and 1, got {width_weight}"))
+        if not (0.0 <= height_weight <= 1.0):
+            return Left(ValidationError(f"Height weight must be between 0 and 1, got {height_weight}"))
+        if not (0.0 <= thickness_weight <= 1.0):
+            return Left(ValidationError(f"Thickness weight must be between 0 and 1, got {thickness_weight}"))
+
+        weight_sum = width_weight + height_weight + thickness_weight
+        if abs(weight_sum - 1.0) > 0.01:
+            return Left(ValidationError(f"Weights must sum to 1.0, got {weight_sum}"))
+
         entity = object.__new__(WalnutComparisonEntity)
-        entity.__init__(walnuts)
+        entity.__init__(walnuts, width_weight, height_weight, thickness_weight)
         return Right(entity)
 
     def compare_all(self) -> List[WalnutComparisonValueObject]:
@@ -72,6 +94,9 @@ class WalnutComparisonEntity:
                     walnut1_dimensions=main_walnut.dimensions,
                     walnut2_id=other_walnut.id,
                     walnut2_dimensions=other_walnut.dimensions,
+                    width_weight=self.width_weight,
+                    height_weight=self.height_weight,
+                    thickness_weight=self.thickness_weight,
                 )
 
                 comparisons.append(comparison_vo)

@@ -49,7 +49,12 @@ class CompareWalnutsHandler(ICommandHandler[CompareWalnutsCommand]):
         )
 
         # Create comparison entity (domain validation happens here - will return error if < 2 walnuts)
-        comparison_entity_result = WalnutComparisonEntity.create(walnut_entities)
+        comparison_entity_result = WalnutComparisonEntity.create(
+            walnuts=walnut_entities,
+            width_weight=command.width_weight,
+            height_weight=command.height_weight,
+            thickness_weight=command.thickness_weight,
+        )
         if comparison_entity_result.is_left():
             error = comparison_entity_result.value
             self.logger.error(

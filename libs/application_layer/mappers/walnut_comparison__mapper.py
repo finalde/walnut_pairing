@@ -48,6 +48,9 @@ class WalnutComparisonMapper(IWalnutComparisonMapper):
             height_diff_mm=comparison_vo.height_diff_mm,
             thickness_diff_mm=comparison_vo.thickness_diff_mm,
             similarity_score=comparison_vo.similarity_score,
+            width_weight=comparison_vo.width_weight,
+            height_weight=comparison_vo.height_weight,
+            thickness_weight=comparison_vo.thickness_weight,
             created_by=created_by,
             updated_by=updated_by,
         )

@@ -5,7 +5,7 @@ from typing import Dict, Optional
 
 import yaml
 from common.enums import WalnutSideEnum
-from common.interfaces import IAppConfig, DatabaseConfig, CameraConfig
+from common.interfaces import IAppConfig, DatabaseConfig, CameraConfig, AlgorithmConfig
 
 
 
@@ -17,9 +17,11 @@ class AppConfig(IAppConfig):
         image_root: str,
         database: dict,
         cameras: Optional[dict] = None,
+        algorithm: Optional[dict] = None,
     ) -> None:
         self._image_root: str = image_root
         self._database: DatabaseConfig = DatabaseConfig(**database)
+        self._algorithm: AlgorithmConfig = AlgorithmConfig(**algorithm)
         
         # Load camera configurations
         self._cameras: Dict[WalnutSideEnum, CameraConfig] = {}
@@ -44,6 +46,10 @@ class AppConfig(IAppConfig):
     @property
     def database(self) -> DatabaseConfig:
         return self._database
+
+    @property
+    def algorithm(self) -> AlgorithmConfig:
+        return self._algorithm
 
     @property
     def cameras(self) -> Dict[WalnutSideEnum, CameraConfig]:
