@@ -76,6 +76,6 @@ class Application:
         self.logger.info("starting_walnut_comparison", note="Checking and creating comparisons for all walnuts")
    
         walnuts: List[WalnutEntity] = self.walnut_query.get_all_entities()
-        walnut_ids = [walnut.walnut_id for walnut in walnuts]
+        walnut_ids = [walnut.id for walnut in walnuts]
         compare_command = CompareWalnutsCommand(walnut_ids=walnut_ids)  # None means compare all walnuts
         self.command_dispatcher.dispatch(compare_command)

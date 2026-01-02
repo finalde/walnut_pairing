@@ -1,5 +1,5 @@
 # application_layer/commands/command_objects/walnut_command.py
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from .base__command import ICommand
@@ -34,4 +34,4 @@ class CompareWalnutsCommand(ICommand):
     Args:
         walnut_ids: Optional list of walnut IDs to compare. If None or empty, compares all walnuts.
     """
-    walnut_ids: list[str] = []
+    walnut_ids: Optional[list[str]] = field(default_factory=lambda: None)

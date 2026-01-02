@@ -88,7 +88,8 @@ class WalnutImageDBReader(IWalnutImageDBReader):
         with self.db_connection.cursor() as cursor:
             cursor.execute(
                 """
-                SELECT id, walnut_id, side, image_path, width, height, checksum,
+                SELECT id, walnut_id, side, image_path, width, height, checksum, walnut_width_px, walnut_height_px,
+                       camera_distance_mm, focal_length_px,
                        created_at, created_by, updated_at, updated_by
                 FROM walnut_image
                 WHERE walnut_id = %s
@@ -106,10 +107,14 @@ class WalnutImageDBReader(IWalnutImageDBReader):
                     width=row[4],
                     height=row[5],
                     checksum=row[6],
-                    created_at=row[7],
-                    created_by=row[8],
-                    updated_at=row[9],
-                    updated_by=row[10],
+                    walnut_width_px=row[7],
+                    walnut_height_px=row[8],
+                    camera_distance_mm=row[9],
+                    focal_length_px=row[10],
+                    created_at=row[11],
+                    created_by=row[12],
+                    updated_at=row[13],
+                    updated_by=row[14],
                 )
                 for row in rows
             ]
