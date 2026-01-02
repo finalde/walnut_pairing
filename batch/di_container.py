@@ -56,30 +56,7 @@ def create_app_config(config_path: str | Path) -> IAppConfig:
     return AppConfig.load_from_yaml(path)
 
 
-def get_database_config(app_config: IAppConfig) -> DatabaseConfig:
-    """Extract database configuration from app config."""
-    return app_config.database
-
-
-def create_db_connection(database_config: DatabaseConfig) -> IDatabaseConnection:
-    """Create database connection using psycopg2."""
-    return psycopg2.connect(
-        host=database_config.host,
-        port=database_config.port,
-        database=database_config.database,
-        user=database_config.user,
-        password=database_config.password,
-    )
-
-
-def create_session_factory(database_config: DatabaseConfig) -> SessionFactory:
-    """Create SQLAlchemy session factory."""
-    return SessionFactory(database_config)
-
-
-def create_session(session_factory: SessionFactory) -> Session:
-    """Create a new database session."""
-    return session_factory.create_session()
+# Simple factory functions removed - inlined in Container class below
 
 
 def create_command_dispatcher(container: "Container") -> ICommandDispatcher:
@@ -313,22 +290,28 @@ class Container(containers.DeclarativeContainer):
     )
 
     database_config = providers.Singleton(
-        get_database_config,
+        lambda app_config: app_config.database,
         app_config=app_config,
     )
 
     db_connection = providers.Singleton(
-        create_db_connection,
+        lambda database_config: psycopg2.connect(
+            host=database_config.host,
+            port=database_config.port,
+            database=database_config.database,
+            user=database_config.user,
+            password=database_config.password,
+        ),
         database_config=database_config,
     )
 
     session_factory = providers.Singleton(
-        create_session_factory,
+        SessionFactory,
         database_config=database_config,
     )
 
     session = providers.Factory(
-        create_session,
+        lambda session_factory: session_factory.create_session(),
         session_factory=session_factory,
     )
 
