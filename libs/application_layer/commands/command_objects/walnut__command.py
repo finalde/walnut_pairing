@@ -34,4 +34,4 @@ class CompareWalnutsCommand(ICommand):
     Args:
         walnut_ids: Optional list of walnut IDs to compare. If None or empty, compares all walnuts.
     """
-    walnut_ids: Optional[list[str]] = None
+    walnut_ids: list[str] = []
