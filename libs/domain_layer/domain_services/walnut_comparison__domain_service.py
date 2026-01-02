@@ -42,9 +42,13 @@ class WalnutComparisonDomainService:
             WalnutComparisonValueObject with differences and similarity score
         """
         # Calculate absolute differences
-        width_diff_mm = abs(walnut1_dimensions.width_mm - walnut2_dimensions.width_mm)
-        height_diff_mm = abs(walnut1_dimensions.height_mm - walnut2_dimensions.height_mm)
-        thickness_diff_mm = abs(walnut1_dimensions.thickness_mm - walnut2_dimensions.thickness_mm)
+        width_diff_mm = walnut1_dimensions.width_mm - walnut2_dimensions.width_mm
+        height_diff_mm = walnut1_dimensions.height_mm - walnut2_dimensions.height_mm
+        thickness_diff_mm = walnut1_dimensions.thickness_mm - walnut2_dimensions.thickness_mm
+
+        abs_width_diff_mm = abs(width_diff_mm)
+        abs_height_diff_mm = abs(height_diff_mm)
+        abs_thickness_diff_mm = abs(thickness_diff_mm)
 
         # Calculate average dimensions for normalization
         avg_width = (walnut1_dimensions.width_mm + walnut2_dimensions.width_mm) / 2.0
@@ -52,13 +56,12 @@ class WalnutComparisonDomainService:
         avg_thickness = (walnut1_dimensions.thickness_mm + walnut2_dimensions.thickness_mm) / 2.0
 
         # Normalize differences as percentages (avoid division by zero)
-        width_diff_normalized = width_diff_mm / avg_width if avg_width > 0 else 0.0
-        height_diff_normalized = height_diff_mm / avg_height if avg_height > 0 else 0.0
-        thickness_diff_normalized = thickness_diff_mm / avg_thickness if avg_thickness > 0 else 0.0
+        width_diff_normalized = abs_width_diff_mm / avg_width if avg_width > 0 else 0.0
+        height_diff_normalized = abs_height_diff_mm / avg_height if avg_height > 0 else 0.0
+        thickness_diff_normalized = abs_thickness_diff_mm / avg_thickness if avg_thickness > 0 else 0.0
 
         # Calculate weighted similarity score
-        # Score ranges from 0 (identical) to 1 (completely different)
-        similarity_score = (
+        similarity_score = 1.0 - (
             WalnutComparisonDomainService.WIDTH_WEIGHT * width_diff_normalized +
             WalnutComparisonDomainService.HEIGHT_WEIGHT * height_diff_normalized +
             WalnutComparisonDomainService.THICKNESS_WEIGHT * thickness_diff_normalized

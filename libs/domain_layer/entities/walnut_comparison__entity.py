@@ -63,7 +63,7 @@ class WalnutComparisonEntity:
         for i, main_walnut in enumerate(self.walnuts):
             for j, other_walnut in enumerate(self.walnuts):
                 # Skip same walnut (A-A) and reverse pairs (B-A if we already did A-B)
-                if i >= j:
+                if i == j:
                     continue
 
                 # Calculate comparison using domain service
