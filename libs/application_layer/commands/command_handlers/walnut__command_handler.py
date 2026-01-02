@@ -71,14 +71,15 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
             camera_config: Optional[CameraConfig] = self.app_config.get_camera_config(side_enum)
             with Image.open(image_file_dao.file_path) as img:
                 img_format = img.format or UNKNOWN_IMAGE_FORMAT
-            # Generate embedding for this image
-            embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path))
             # Find walnut object in image
             result: Optional[ObjectDetectionResult] = self.image_object_finder.find_object(
                 str(image_file_dao.file_path),
                 background_is_white=True,
                 intermediate_dir=image_intermediate_dir,
             )
+            # Generate embedding for this image
+            embedding = ImageEmbeddingDomainService.generate(str(image_file_dao.file_path.parent / "_masked" / image_file_dao.file_path.name.replace(".jpg", ".png")))
+            
             image_vo = WalnutImageValueObject(
                 side=side_enum,
                 path=str(image_file_dao.file_path),
