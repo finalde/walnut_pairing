@@ -206,8 +206,11 @@ class ImageObjectFinder(IImageObjectFinder):
                 self._save_all_objects_with_scores(
                     image, all_objects, matched_obj, intermediate_dir, image_path
                 )
-                # Save matched object only (walnut with black background)
-                self._save_matched_object_only(image, matched_obj, intermediate_dir, image_path)
+        
+        # Always save matched object only to image_root/walnut_id/_masked/ (regardless of intermediate_dir)
+        image = cv2.imread(image_path)
+        if image is not None:
+            self._save_matched_object_only(image, matched_obj, image_path)
         
         return self._convert_to_result(matched_obj)
 
@@ -709,22 +712,31 @@ class ImageObjectFinder(IImageObjectFinder):
         self,
         image: np.ndarray,
         matched_obj: DetectedObject,
-        intermediate_dir: str,
         image_path: str,
     ) -> None:
         """
         Save image with only the matched object (walnut) visible, rest is black background.
         
+        Saves to: image_root / walnut_id / _masked / {original_pic_name}.png
+        
         Args:
             image: Original image
             matched_obj: The matched/selected object (walnut)
-            intermediate_dir: Directory to save intermediate files
-            image_path: Original image path (for getting image name)
+            image_path: Original image path (used to extract image_root, walnut_id, and filename)
         """
-        # Get output directory
         image_path_obj = Path(image_path)
-        image_name = image_path_obj.stem
-        out_dir = Path(intermediate_dir) / image_name
+        
+        # Extract components from path structure: {image_root}/{walnut_id}/{filename}
+        # Example: /path/to/images/00001/00001_F.jpg
+        #   -> image_root = /path/to/images
+        #   -> walnut_id = 00001 (parent directory)
+        #   -> filename = 00001_F.jpg -> 00001_F.png
+        walnut_id = image_path_obj.parent.name  # Parent directory name is walnut_id
+        image_root = image_path_obj.parent.parent  # Grandparent is image_root
+        original_filename = image_path_obj.stem + ".png"  # Keep original name, change extension to .png
+        
+        # Create output directory: image_root / walnut_id / _masked
+        out_dir = image_root / walnut_id / "_masked"
         out_dir.mkdir(parents=True, exist_ok=True)
         
         # Create mask for only the matched object
@@ -735,8 +747,8 @@ class ImageObjectFinder(IImageObjectFinder):
         result = image.copy()
         result[mask == 0] = [0, 0, 0]  # Set non-masked areas to black
         
-        # Save the result
-        cv2.imwrite(str(out_dir / "01b_matched_walnut_only.png"), result)
+        # Save the result with original filename
+        cv2.imwrite(str(out_dir / original_filename), result)
 
 
 # =========================
