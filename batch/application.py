@@ -32,26 +32,14 @@ class Application:
 
     def run(self) -> None:
         image_root = Path(self.app_config.image_root)
-        if not image_root.exists():
-            self.logger.error("image_root_not_found", image_root=str(image_root))
-            return
-
         self.logger.info("scanning_images_directory", image_root=str(image_root))
 
         walnut_directories = sorted([d for d in image_root.iterdir() if d.is_dir()])
-        processed_count = 0
-        
+        existing_walnut_ids: List[str] = [walnut.id for walnut in self.walnut_query.get_all_entities()]
+
         for walnut_dir in walnut_directories:
-            walnut_id = walnut_dir.name
-            
-            # Check if walnut already exists in database
-            existing_walnut = self.walnut_query.get_by_id(walnut_id)
-            if existing_walnut:
-                self.logger.debug(
-                    "walnut_already_processed",
-                    walnut_id=walnut_id,
-                    note="Skipping - already in database",
-                )
+            walnut_id: str = walnut_dir.name
+            if walnut_id in existing_walnut_ids:
                 continue
 
             self.logger.info("processing_walnut", walnut_id=walnut_id, directory=str(walnut_dir))
@@ -63,21 +51,9 @@ class Application:
             )
             self.command_dispatcher.dispatch(command)
 
-            saved_walnut = self.walnut_query.get_by_id(walnut_id)
-            processed_count += 1
-            self.logger.info(
-                "walnut_processed_successfully",
-                walnut_id=saved_walnut.walnut_id,
-                image_count=len(saved_walnut.images),
-                width_mm=saved_walnut.width_mm,
-                height_mm=saved_walnut.height_mm,
-                thickness_mm=saved_walnut.thickness_mm,
-            )
-
         self.logger.info("starting_walnut_comparison", note="Checking and creating comparisons for all walnuts")
    
-        walnuts: List[WalnutEntity] = self.walnut_query.get_all_entities()
-        walnut_ids = [walnut.id for walnut in walnuts]
+        walnut_ids : List[str] = [walnut.id for walnut in self.walnut_query.get_all_entities()]
         
         algorithm = self.app_config.algorithm
         compare_command = CompareWalnutsCommand(
