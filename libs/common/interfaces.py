@@ -4,7 +4,7 @@ Common interfaces for dependency injection.
 """
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from common.enums import ComparisonModeEnum, WalnutSideEnum
 
@@ -81,6 +81,58 @@ class AlgorithmConfig:
         return ComparisonModeEnum(self.comparison_mode)
 
 
+@dataclass
+class CaptureConfig:
+    """Configuration for image capture settings."""
+    resolutions: List[Dict[str, Any]]
+    default_resolution: str
+    frame_interval_ms: int
+    preview_width: int
+    preview_height: int
+    buffer_size: int
+    fourcc: str
+    auto_exposure: float
+
+    def get_resolution(self, name: Optional[str] = None) -> tuple[int, int]:
+        """Get resolution width and height by name."""
+        resolution_name = name or self.default_resolution
+        for res in self.resolutions:
+            if res["name"] == resolution_name:
+                return (res["width"], res["height"])
+        # Default to first resolution if not found
+        if self.resolutions:
+            first = self.resolutions[0]
+            return (first["width"], first["height"])
+        return (640, 480)
+
+
+@dataclass
+class ScanConfig:
+    """Configuration for camera scanning."""
+    max_index: int
+    backends: List[str]
+
+
+@dataclass
+class FileNamingConfig:
+    """Configuration for file naming."""
+    id_padding_width: int
+    default_id: str
+
+
+@dataclass
+class CameraRolesConfig:
+    """Configuration for camera roles."""
+    roles: List[str]
+    role_suffixes: Dict[str, str]
+    device_indices: Optional[Dict[str, int]] = None  # Mapping of role to camera device index
+    
+    def __post_init__(self) -> None:
+        """Initialize device_indices if not provided."""
+        if self.device_indices is None:
+            self.device_indices = {}
+
+
 class IAppConfig(ABC):
     """Interface for application configuration."""
 
@@ -112,6 +164,49 @@ class IAppConfig(ABC):
     def algorithm(self) -> Optional["AlgorithmConfig"]:
         """Get algorithm comparison configuration (weights)."""
         pass
+
+    # Optional properties for image capture app
+    # These can return None or raise NotImplementedError for apps that don't need them
+    
+    @property
+    def camera_roles(self) -> Optional["CameraRolesConfig"]:
+        """
+        Get camera roles configuration (image capture app specific).
+        
+        Returns:
+            CameraRolesConfig or None if not applicable
+        """
+        return None
+
+    @property
+    def capture(self) -> Optional["CaptureConfig"]:
+        """
+        Get capture configuration (image capture app specific).
+        
+        Returns:
+            CaptureConfig or None if not applicable
+        """
+        return None
+
+    @property
+    def scan(self) -> Optional["ScanConfig"]:
+        """
+        Get scan configuration (image capture app specific).
+        
+        Returns:
+            ScanConfig or None if not applicable
+        """
+        return None
+
+    @property
+    def file_naming(self) -> Optional["FileNamingConfig"]:
+        """
+        Get file naming configuration (image capture app specific).
+        
+        Returns:
+            FileNamingConfig or None if not applicable
+        """
+        return None
 
 
 class IDependencyProvider(ABC):

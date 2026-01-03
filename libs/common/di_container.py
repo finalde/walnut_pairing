@@ -315,14 +315,21 @@ def _container_resolve(container: containers.DeclarativeContainer, dependency_ty
         }
         return impl(**deps)
 
-    # Last resort: try to instantiate directly
-    hints = _resolve_type_hints(dependency_type.__init__)
-    deps = {
-        name: _container_resolve(container, param_type)
-        for name, param_type in hints.items()
-        if name not in ("self", "return")
-    }
-    return dependency_type(**deps)
+    # Last resort: try to instantiate directly (only for concrete types, not ABCs)
+    if not hasattr(dependency_type, "__abstractmethods__") or len(dependency_type.__abstractmethods__) == 0:
+        hints = _resolve_type_hints(dependency_type.__init__)
+        deps = {
+            name: _container_resolve(container, param_type)
+            for name, param_type in hints.items()
+            if name not in ("self", "return")
+        }
+        return dependency_type(**deps)
+    
+    # If it's an abstract class and we can't resolve it, raise an error
+    raise ValueError(
+        f"Cannot resolve abstract class {dependency_type.__name__}. "
+        f"Register an implementation in DIRegistry or provide it in the container."
+    )
 
 
 # ============================================================

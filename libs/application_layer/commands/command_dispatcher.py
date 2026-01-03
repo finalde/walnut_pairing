@@ -7,12 +7,16 @@ from common.interfaces import IDependencyProvider
 
 from .command_handlers.base__command_handler import ICommandHandler
 from .command_objects.base__command import ICommand
+from .command_handlers.image_capture__command_handler import (
+    ImageCaptureCommandHandler,
+)
 from .command_handlers.walnut__command_handler import (
     CreateWalnutFromImagesHandler,
 )
 from .command_handlers.walnut_comparison__command_handler import (
     CompareWalnutsHandler,
 )
+from .command_objects.image_capture__command import ImageCaptureCommand
 from .command_objects.walnut__command import (
     CompareWalnutsCommand,
     CreateWalnutFromImagesCommand,
@@ -50,10 +54,28 @@ class CommandDispatcher(ICommandDispatcher):
     def create_with_handlers(cls, dependency_provider: IDependencyProvider) -> "CommandDispatcher":
         dispatcher = cls()
 
-        create_from_images_handler = dependency_provider.resolve(CreateWalnutFromImagesHandler)
-        dispatcher.register_handler(CreateWalnutFromImagesCommand, create_from_images_handler)
+        # Register CreateWalnutFromImagesHandler if available (for batch app)
+        try:
+            create_from_images_handler = dependency_provider.resolve(CreateWalnutFromImagesHandler)
+            dispatcher.register_handler(CreateWalnutFromImagesCommand, create_from_images_handler)
+        except Exception:
+            # Handler not available (e.g., in image_capture/webapi apps), skip
+            pass
 
-        compare_walnuts_handler = dependency_provider.resolve(CompareWalnutsHandler)
-        dispatcher.register_handler(CompareWalnutsCommand, compare_walnuts_handler)
+        # Register CompareWalnutsHandler if available (for batch app)
+        try:
+            compare_walnuts_handler = dependency_provider.resolve(CompareWalnutsHandler)
+            dispatcher.register_handler(CompareWalnutsCommand, compare_walnuts_handler)
+        except Exception:
+            # Handler not available (e.g., in image_capture/webapi apps), skip
+            pass
+
+        # Register ImageCaptureCommandHandler if available (for image_capture app)
+        try:
+            image_capture_handler = dependency_provider.resolve(ImageCaptureCommandHandler)
+            dispatcher.register_handler(ImageCaptureCommand, image_capture_handler)
+        except Exception:
+            # Handler not available (e.g., in batch/webapi apps), skip
+            pass
 
         return dispatcher

@@ -1,0 +1,47 @@
+image_root: "./images"
+
+cameras:
+  roles: ["Front", "Back", "Left", "Right", "Top", "Down", "Additional1", "Additional2"]
+  role_suffixes:
+    Front: "F"
+    Back: "B"
+    Left: "L"
+    Right: "R"
+    Top: "T"
+    Down: "D"
+    Additional1: "A1"
+    Additional2: "A2"
+  # Device indices mapping (role -> camera index)
+  # Example:
+  #   device_indices:
+  #     Front: 0
+  #     Back: 1
+  device_indices: {}
+
+capture:
+  resolutions:
+    - name: "640x480 (Fast)"
+      width: 640
+      height: 480
+    - name: "1280x720 (HD)"
+      width: 1280
+      height: 720
+    - name: "1920x1080 (Full HD)"
+      width: 1920
+      height: 1080
+  default_resolution: "640x480 (Fast)"
+  frame_interval_ms: 33
+  preview_width: 640
+  preview_height: 360
+  buffer_size: 1
+  fourcc: "MJPG"
+  auto_exposure: 0.75
+
+scan:
+  max_index: 15
+  backends: ["MSMF", "DSHOW", "ANY"]
+
+file_naming:
+  id_padding_width: 4
+  default_id: "0001"
+
