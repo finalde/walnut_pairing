@@ -61,10 +61,9 @@ PROJECT_ROOT/
 
 ### Naming Conventions
 
-- Use **kebab-case** for all filenames
+- Use **snake_case** for all filenames
 - Always use **.mdc** extension
 - Make names **descriptive** of the rule's purpose
-- Examples: `typescript-style.mdc`, `tailwind-styling.mdc`, `mdx-documentation.mdc`
 
 ## Content Guidelines
 
@@ -76,19 +75,7 @@ PROJECT_ROOT/
 4. **Keep it focused** - One rule per concern/pattern
 5. **Add context** - Explain why the rule exists
 
-### Code Examples Format
 
-```typescript
-// ✅ Good: Clear and follows conventions
-function processUser({ id, name }: { id: string; name: string }) {
-  return { id, displayName: name };
-}
-
-// ❌ Bad: Unclear parameter passing
-function processUser(id: string, name: string) {
-  return { id, displayName: name };
-}
-```
 
 ### File References
 
@@ -110,11 +97,7 @@ When referencing project files in rules, use this pattern to mention other files
 ## Rule Categories
 
 Organize rules by purpose:
-- **Code Style**: `typescript-style.mdc`, `css-conventions.mdc`
-- **Architecture**: `component-patterns.mdc`, `folder-structure.mdc`
-- **Documentation**: `mdx-documentation.mdc`, `readme-format.mdc`
-- **Tools**: `testing-patterns.mdc`, `build-config.mdc`
-- **Meta**: `cursor-rules.mdc`, `self-improve.mdc`
+
 
 ## Best Practices
 
