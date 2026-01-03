@@ -5,7 +5,7 @@ from typing import Dict, Optional
 from infrastructure_layer.services.image_object__finder import ObjectDetectionResult
 import numpy as np
 from application_layer.commands.command_handlers.base__command_handler import ICommandHandler
-from application_layer.commands.command_objects.walnut__command import CreateFakeWalnutCommand, CreateWalnutFromImagesCommand
+from application_layer.commands.command_objects.walnut__command import CreateWalnutFromImagesCommand
 from application_layer.dtos.walnut__create_dto import WalnutCreateDTO, WalnutImageCreateDTO
 from application_layer.mappers.walnut__mapper import IWalnutMapper
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER

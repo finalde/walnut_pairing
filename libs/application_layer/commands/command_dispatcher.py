@@ -7,7 +7,16 @@ from common.interfaces import IDependencyProvider
 
 from .command_handlers.base__command_handler import ICommandHandler
 from .command_objects.base__command import ICommand
-
+from .command_handlers.walnut__command_handler import (
+    CreateWalnutFromImagesHandler,
+)
+from .command_handlers.walnut_comparison__command_handler import (
+    CompareWalnutsHandler,
+)
+from .command_objects.walnut__command import (
+    CompareWalnutsCommand,
+    CreateWalnutFromImagesCommand,
+)
 
 class ICommandDispatcher(ABC):
     @abstractmethod
@@ -23,6 +32,9 @@ class CommandDispatcher(ICommandDispatcher):
     def __init__(self) -> None:
         self._handlers: Dict[Type[ICommand], ICommandHandler] = {}
 
+
+    # For simplicity, we use a simple synchronous dispatch patter for now.
+    # In future, we could switch the implementation to an asynchronous dispatch pattern.
     def dispatch(self, command: ICommand) -> None:
         if command.timestamp is None:
             command.timestamp = datetime.now()
@@ -39,20 +51,6 @@ class CommandDispatcher(ICommandDispatcher):
 
     @classmethod
     def create_with_handlers(cls, dependency_provider: IDependencyProvider) -> "CommandDispatcher":
-        from infrastructure_layer.db_writers import IWalnutDBWriter
-
-        from .command_handlers.walnut__command_handler import (
-            CreateWalnutFromImagesHandler,
-        )
-        from .command_handlers.walnut_comparison__command_handler import (
-            CompareWalnutsHandler,
-        )
-        from .command_objects.walnut__command import (
-            CompareWalnutsCommand,
-            CreateFakeWalnutCommand,
-            CreateWalnutFromImagesCommand,
-        )
-
         dispatcher = cls()
 
         create_from_images_handler = dependency_provider.resolve(CreateWalnutFromImagesHandler)

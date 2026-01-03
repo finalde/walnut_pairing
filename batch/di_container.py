@@ -56,14 +56,14 @@ from infrastructure_layer.services import (
 from infrastructure_layer.session_factory import SessionFactory
 
 from batch.app_config import AppConfig
-from batch.application import Application, IApplication
+from batch.application import Application
 
 
 def create_application(
     command_dispatcher: ICommandDispatcher,
     container: "Container",
     app_config: IAppConfig,
-) -> IApplication:
+) -> Application:
     return Application(
         command_dispatcher=command_dispatcher,
         walnut_query=container.walnutquery(),

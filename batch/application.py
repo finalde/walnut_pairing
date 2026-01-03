@@ -14,10 +14,6 @@ from common.logger import get_logger
 from domain_layer.entities.walnut__entity import WalnutEntity
 
 
-class IApplication:
-    pass
-
-
 class Application:
     def __init__(
         self,

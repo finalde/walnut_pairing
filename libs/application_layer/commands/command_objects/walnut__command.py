@@ -5,17 +5,6 @@ from typing import Optional
 from common.enums import ComparisonModeEnum
 from .base__command import ICommand
 
-
-@dataclass
-class CreateFakeWalnutCommand(ICommand):
-    walnut_id: str = ""
-    description: Optional[str] = None
-
-    def __post_init__(self) -> None:
-        if not self.walnut_id:
-            raise ValueError("walnut_id is required")
-
-
 @dataclass
 class CreateWalnutFromImagesCommand(ICommand):
     walnut_id: str = ""

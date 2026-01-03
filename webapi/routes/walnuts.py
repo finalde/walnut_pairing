@@ -3,9 +3,6 @@ from pathlib import Path
 from typing import List
 
 from application_layer.commands.command_dispatcher import ICommandDispatcher
-from application_layer.commands.command_objects.walnut__command import (
-    CreateFakeWalnutCommand,
-)
 from application_layer.dtos.walnut__dto import WalnutDTO, WalnutImageDTO
 from application_layer.queries.walnut__query import IWalnutQuery
 from common.di_container import Container
@@ -93,12 +90,3 @@ async def load_walnut_from_filesystem(
     if walnut is None:
         raise HTTPException(status_code=404, detail=f"Walnut {walnut_id} not found in filesystem")
     return _dto_to_response(walnut)
-
-
-@router.post("/{walnut_id}/create-fake")
-async def create_fake_walnut(
-    walnut_id: str, command_dispatcher: ICommandDispatcher = Depends(get_command_dispatcher)
-) -> dict:
-    command = CreateFakeWalnutCommand(walnut_id=walnut_id)
-    command_dispatcher.dispatch(command)
-    return {"message": f"Fake walnut {walnut_id} created"}
