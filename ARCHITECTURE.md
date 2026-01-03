@@ -324,14 +324,14 @@ class WalnutMapper(IWalnutMapper):
 
 - **Registry**: `libs/common/di_registry.py` (shared across applications)
 - **Containers**: Each application has its own container:
-  - `batch/di_container.py` (batch-specific)
-  - `webapi/dependencies.py` (webapi-specific)
+  - `app__batch/di_container.py` (batch-specific)
+  - `app__webapi/dependencies.py` (webapi-specific)
 - **Registration**: Interfaces → Implementations mapping in DIRegistry
 
 ### DI Rules
 
 1. **Interfaces**: Define in `libs/common/interfaces.py` or layer-specific `__init__.py`
-2. **Registration**: Register in application-specific DI container (e.g., `batch/di_container.py`):
+2. **Registration**: Register in application-specific DI container (e.g., `app__batch/di_container.py`):
    ```python
    DIRegistry.register(IInterface, Implementation)
    ```

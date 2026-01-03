@@ -6,7 +6,7 @@
       "type": "python",
       "request": "launch",
 
-      "module": "batch.main",
+      "module": "app__batch.main",
       "cwd": "${workspaceFolder}",
 
       "console": "integratedTerminal",

@@ -1,12 +1,12 @@
-# webapi/main.py
+# app__webapi/main.py
 """FastAPI web application entry point."""
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from webapi.dependencies import get_container, shutdown_container
-from webapi.routes import walnuts
+from app__webapi.dependencies import get_container, shutdown_container
+from app__webapi.routes import walnuts
 
 
 def create_app() -> FastAPI:

@@ -6,6 +6,7 @@
 # - Batch Container class with batch-specific providers
 # - Batch-specific DIRegistry registrations
 # ============================================================
+# Note: This file is in app__batch/ directory
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Type
@@ -54,8 +55,8 @@ from infrastructure_layer.services import (
 )
 from infrastructure_layer.session_factory import SessionFactory
 
-from batch.app_config import AppConfig
-from batch.application import Application
+from app__batch.app_config import AppConfig
+from app__batch.application import Application
 
 
 def create_application(

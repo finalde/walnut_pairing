@@ -8,11 +8,11 @@ The codebase has been restructured to support two executable applications:
 walnut_pairing/
 ├── libs/              # Shared library code
 │   └── src/           # All shared business logic, domain, infrastructure
-├── batch/             # Batch job application
+├── app__batch/        # Batch job application
 │   ├── main.py        # Batch entry point
 │   ├── application.py # Batch-specific application logic
 │   └── config.yml     # Batch configuration
-└── webapi/            # FastAPI web application
+└── app__webapi/       # FastAPI web application
     ├── main.py        # FastAPI entry point
     ├── dependencies.py # DI setup for web API
     ├── routes/        # API routes
@@ -39,8 +39,8 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ## Configuration
 
 Each application has its own `config.yml` file:
-- `batch/config.yml` - Batch job configuration
-- `webapi/config.yml` - Web API configuration
+- `app__batch/config.yml` - Batch job configuration
+- `app__webapi/config.yml` - Web API configuration
 
 Both can share the same database and image root settings, or be configured independently.
 
@@ -57,5 +57,5 @@ All shared dependencies are in `libs/src/`:
 
 All code in `libs/src/` uses `src.*` imports (e.g., `from src.common.interfaces import ...`).
 
-Both `batch/` and `webapi/` add `libs/` to `sys.path` to access shared code.
+Both `app__batch/` and `app__webapi/` add `libs/` to `sys.path` to access shared code.
 

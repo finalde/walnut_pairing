@@ -1,4 +1,4 @@
-# webapi/dependencies.py
+# app__webapi/dependencies.py
 """Dependency injection setup for FastAPI."""
 from pathlib import Path
 from typing import Optional
@@ -14,7 +14,7 @@ def get_container() -> Container:
     global _container
     if _container is None:
         project_root = Path(__file__).resolve().parent.parent
-        config_path = project_root / "webapi" / "config.yml"
+        config_path = project_root / "app__webapi" / "config.yml"
 
         _container = Container()
         _container.config_path.from_value(config_path)

@@ -1,4 +1,4 @@
-# batch/main.py
+# app__batch/main.py
 import asyncio
 import sys
 from pathlib import Path
@@ -8,8 +8,8 @@ sys.path.insert(0, str(project_root))
 
 from common.logger import configure_logging, get_logger
 
-from batch.application import Application
-from batch.di_container import Container, bootstrap_container
+from app__batch.application import Application
+from app__batch.di_container import Container, bootstrap_container
 
 
 async def main_async() -> None:
@@ -17,7 +17,7 @@ async def main_async() -> None:
     logger = get_logger(__name__)
     container: Container | None = None
     try:
-        config_path = project_root / "batch/config.yml"
+        config_path = project_root / "app__batch/config.yml"
 
         container = bootstrap_container()
         container.config_path.from_value(str(config_path))
