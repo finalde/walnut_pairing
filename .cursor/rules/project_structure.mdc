@@ -1,0 +1,186 @@
+---
+description: Project directory structure and important files reference guide
+globs: **/*
+alwaysApply: true
+---
+
+# Project Structure and Important Files
+
+This document outlines the directory structure and key files in the walnut pairing project. Follow this structure when creating new files or understanding the codebase organization.
+
+## Root Directory Structure
+
+```
+walnut_pairing/
+├── .cursor/
+│   └── rules/              # Cursor IDE rules (this directory)
+├── batch/                  # Batch processing application
+├── business_docs/          # Business documentation (Excel, Word docs)
+├── libs/                   # Shared library code (core business logic)
+├── sql_scripts/            # Database schema and migration scripts
+├── webapi/                 # Web API application
+├── ARCHITECTURE.md         # Architecture documentation (MUST READ)
+├── CODE_QUALITY.md         # Code quality guidelines
+├── CQRS_ARCHITECTURE.md    # CQRS pattern documentation
+├── pyproject.toml          # Python project configuration (black, isort, mypy)
+├── requirements.txt        # Python dependencies
+├── mypy.ini                # Type checking configuration
+└── Makefile                # Build and utility commands
+```
+
+## Core Library Structure (`libs/`)
+
+The `libs/` directory contains the core business logic organized in layers following Clean Architecture principles.
+
+### Common Layer (`libs/common/`)
+
+Shared utilities and interfaces used across all layers:
+
+- **`interfaces.py`** - Core interfaces (IAppConfig, IWalnutReader, etc.)
+- **`enums.py`** - All enum definitions (WalnutSideEnum, ComparisonModeEnum, etc.)
+- **`constants.py`** - Application-wide constants
+- **`logger.py`** - Structured logging setup
+- **`di_container.py`** - Dependency injection container (common implementation)
+- **`di_registry.py`** - DI registration utilities
+
+### Domain Layer (`libs/domain_layer/`)
+
+Pure business logic with no infrastructure dependencies:
+
+#### Entities (`libs/domain_layer/entities/`)
+
+
+#### Value Objects (`libs/domain_layer/value_objects/`)
+
+#### Domain Services (`libs/domain_layer/domain_services/`)
+Static services (no DI) for domain logic:
+
+#### Domain Factories (`libs/domain_layer/domain_factories/`) Factory for creating WalnutEntity
+
+#### Domain Errors (`libs/domain_layer/`) Domain-specific error types
+
+### Application Layer (`libs/application_layer/`)
+
+Orchestration layer that coordinates domain and infrastructure:
+
+#### Commands (`libs/application_layer/commands/`)
+CQRS command pattern implementation:
+- **`command_dispatcher.py`** - Command routing and execution
+- **`command_objects/`** - Command DTOs
+- **`command_handlers/`** - Command handlers
+
+#### Queries (`libs/application_layer/queries/`)
+CQRS query pattern for read operations
+
+#### Mappers (`libs/application_layer/mappers/`)
+Layer translation between domain and infrastructure, and between domain and upper layer like webapi routes
+
+#### DTOs (`libs/application_layer/dtos/`)
+Data Transfer Objects for API boundaries:
+
+#### Services (`libs/application_layer/`)
+
+### Infrastructure Layer (`libs/infrastructure_layer/`)
+
+Technical implementations and external system integrations:
+
+#### Data Access Objects (`libs/infrastructure_layer/data_access_objects/`)
+SQLAlchemy ORM models:
+- **`base__db_dao.py`** - Base DAO class
+
+#### Database Readers (`libs/infrastructure_layer/db_readers/`)
+Read operations from database:
+
+
+#### Database Writers (`libs/infrastructure_layer/db_writers/`)
+Write operations to database:
+
+
+#### File Readers (`libs/infrastructure_layer/file_readers/`)
+File system operations:
+
+
+#### Services (`libs/infrastructure_layer/services/`)
+Infrastructure services:
+
+
+#### Database (`libs/infrastructure_layer/`)
+- **`session_factory.py`** - Database session management
+
+## Application Directories
+
+### Batch Application (`batch/`)
+
+Batch processing application for image processing and comparisons:
+
+- **`main.py`** - Entry point for batch application
+- **`application.py`** - Main application orchestration logic
+- **`app_config.py`** - Configuration implementation (IAppConfig)
+- **`config.yml`** - Configuration file (database, cameras, algorithm settings)
+- **`di_container.py`** - Dependency injection setup for batch app
+
+### Web API Application (`webapi/`)
+
+REST API application:
+
+
+## Configuration Files
+
+- **`batch/config.yml`** - Batch app configuration (database, cameras, algorithm)
+- **`webapi/config.yml`** - Web API configuration
+- **`pyproject.toml`** - Python tooling config (black, isort, mypy)
+- **`mypy.ini`** - Type checking configuration
+- **`requirements.txt`** - Python package dependencies
+
+## Documentation Files
+
+- **`ARCHITECTURE.md`** - **MUST READ**: Core architecture principles and patterns
+- **`CQRS_ARCHITECTURE.md`** - CQRS pattern details
+- **`CODE_QUALITY.md`** - Code quality standards
+- **`README.md`** - Project overview
+- **`README_RESTRUCTURE.md`** - Restructuring notes
+
+## Database Scripts
+
+- **`sql_scripts/initial.sql`** - Initial database schema creation
+
+## Important Naming Conventions
+
+### File Naming
+- All Python files use **double underscore** (`__`) to separate words: `walnut__entity.py`
+- This distinguishes from single underscore which is Python's private convention
+
+### Module Organization
+- Each major domain concept has its own files across layers:
+  - Entity: `walnut__entity.py`
+  - Value Object: `walnut__value_object.py`
+  - DAO: `walnut__db_dao.py`
+  - Mapper: `walnut__mapper.py`
+  - Command: `walnut__command.py`
+  - Handler: `walnut__command_handler.py`
+
+## Key Principles
+
+1. **Layer Dependencies**: Domain sits in the center, application layers understands what is doamin layer and what is infrastructure layer, domain does not know what is application layer, domon does not know what is infrastructure, infrastructure does not know what is domain. In another words, domain is pure, infrastructure is pure, applicaiton layer is in charge of orchestration and makes everything glued together.
+2. **No Infrastructure in Domain**: Domain layer must not import from infrastructure
+3. **No Application in Domain**: Domain layer must not import fro application
+4. **No Domain in Infrastructure**: Infrastructure layer must not import Domain
+5. **No Application in Infrastructure**: Infrastructure layer must not import Application
+6. **Interfaces in Common**: All interfaces defined in `libs/common/interfaces.py`
+7. **Either for Errors**: Domain operations return `Either[Success, DomainError]`
+8. **CQRS Pattern**: Commands modify, Queries read (separate paths)
+
+## When Adding New Features
+
+1. **Domain Logic**: Add to `libs/domain_layer/` (entities, value objects, domain services)
+2. **Application Logic**: Add to `libs/application_layer/` (commands, queries, mappers)
+3. **Infrastructure**: Add to `libs/infrastructure_layer/` (DAOs, readers, writers)
+4. **Interfaces**: Define in `libs/common/interfaces.py`
+5. **Enums**: Add to `libs/common/enums.py`
+6. **Configuration**: Update `batch/config.yml` or `webapi/config.yml`
+
+## References
+
+- See [ARCHITECTURE.md](mdc:ARCHITECTURE.md) for detailed architectural patterns
+- See [architecture_guidelines.mdc](mdc:.cursor/rules/architecture_guidelines.mdc) for architecture rules
+- See [python_coding_standards.mdc](mdc:.cursor/rules/python_coding_standards.mdc) for coding standards
