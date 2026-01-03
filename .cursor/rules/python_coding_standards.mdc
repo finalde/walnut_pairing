@@ -1,0 +1,52 @@
+---
+description: Python coding standards and conventions for the walnut pairing project
+globs: **/*.py
+alwaysApply: true
+---
+
+# Python Coding Standards
+
+This project follows strict, explicit, and readable Python coding standards.
+
+## General Principles
+
+- Prefer clarity over cleverness
+- Write code that is easy to read, review, and refactor
+- Avoid hidden or implicit behavior
+- Avoid magic strings or numbers - use enums, constants, or strong typed hints like `Class.__name__` to replace magic strings or numbers
+- Max line length: 120 characters (configured in pyproject.toml for black and isort)
+
+## Type Hints
+
+- All variables, parameters, and return values MUST have explicit type hints
+- Class attributes MUST be type-annotated
+- Avoid using `Any` unless absolutely necessary and explicitly justified
+- Prefer concrete types over generic ones
+
+## Naming Conventions
+
+- **Class names**: MUST be PascalCase
+- **Function and variable names**: MUST be snake_case
+- **Constants**: MUST be UPPER_SNAKE_CASE
+- **File names**: MUST be snake_case
+
+## Code Ingegrity
+- **Strong Type**: All variable, function, paramter must be strong typed explicitly
+
+## Examples
+
+```python
+# Good - explicit types, clear naming
+class WalnutEntity:
+    def __init__(self, walnut_id: str, dimensions: WalnutDimensionValueObject) -> None:
+        self.walnut_id: str = walnut_id
+        self.dimensions: WalnutDimensionValueObject = dimensions
+
+# Bad - missing types, magic strings
+class walnut:
+    def __init__(self, id, dims):
+        self.id = id
+        self.dims = dims
+        if id == "special":  # Magic string
+            pass
+```

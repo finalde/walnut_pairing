@@ -1,0 +1,43 @@
+---
+description: Architecture guidelines and patterns for the walnut pairing project
+globs: **/*
+alwaysApply: true
+---
+
+# Architecture Guidelines
+
+## Architecture Reference
+
+ALWAYS follow the guidelines in [ARCHITECTURE.md](mdc:ARCHITECTURE.md) when generating new code.
+
+[ARCHITECTURE.md](mdc:ARCHITECTURE.md) contains detailed rules for:
+- Domain-Driven Design (DDD)
+- CQRS (Command Query Responsibility Segregation)
+- Dependency Injection (DI) / IoC Container
+- File naming conventions
+- Layer boundaries
+- Entity, Value Object, DAO, DTO definitions
+
+**Read [ARCHITECTURE.md](mdc:ARCHITECTURE.md) before making architectural decisions.**
+
+## Key Principles
+
+1. **Domain-Driven Design (DDD)**
+   - Domain layer contains business logic and entities
+   - Infrastructure layer handles external concerns (database, file system, distributed processing)
+   - Application layer orchestrates use cases
+
+2. **CQRS (Command Query Responsibility Segregation)**
+   - Commands modify state (use command handlers)
+   - Queries read state (use query services)
+   - Separate command and query models
+
+3. **Dependency Injection**
+   - Use interfaces for all dependencies
+   - Register implementations in DI container
+   - Dependencies flow inward (infrastructure → application → domain)
+
+4. **Layer Boundaries**
+   - Domain layey has no dependencies on infrastructure or application
+   - Application layer depends on domain and infrastructure
+   - Infrastructure implements interfaces defined in application/domain

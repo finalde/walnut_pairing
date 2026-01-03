@@ -1,0 +1,15 @@
+---
+description: Cursor IDE configuration settings
+globs: **/*
+alwaysApply: true
+---
+
+# Cursor Configuration
+
+## Auto-Generation Limits
+
+Limit the number of auto-generation cycles to avoid infinite loops:
+
+- **max_iterations**: 3
+
+This prevents the AI from getting stuck in generation loops and ensures responses are focused and efficient.
