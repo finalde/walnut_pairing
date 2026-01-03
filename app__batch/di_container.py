@@ -25,7 +25,7 @@ from common.di_container import (
     _create_provider,
     _normalize_attr_name,
 )
-from common.di_registry import DIRegistry
+from common.di_registry import DIRegistry, Scope
 from common.interfaces import DatabaseConfig, IAppConfig
 from infrastructure_layer.db_readers import (
     IWalnutDBReader,
@@ -66,25 +66,29 @@ def create_application(
 ) -> Application:
     return Application(
         command_dispatcher=command_dispatcher,
-        walnut_query=container.walnutquery(),
+        walnut_query=container.walnut_query(),
         app_config=app_config,
     )
 
 
-DIRegistry.register(IAppConfig, AppConfig)
-DIRegistry.register(IWalnutImageEmbeddingDBReader, WalnutImageEmbeddingDBReader)
-DIRegistry.register(IWalnutImageDBReader, WalnutImageDBReader)
-DIRegistry.register(IWalnutImageFileReader, WalnutImageFileReader)
-DIRegistry.register(IWalnutDBReader, WalnutDBReader)
-DIRegistry.register(IWalnutImageEmbeddingDBWriter, WalnutImageEmbeddingDBWriter)
-DIRegistry.register(IWalnutImageDBWriter, WalnutImageDBWriter)
-DIRegistry.register(IWalnutDBWriter, WalnutDBWriter)
-DIRegistry.register(IWalnutAL, WalnutAL)
-DIRegistry.register(IWalnutMapper, WalnutMapper)
-DIRegistry.register(IWalnutQuery, WalnutQuery)
-DIRegistry.register(IImageObjectFinder, ImageObjectFinder)
-DIRegistry.register(IWalnutComparisonDBWriter, WalnutComparisonDBWriter)
-DIRegistry.register(IWalnutComparisonMapper, WalnutComparisonMapper)
+# Register dependencies with scopes
+# Singleton: Stateless services that can be shared
+DIRegistry.register(IAppConfig, AppConfig, Scope.SINGLETON)
+DIRegistry.register(IWalnutMapper, WalnutMapper, Scope.SINGLETON)
+DIRegistry.register(IWalnutComparisonMapper, WalnutComparisonMapper, Scope.SINGLETON)
+DIRegistry.register(IImageObjectFinder, ImageObjectFinder, Scope.SINGLETON)
+
+# Request/Transient: Services that need per-request instances (using Singleton for batch since it's single-threaded)
+DIRegistry.register(IWalnutImageEmbeddingDBReader, WalnutImageEmbeddingDBReader, Scope.SINGLETON)
+DIRegistry.register(IWalnutImageDBReader, WalnutImageDBReader, Scope.SINGLETON)
+DIRegistry.register(IWalnutImageFileReader, WalnutImageFileReader, Scope.SINGLETON)
+DIRegistry.register(IWalnutDBReader, WalnutDBReader, Scope.SINGLETON)
+DIRegistry.register(IWalnutImageEmbeddingDBWriter, WalnutImageEmbeddingDBWriter, Scope.SINGLETON)
+DIRegistry.register(IWalnutImageDBWriter, WalnutImageDBWriter, Scope.SINGLETON)
+DIRegistry.register(IWalnutDBWriter, WalnutDBWriter, Scope.SINGLETON)
+DIRegistry.register(IWalnutAL, WalnutAL, Scope.SINGLETON)
+DIRegistry.register(IWalnutQuery, WalnutQuery, Scope.SINGLETON)
+DIRegistry.register(IWalnutComparisonDBWriter, WalnutComparisonDBWriter, Scope.SINGLETON)
 
 
 class Container(containers.DeclarativeContainer):
@@ -142,28 +146,44 @@ class Container(containers.DeclarativeContainer):
 # ============================================================
 
 def bootstrap_container() -> Container:
-    # Start with core providers
+    """
+    Bootstrap the batch container by creating providers from DIRegistry.
+    
+    This function:
+    1. Creates the container instance first
+    2. Creates providers for all registered interfaces with their scopes
+    3. Adds them to the container instance
+    """
+    # Create container instance first
+    container = Container()
+    
+    # Start with core providers that are already in the container
     providers_map: Dict[Type[Any], providers.Provider] = {
-        IAppConfig: Container.app_config,
-        SessionFactory: Container.session_factory,
-        AsyncSession: Container.session,
+        IAppConfig: container.app_config,
+        SessionFactory: container.session_factory,
+        AsyncSession: container.session,
     }
 
     # Register all DIRegistry interfaces
-    for interface in DIRegistry._registry:
+    for interface in DIRegistry._registry.keys():
         if interface in providers_map:
             continue
 
-        # Create provider for this interface
+        # Get registration info (implementation and scope)
+        registration = DIRegistry.get_registration(interface)
+        
+        # Create provider for this interface with scope
         provider = _create_provider(
             interface,
-            DIRegistry.get(interface),
+            registration.implementation,
             providers_map,
             visited=set(),
+            scope=registration.scope,
         )
 
-        # Add as attribute to Container class
+        # Add as attribute to container instance
         attr_name = _normalize_attr_name(interface)
-        setattr(Container, attr_name, provider)
+        setattr(container, attr_name, provider)
+        providers_map[interface] = provider
 
-    return Container()
+    return container

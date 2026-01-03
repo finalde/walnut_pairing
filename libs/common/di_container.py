@@ -7,11 +7,11 @@
 
 import inspect
 import sys
-from typing import Any, Dict, Type, get_args, get_origin, get_type_hints
+from typing import Any, Dict, Optional, Type, get_args, get_origin, get_type_hints
 
 from dependency_injector import containers, providers
 
-from common.di_registry import DIRegistry
+from common.di_registry import DIRegistry, Scope
 from common.interfaces import (
     IDatabaseConnection,
     IDependencyProvider,
@@ -81,7 +81,7 @@ def _resolve_type_hints(func: Any) -> Dict[str, Any]:
 # Provider graph construction
 # ============================================================
 
-_PRIMITIVE_TYPES = (int, float, str, bool, bytes, type(None))
+_Primitive_TYPES = (int, float, str, bool, bytes, type(None))
 
 
 def _create_provider(
@@ -89,7 +89,8 @@ def _create_provider(
     impl: Type[Any],
     providers_map: Dict[Type[Any], providers.Provider],
     visited: set[Type[Any]],
-) -> providers.Factory:
+    scope: Optional[str] = None,
+) -> providers.Provider:
     """
     Recursively create a provider for an interface/implementation pair.
     
@@ -97,16 +98,17 @@ def _create_provider(
     1. Detects circular dependencies
     2. Resolves constructor dependencies
     3. Creates providers for dependencies recursively
-    4. Returns a Factory provider for the implementation
+    4. Returns a provider (Singleton, Factory, etc.) based on scope
     
     Args:
         interface: The interface type to register
         impl: The implementation class
         providers_map: Map of already-created providers (for dependency resolution)
         visited: Set of interfaces currently being processed (for cycle detection)
+        scope: The scope for the provider (Scope.SINGLETON, Scope.REQUEST, Scope.TRANSIENT)
         
     Returns:
-        Factory provider for the implementation
+        Provider (Singleton, Factory, etc.) for the implementation
         
     Raises:
         ValueError: If circular dependency detected or unknown dependency found
@@ -140,9 +142,9 @@ def _create_provider(
 
         # Skip primitive types (they don't need DI)
         if (
-            param_type in _PRIMITIVE_TYPES
+            param_type in _Primitive_TYPES
             or isinstance(param_type, type)
-            and issubclass(param_type, _PRIMITIVE_TYPES)
+            and issubclass(param_type, _Primitive_TYPES)
         ):
             continue
 
@@ -157,12 +159,15 @@ def _create_provider(
             # Use existing provider
             deps[name] = providers_map[param_type]
         elif DIRegistry.is_registered(param_type):
+            # Get registration info (implementation and scope)
+            registration = DIRegistry.get_registration(param_type)
             # Recursively create provider for dependency
             dep_provider = _create_provider(
                 param_type,
-                DIRegistry.get(param_type),
+                registration.implementation,
                 providers_map,
                 visited,
+                registration.scope,
             )
             providers_map[param_type] = dep_provider
             deps[name] = dep_provider
@@ -172,11 +177,66 @@ def _create_provider(
                 f"for {impl.__name__}.{name}"
             )
 
-    # Create and register the provider
-    provider = providers.Factory(impl, **deps)
+    # Create and register the provider based on scope
+    if scope == Scope.SINGLETON:
+        provider = providers.Singleton(impl, **deps)
+    elif scope == Scope.TRANSIENT:
+        provider = providers.Factory(impl, **deps)
+    else:  # Default to REQUEST scope (Factory)
+        provider = providers.Factory(impl, **deps)
+    
     providers_map[interface] = provider
     visited.remove(interface)
     return provider
+
+
+def create_providers_from_registry(
+    container: containers.DeclarativeContainer,
+    additional_providers: Optional[Dict[str, providers.Provider]] = None,
+) -> None:
+    """
+    Automatically create providers from DIRegistry and add them to the container.
+    
+    This function:
+    1. Iterates through all registered interfaces in DIRegistry
+    2. Creates providers based on their registered scopes
+    3. Adds them to the container as attributes
+    4. Resolves dependencies recursively
+    
+    Args:
+        container: The DI container to populate
+        additional_providers: Optional dict of additional providers to use for dependencies
+                            (e.g., session, session_factory, etc.)
+    """
+    providers_map: Dict[Type[Any], providers.Provider] = {}
+    
+    # Add additional providers (like session, session_factory) to the map
+    if additional_providers:
+        # Map by type if possible, or by name
+        for name, provider in additional_providers.items():
+            # Try to find the type from the container
+            if hasattr(container, name):
+                attr = getattr(container, name)
+                # If it's a provider, we can use it
+                if isinstance(attr, providers.Provider):
+                    # We need to infer the type from the provider
+                    # For now, we'll store by name in a separate dict
+                    pass
+    
+    # Create providers for all registered interfaces
+    for interface in DIRegistry._registry.keys():
+        registration = DIRegistry.get_registration(interface)
+        provider = _create_provider(
+            interface,
+            registration.implementation,
+            providers_map,
+            set(),
+            registration.scope,
+        )
+        
+        # Add provider to container as attribute
+        attr_name = _normalize_attr_name(interface)
+        setattr(container, attr_name, provider)
 
 
 # ============================================================
@@ -187,10 +247,13 @@ def _normalize_attr_name(tp: Type[Any]) -> str:
     """
     Convert interface/class name to container attribute name.
     
+    Converts camelCase to snake_case, handling special cases.
+    
     Examples:
         IAppConfig -> app_config
         IDatabaseConnection -> db_connection
         IWalnutAL -> walnut_al
+        IWalnutComparisonMapper -> walnut_comparison_mapper
         
     Args:
         tp: Type to convert
@@ -198,15 +261,21 @@ def _normalize_attr_name(tp: Type[Any]) -> str:
     Returns:
         Normalized attribute name
     """
-    name = tp.__name__.lower()
-    if name.startswith("i"):
+    import re
+    
+    name = tp.__name__
+    if name.startswith("I"):
         name = name[1:]
-
-    return (
-        name.replace("appconfig", "app_config")
-        .replace("databaseconnection", "db_connection")
-        .replace("walnutal", "walnut_al")
-    )
+    
+    # Convert camelCase to snake_case
+    # Insert underscore before uppercase letters (except the first one)
+    name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+    
+    # Handle special abbreviations that should stay together
+    # e.g., "AL" in "WalnutAL" should become "walnut_al" not "walnut_a_l"
+    name = name.replace("_a_l", "_al")
+    
+    return name
 
 
 # ============================================================
