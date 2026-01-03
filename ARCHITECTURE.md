@@ -170,16 +170,22 @@ class WalnutDomainFactory:
 **What is a Command:**
 - Modifies state (creates, updates, deletes)
 - Returns `None` (void)
-- Asynchronous execution via `CommandDispatcher`
+- Synchronous execution via `CommandDispatcher` (executes immediately)
 - File naming: `xxx__command.py` in `commands/command_objects/`
 - Class naming: `CreateXxxCommand`, `UpdateXxxCommand`, etc.
+- Commands are dataclasses that implement `ICommand` interface
+- Commands can have optional `walnut_ids` parameter to limit scope
 
 **Command Flow:**
-1. Application layer creates a command object
+1. Application layer creates a command object (with all required parameters from config)
 2. Calls `command_dispatcher.dispatch(command)`
-3. Dispatcher finds and executes the appropriate handler
-4. Handler performs business logic through domain layer
-5. Handler saves changes via infrastructure layer
+3. Dispatcher finds the registered handler for the command type
+4. Handler executes synchronously:
+   - Gets domain entities via queries (queries can return entities for internal use)
+   - Creates domain entities/factories for business logic
+   - Executes domain logic (e.g., `WalnutComparisonEntity.compare_all()`)
+   - Maps domain results to DAOs via mappers
+   - Saves changes via infrastructure writers (bulk operations preferred)
 
 **Command Handler:**
 - File naming: `xxx__command_handler.py` in `commands/command_handlers/`
@@ -196,7 +202,7 @@ class WalnutDomainFactory:
 **What is a Query:**
 - Reads data only (no state modification)
 - Synchronous execution
-- Returns DTOs (not DAOs)
+- Can return DTOs (for external API) or Domain Entities (for internal domain operations)
 - File naming: `xxx__query.py` in `queries/`
 - Class naming: `XxxQuery`
 - Implements `IXxxQuery` interface
@@ -204,8 +210,13 @@ class WalnutDomainFactory:
 **Query Rules:**
 - No query handlers (direct execution)
 - Uses infrastructure readers to get DAOs
-- Uses mappers to convert DAOs to DTOs
-- Returns DTOs to application layer
+- Uses mappers to convert DAOs to Entities or DTOs
+- Returns DTOs for external consumption (API boundaries)
+- Returns Entities for internal domain operations (command handlers use entities)
+
+**Query Return Types:**
+- **DTOs**: For API responses (`get_by_id()`, `get_all()`, `load_from_filesystem()`)
+- **Entities**: For internal domain operations (`get_entities_by_ids()`, `get_all_entities()`)
 
 **Example:**
 ```python
@@ -214,8 +225,19 @@ class WalnutQuery(IWalnutQuery):
         ...
     
     def get_by_id(self, walnut_id: str) -> Optional[WalnutDTO]:
+        """Returns DTO for API consumption."""
         dao = self.walnut_reader.get_by_id(walnut_id)
         return self.walnut_mapper.dao_to_dto(dao) if dao else None
+    
+    def get_all_entities(self) -> List[WalnutEntity]:
+        """Returns domain entities for internal domain operations."""
+        walnut_daos = self.walnut_reader.get_all()
+        entities = []
+        for dao in walnut_daos:
+            entity_result = self.walnut_mapper.dao_to_entity(dao)
+            if entity_result.is_right():
+                entities.append(entity_result.value)
+        return entities
 ```
 
 ## Data Access Objects (DAOs)
@@ -300,14 +322,16 @@ class WalnutMapper(IWalnutMapper):
 
 ### Container Structure
 
-- **Location**: `batch/di_container.py` (batch-specific)
-- **Registry**: `batch/di_registry.py` (batch-specific)
-- **Registration**: Interfaces → Implementations mapping
+- **Registry**: `libs/common/di_registry.py` (shared across applications)
+- **Containers**: Each application has its own container:
+  - `batch/di_container.py` (batch-specific)
+  - `webapi/dependencies.py` (webapi-specific)
+- **Registration**: Interfaces → Implementations mapping in DIRegistry
 
 ### DI Rules
 
-1. **Interfaces**: Define in `common/interfaces.py` or layer-specific `__init__.py`
-2. **Registration**: Register in `batch/di_registry.py`:
+1. **Interfaces**: Define in `libs/common/interfaces.py` or layer-specific `__init__.py`
+2. **Registration**: Register in application-specific DI container (e.g., `batch/di_container.py`):
    ```python
    DIRegistry.register(IInterface, Implementation)
    ```
@@ -317,6 +341,7 @@ class WalnutMapper(IWalnutMapper):
        self.dependency: IDependency = dependency
    ```
 4. **No Manual Instantiation**: Never manually create dependencies, always inject
+5. **Command Handler Registration**: Command handlers are registered via `CommandDispatcher.create_with_handlers()` which resolves handlers from DI container
 
 ### What Gets DI
 
@@ -377,9 +402,9 @@ All files follow the pattern: `xxx__file_type.py`
 ## Important Rules
 
 1. **Layer Boundaries**: Never import from outer layers into inner layers
-   - Domain layer: No imports from application or infrastructure
-   - Application layer: Can import from domain, but not infrastructure (except via interfaces)
-   - Infrastructure layer: Can import from domain (interfaces only)
+   - **Domain layer**: No imports from application or infrastructure (pure business logic)
+   - **Application layer**: Can import from domain (entities, value objects, domain services). Can import from infrastructure via interfaces only (IWalnutDBReader, IWalnutDBWriter, etc.)
+   - **Infrastructure layer**: Implements interfaces defined in common/application layers. Does NOT import domain entities or value objects directly (only via interfaces)
 
 2. **Entity Creation**: Always use factory methods or domain factories, never direct instantiation
 
