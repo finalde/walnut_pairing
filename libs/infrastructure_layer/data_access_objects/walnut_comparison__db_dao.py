@@ -3,6 +3,8 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
+from typing import Optional
+
 from common.constants import CONSTRAINT_UQ_WALNUT_COMPARISON, TABLE_WALNUT
 from sqlalchemy import BigInteger, DateTime, Float, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
@@ -21,13 +23,25 @@ class WalnutComparisonDBDAO(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     walnut_id: Mapped[str] = mapped_column(String, ForeignKey(f"{TABLE_WALNUT}.id", ondelete="CASCADE"), nullable=False)
     compared_walnut_id: Mapped[str] = mapped_column(String, ForeignKey(f"{TABLE_WALNUT}.id", ondelete="CASCADE"), nullable=False)
+    # Basic similarity metrics
     width_diff_mm: Mapped[float] = mapped_column(Float, nullable=False)
     height_diff_mm: Mapped[float] = mapped_column(Float, nullable=False)
     thickness_diff_mm: Mapped[float] = mapped_column(Float, nullable=False)
-    similarity_score: Mapped[float] = mapped_column(Float, nullable=False)
+    basic_similarity: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     width_weight: Mapped[float] = mapped_column(Float, nullable=False)
     height_weight: Mapped[float] = mapped_column(Float, nullable=False)
     thickness_weight: Mapped[float] = mapped_column(Float, nullable=False)
+    # Advanced similarity metrics (embedding scores)
+    front_embedding_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    back_embedding_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    left_embedding_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    right_embedding_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    top_embedding_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    down_embedding_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    advanced_similarity: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # Final combined similarity
+    final_similarity: Mapped[float] = mapped_column(Float, nullable=False)
+    # Metadata
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")
     created_by: Mapped[str] = mapped_column(String, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, server_default="NOW()")

@@ -52,6 +52,18 @@ class WalnutEntity:
     def id(self) -> str:
         return self._id
 
+    @property
+    def images(self) -> Dict[WalnutSideEnum, WalnutImageValueObject]:
+        """Get all images as a dictionary keyed by side."""
+        return {
+            WalnutSideEnum.FRONT: self.front,
+            WalnutSideEnum.BACK: self.back,
+            WalnutSideEnum.LEFT: self.left,
+            WalnutSideEnum.RIGHT: self.right,
+            WalnutSideEnum.TOP: self.top,
+            WalnutSideEnum.DOWN: self.down,
+        }
+
     @staticmethod
     def create(
         front: WalnutImageValueObject,

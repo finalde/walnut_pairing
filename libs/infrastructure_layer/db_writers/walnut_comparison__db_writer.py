@@ -61,10 +61,18 @@ class WalnutComparisonDBWriter(IWalnutComparisonDBWriter):
             existing.width_diff_mm = comparison_dao.width_diff_mm
             existing.height_diff_mm = comparison_dao.height_diff_mm
             existing.thickness_diff_mm = comparison_dao.thickness_diff_mm
-            existing.similarity_score = comparison_dao.similarity_score
+            existing.basic_similarity = comparison_dao.basic_similarity
             existing.width_weight = comparison_dao.width_weight
             existing.height_weight = comparison_dao.height_weight
             existing.thickness_weight = comparison_dao.thickness_weight
+            existing.front_embedding_score = comparison_dao.front_embedding_score
+            existing.back_embedding_score = comparison_dao.back_embedding_score
+            existing.left_embedding_score = comparison_dao.left_embedding_score
+            existing.right_embedding_score = comparison_dao.right_embedding_score
+            existing.top_embedding_score = comparison_dao.top_embedding_score
+            existing.down_embedding_score = comparison_dao.down_embedding_score
+            existing.advanced_similarity = comparison_dao.advanced_similarity
+            existing.final_similarity = comparison_dao.final_similarity
             existing.updated_by = comparison_dao.updated_by
             self.session.commit()
             self.session.refresh(existing)
@@ -96,10 +104,18 @@ class WalnutComparisonDBWriter(IWalnutComparisonDBWriter):
                 existing.width_diff_mm = comparison_dao.width_diff_mm
                 existing.height_diff_mm = comparison_dao.height_diff_mm
                 existing.thickness_diff_mm = comparison_dao.thickness_diff_mm
-                existing.similarity_score = comparison_dao.similarity_score
+                existing.basic_similarity = comparison_dao.basic_similarity
                 existing.width_weight = comparison_dao.width_weight
                 existing.height_weight = comparison_dao.height_weight
                 existing.thickness_weight = comparison_dao.thickness_weight
+                existing.front_embedding_score = comparison_dao.front_embedding_score
+                existing.back_embedding_score = comparison_dao.back_embedding_score
+                existing.left_embedding_score = comparison_dao.left_embedding_score
+                existing.right_embedding_score = comparison_dao.right_embedding_score
+                existing.top_embedding_score = comparison_dao.top_embedding_score
+                existing.down_embedding_score = comparison_dao.down_embedding_score
+                existing.advanced_similarity = comparison_dao.advanced_similarity
+                existing.final_similarity = comparison_dao.final_similarity
                 existing.updated_by = comparison_dao.updated_by
                 saved_comparisons.append(existing)
             else:

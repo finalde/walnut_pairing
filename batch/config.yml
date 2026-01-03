@@ -28,6 +28,24 @@ cameras:
     focal_length_px: 1000.0
 
 algorithm:
+  # Basic similarity weights (for dimension-based comparison)
+  basic:
     width_weight: 0.40
     height_weight: 0.35
     thickness_weight: 0.25
+    # Threshold: if basic similarity is below this, skip advanced calculation
+    skip_advanced_threshold: 0.3
+  
+  # Advanced similarity weights (for embedding-based comparison by side)
+  advanced:
+    front_weight: 0.20
+    back_weight: 0.20
+    left_weight: 0.15
+    right_weight: 0.15
+    top_weight: 0.15
+    down_weight: 0.15
+  
+  # Final similarity weights (combining basic and advanced)
+  final:
+    basic_weight: 0.70    # Basic similarity has higher weight
+    advanced_weight: 0.30  # Advanced similarity has lower weight

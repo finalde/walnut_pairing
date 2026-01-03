@@ -8,6 +8,7 @@ from application_layer.commands.command_objects.walnut__command import (
     CreateWalnutFromImagesCommand,
 )
 from application_layer.queries.walnut__query import IWalnutQuery
+from common.enums import ComparisonModeEnum
 from common.interfaces import IAppConfig
 from common.logger import get_logger
 from domain_layer.entities.walnut__entity import WalnutEntity
@@ -77,9 +78,26 @@ class Application:
    
         walnuts: List[WalnutEntity] = self.walnut_query.get_all_entities()
         walnut_ids = [walnut.id for walnut in walnuts]
+        
+        algorithm = self.app_config.algorithm
         compare_command = CompareWalnutsCommand(
-            walnut_ids=walnut_ids, 
-            width_weight=self.app_config.algorithm.width_weight, 
-            height_weight=self.app_config.algorithm.height_weight, 
-            thickness_weight=self.app_config.algorithm.thickness_weight)  # None means compare all walnuts
+            walnut_ids=walnut_ids,
+            comparison_mode=ComparisonModeEnum.BOTH,
+            # Basic similarity weights
+            width_weight=algorithm.basic.width_weight,
+            height_weight=algorithm.basic.height_weight,
+            thickness_weight=algorithm.basic.thickness_weight,
+            # Advanced similarity weights
+            front_weight=algorithm.advanced.front_weight,
+            back_weight=algorithm.advanced.back_weight,
+            left_weight=algorithm.advanced.left_weight,
+            right_weight=algorithm.advanced.right_weight,
+            top_weight=algorithm.advanced.top_weight,
+            down_weight=algorithm.advanced.down_weight,
+            # Final similarity weights
+            basic_weight=algorithm.final.basic_weight,
+            advanced_weight=algorithm.final.advanced_weight,
+            # Threshold
+            skip_advanced_threshold=algorithm.basic.skip_advanced_threshold,
+        )
         self.command_dispatcher.dispatch(compare_command)

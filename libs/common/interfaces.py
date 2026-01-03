@@ -37,11 +37,38 @@ class CameraConfig:
 
 
 @dataclass
-class AlgorithmConfig:
-    """Configuration for walnut comparison algorithm weights."""
+class BasicSimilarityConfig:
+    """Configuration for basic similarity calculation (dimension-based)."""
     width_weight: float
     height_weight: float
     thickness_weight: float
+    skip_advanced_threshold: float  # Skip advanced if basic similarity is below this
+
+
+@dataclass
+class AdvancedSimilarityConfig:
+    """Configuration for advanced similarity calculation (embedding-based)."""
+    front_weight: float
+    back_weight: float
+    left_weight: float
+    right_weight: float
+    top_weight: float
+    down_weight: float
+
+
+@dataclass
+class FinalSimilarityConfig:
+    """Configuration for final similarity calculation (combining basic and advanced)."""
+    basic_weight: float
+    advanced_weight: float
+
+
+@dataclass
+class AlgorithmConfig:
+    """Configuration for walnut comparison algorithm."""
+    basic: BasicSimilarityConfig
+    advanced: AdvancedSimilarityConfig
+    final: FinalSimilarityConfig
 
 
 class IAppConfig(ABC):

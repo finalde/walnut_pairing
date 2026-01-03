@@ -68,13 +68,25 @@ CREATE TABLE walnut_comparison (
     id BIGSERIAL PRIMARY KEY,
     walnut_id TEXT NOT NULL,
     compared_walnut_id TEXT NOT NULL,
+    -- Basic similarity metrics
     width_diff_mm DOUBLE PRECISION NOT NULL,
     height_diff_mm DOUBLE PRECISION NOT NULL,
     thickness_diff_mm DOUBLE PRECISION NOT NULL,
-    similarity_score DOUBLE PRECISION NOT NULL,
+    basic_similarity DOUBLE PRECISION NOT NULL,
     width_weight DOUBLE PRECISION NOT NULL,
     height_weight DOUBLE PRECISION NOT NULL,
     thickness_weight DOUBLE PRECISION NOT NULL,
+    -- Advanced similarity metrics (from embeddings)
+    front_embedding_score DOUBLE PRECISION,
+    back_embedding_score DOUBLE PRECISION,
+    left_embedding_score DOUBLE PRECISION,
+    right_embedding_score DOUBLE PRECISION,
+    top_embedding_score DOUBLE PRECISION,
+    down_embedding_score DOUBLE PRECISION,
+    advanced_similarity DOUBLE PRECISION,
+    -- Final combined similarity
+    final_similarity DOUBLE PRECISION NOT NULL,
+    -- Metadata
     created_at TIMESTAMP DEFAULT NOW() not null,
     created_by TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT NOW() not null,

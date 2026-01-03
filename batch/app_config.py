@@ -5,7 +5,15 @@ from typing import Dict, Optional
 
 import yaml
 from common.enums import WalnutSideEnum
-from common.interfaces import IAppConfig, DatabaseConfig, CameraConfig, AlgorithmConfig
+from common.interfaces import (
+    IAppConfig,
+    DatabaseConfig,
+    CameraConfig,
+    AlgorithmConfig,
+    BasicSimilarityConfig,
+    AdvancedSimilarityConfig,
+    FinalSimilarityConfig,
+)
 
 
 
@@ -21,7 +29,28 @@ class AppConfig(IAppConfig):
     ) -> None:
         self._image_root: str = image_root
         self._database: DatabaseConfig = DatabaseConfig(**database)
-        self._algorithm: AlgorithmConfig = AlgorithmConfig(**algorithm)
+        
+        # Load algorithm configurations - fail if missing
+        if algorithm is None:
+            raise ValueError("Algorithm configuration is required in config.yml")
+        
+        basic_config = algorithm.get("basic")
+        if basic_config is None:
+            raise ValueError("Algorithm 'basic' configuration is required in config.yml")
+        
+        advanced_config = algorithm.get("advanced")
+        if advanced_config is None:
+            raise ValueError("Algorithm 'advanced' configuration is required in config.yml")
+        
+        final_config = algorithm.get("final")
+        if final_config is None:
+            raise ValueError("Algorithm 'final' configuration is required in config.yml")
+        
+        self._algorithm: AlgorithmConfig = AlgorithmConfig(
+            basic=BasicSimilarityConfig(**basic_config),
+            advanced=AdvancedSimilarityConfig(**advanced_config),
+            final=FinalSimilarityConfig(**final_config),
+        )
         
         # Load camera configurations
         self._cameras: Dict[WalnutSideEnum, CameraConfig] = {}

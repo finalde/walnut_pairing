@@ -46,14 +46,25 @@ class CompareWalnutsHandler(ICommandHandler[CompareWalnutsCommand]):
             "starting_walnut_comparison",
             total_walnuts=len(walnut_entities),
             walnut_ids=command.walnut_ids if command.walnut_ids else None,
+            comparison_mode=command.comparison_mode.value,
         )
 
         # Create comparison entity (domain validation happens here - will return error if < 2 walnuts)
         comparison_entity_result = WalnutComparisonEntity.create(
             walnuts=walnut_entities,
+            comparison_mode=command.comparison_mode,
             width_weight=command.width_weight,
             height_weight=command.height_weight,
             thickness_weight=command.thickness_weight,
+            front_weight=command.front_weight,
+            back_weight=command.back_weight,
+            left_weight=command.left_weight,
+            right_weight=command.right_weight,
+            top_weight=command.top_weight,
+            down_weight=command.down_weight,
+            basic_weight=command.basic_weight,
+            advanced_weight=command.advanced_weight,
+            skip_advanced_threshold=command.skip_advanced_threshold,
         )
         if comparison_entity_result.is_left():
             error = comparison_entity_result.value

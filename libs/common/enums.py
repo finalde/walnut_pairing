@@ -35,3 +35,15 @@ class ImageMeasurementTypeEnum(Enum):
     def list(cls) -> List[str]:
         """Return all measurement types as a list of strings"""
         return [measurement_type.value for measurement_type in cls]
+
+
+class ComparisonModeEnum(Enum):
+    """Comparison calculation modes."""
+    BASIC_ONLY = "basic_only"  # Calculate only basic similarity
+    ADVANCED_ONLY = "advanced_only"  # Calculate only advanced similarity
+    BOTH = "both"  # Calculate both basic and advanced, then final similarity
+
+    @classmethod
+    def list(cls) -> List[str]:
+        """Return all comparison modes as a list of strings"""
+        return [mode.value for mode in cls]
