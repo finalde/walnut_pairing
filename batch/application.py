@@ -82,7 +82,7 @@ class Application:
         algorithm = self.app_config.algorithm
         compare_command = CompareWalnutsCommand(
             walnut_ids=walnut_ids,
-            comparison_mode=ComparisonModeEnum.BOTH,
+            comparison_mode=algorithm.comparison_mode_enum,
             # Basic similarity weights
             width_weight=algorithm.basic.width_weight,
             height_weight=algorithm.basic.height_weight,
@@ -99,5 +99,9 @@ class Application:
             advanced_weight=algorithm.final.advanced_weight,
             # Threshold
             skip_advanced_threshold=algorithm.basic.skip_advanced_threshold,
+            # Discriminative parameters
+            discriminative_power=algorithm.advanced.discriminative_power,
+            min_expected_cosine=algorithm.advanced.min_expected_cosine,
+            max_expected_cosine=algorithm.advanced.max_expected_cosine,
         )
         self.command_dispatcher.dispatch(compare_command)

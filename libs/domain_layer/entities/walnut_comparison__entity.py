@@ -42,6 +42,9 @@ class WalnutComparisonEntity:
         basic_weight: float,
         advanced_weight: float,
         skip_advanced_threshold: float,
+        discriminative_power: float,
+        min_expected_cosine: float,
+        max_expected_cosine: float,
     ) -> None:
         self.walnuts: List[WalnutEntity] = walnuts
         self.comparison_mode: ComparisonModeEnum = comparison_mode
@@ -57,6 +60,9 @@ class WalnutComparisonEntity:
         self.basic_weight: float = basic_weight
         self.advanced_weight: float = advanced_weight
         self.skip_advanced_threshold: float = skip_advanced_threshold
+        self.discriminative_power: float = discriminative_power
+        self.min_expected_cosine: float = min_expected_cosine
+        self.max_expected_cosine: float = max_expected_cosine
         self._initialized: bool = True
 
     @staticmethod
@@ -75,6 +81,9 @@ class WalnutComparisonEntity:
         basic_weight: float,
         advanced_weight: float,
         skip_advanced_threshold: float,
+        discriminative_power: float,
+        min_expected_cosine: float,
+        max_expected_cosine: float,
     ) -> Either["WalnutComparisonEntity", DomainError]:
         """
         Create a WalnutComparisonEntity with validation.
@@ -150,6 +159,9 @@ class WalnutComparisonEntity:
             basic_weight,
             advanced_weight,
             skip_advanced_threshold,
+            discriminative_power,
+            min_expected_cosine,
+            max_expected_cosine,
         )
         return Right(entity)
 
@@ -230,6 +242,9 @@ class WalnutComparisonEntity:
                     right_weight=self.right_weight,
                     top_weight=self.top_weight,
                     down_weight=self.down_weight,
+                    discriminative_power=self.discriminative_power,
+                    min_expected_cosine=self.min_expected_cosine,
+                    max_expected_cosine=self.max_expected_cosine,
                 )
             )
 

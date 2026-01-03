@@ -65,6 +65,9 @@ class CompareWalnutsHandler(ICommandHandler[CompareWalnutsCommand]):
             basic_weight=command.basic_weight,
             advanced_weight=command.advanced_weight,
             skip_advanced_threshold=command.skip_advanced_threshold,
+            discriminative_power=command.discriminative_power,
+            min_expected_cosine=command.min_expected_cosine,
+            max_expected_cosine=command.max_expected_cosine,
         )
         if comparison_entity_result.is_left():
             error = comparison_entity_result.value

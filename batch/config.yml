@@ -28,6 +28,9 @@ cameras:
     focal_length_px: 1000.0
 
 algorithm:
+  # Comparison mode: basic_only, advanced_only, or both
+  comparison_mode: both
+  
   # Basic similarity weights (for dimension-based comparison)
   basic:
     width_weight: 0.40
@@ -44,6 +47,9 @@ algorithm:
     right_weight: 0.15
     top_weight: 0.15
     down_weight: 0.15
+    discriminative_power: 2.0  # Power transformation: higher values make high scores rarer
+    min_expected_cosine: 0.3    # Minimum expected cosine similarity for normalization
+    max_expected_cosine: 0.9   # Maximum expected cosine similarity for normalization
   
   # Final similarity weights (combining basic and advanced)
   final:

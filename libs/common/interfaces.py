@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
 
-from common.enums import WalnutSideEnum
+from common.enums import ComparisonModeEnum, WalnutSideEnum
 
 
 @runtime_checkable
@@ -54,6 +54,9 @@ class AdvancedSimilarityConfig:
     right_weight: float
     top_weight: float
     down_weight: float
+    discriminative_power: float  # Power transformation to make high scores rarer
+    min_expected_cosine: float  # Minimum expected cosine similarity for normalization
+    max_expected_cosine: float  # Maximum expected cosine similarity for normalization
 
 
 @dataclass
@@ -66,9 +69,16 @@ class FinalSimilarityConfig:
 @dataclass
 class AlgorithmConfig:
     """Configuration for walnut comparison algorithm."""
+    comparison_mode: str  # "basic_only", "advanced_only", or "both"
     basic: BasicSimilarityConfig
     advanced: AdvancedSimilarityConfig
     final: FinalSimilarityConfig
+
+    @property
+    def comparison_mode_enum(self) -> ComparisonModeEnum:
+        """Get comparison mode."""
+        print("sasafsafd")
+        return ComparisonModeEnum(self.comparison_mode)
 
 
 class IAppConfig(ABC):

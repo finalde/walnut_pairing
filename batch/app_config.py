@@ -34,6 +34,10 @@ class AppConfig(IAppConfig):
         if algorithm is None:
             raise ValueError("Algorithm configuration is required in config.yml")
         
+        comparison_mode : str = algorithm.get("comparison_mode")
+        if comparison_mode is None:
+            raise ValueError("Algorithm 'comparison_mode' is required in config.yml")
+        
         basic_config = algorithm.get("basic")
         if basic_config is None:
             raise ValueError("Algorithm 'basic' configuration is required in config.yml")
@@ -47,6 +51,7 @@ class AppConfig(IAppConfig):
             raise ValueError("Algorithm 'final' configuration is required in config.yml")
         
         self._algorithm: AlgorithmConfig = AlgorithmConfig(
+            comparison_mode=comparison_mode,
             basic=BasicSimilarityConfig(**basic_config),
             advanced=AdvancedSimilarityConfig(**advanced_config),
             final=FinalSimilarityConfig(**final_config),

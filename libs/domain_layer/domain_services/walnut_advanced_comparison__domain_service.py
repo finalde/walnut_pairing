@@ -15,16 +15,29 @@ class WalnutAdvancedComparisonDomainService:
     """
 
     @staticmethod
-    def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    def cosine_similarity(
+        vec1: np.ndarray,
+        vec2: np.ndarray,
+        discriminative_power: float = 2.0,
+        min_expected_cosine: float = 0.3,
+        max_expected_cosine: float = 0.9,
+    ) -> float:
         """
-        Calculate cosine similarity between two vectors.
+        Calculate cosine similarity between two vectors with discriminative transformation.
+        
+        Business rule: Apply power transformation to make high scores more rare and meaningful.
+        For embeddings (typically normalized and in positive space), cosine similarity usually
+        ranges from ~0.3 to ~0.9. We apply a power transformation to spread out the scores
+        so that 0.8-0.9 scores truly indicate high-quality matches.
         
         Args:
             vec1: First vector (embedding)
             vec2: Second vector (embedding)
+            discriminative_power: Power to apply for transformation (default 2.0)
+                                 Higher values make high scores rarer
         
         Returns:
-            Cosine similarity score between 0 and 1 (1 = identical, 0 = orthogonal)
+            Cosine similarity score between 0 and 1 (1 = identical, 0 = very different)
         """
         # Normalize vectors
         norm1 = np.linalg.norm(vec1)
@@ -38,16 +51,37 @@ class WalnutAdvancedComparisonDomainService:
         dot_product = np.dot(vec1, vec2)
         cosine_sim = dot_product / (norm1 * norm2)
         
-        # Cosine similarity ranges from -1 to 1, normalize to 0-1 range
-        # (1 + cosine_sim) / 2 maps [-1, 1] to [0, 1]
-        normalized_similarity = (cosine_sim + 1.0) / 2.0
+        # For ResNet embeddings, cosine similarity typically ranges from ~0.3 to ~0.9
+        # We need to normalize to 0-1 range, but make it more discriminative
+        # Strategy: 
+        # 1. Shift and scale to map typical range [min_expected, max_expected] to approximately [0, 1]
+        # 2. Apply power transformation to make high scores rarer
         
-        return float(normalized_similarity)
+        # First, normalize assuming typical range maps to [0, 1]
+        # This means cosine min_expected → 0.0, cosine max_expected → 1.0
+        range_size = max_expected_cosine - min_expected_cosine
+        
+        # Normalize to 0-1 range based on expected distribution
+        normalized = (cosine_sim - min_expected_cosine) / range_size
+        
+        # Clip to [0, 1] range
+        normalized = max(0.0, min(1.0, normalized))
+        
+        # Apply power transformation to make high scores rarer
+        # Higher power means high scores are harder to achieve
+        # Example: normalized=0.8, power=2.0 → 0.8^2 = 0.64 (lower score)
+        # This means only very high cosine similarities will result in high final scores
+        discriminative_score = normalized ** discriminative_power
+        
+        return float(discriminative_score)
 
     @staticmethod
     def compare_side_embeddings(
         image1: Optional[WalnutImageValueObject],
         image2: Optional[WalnutImageValueObject],
+        discriminative_power: float = 2.0,
+        min_expected_cosine: float = 0.3,
+        max_expected_cosine: float = 0.9,
     ) -> float:
         """
         Compare embeddings of two images from the same side.
@@ -72,7 +106,7 @@ class WalnutAdvancedComparisonDomainService:
             return 0.0
         
         return WalnutAdvancedComparisonDomainService.cosine_similarity(
-            image1.embedding, image2.embedding
+            image1.embedding, image2.embedding, discriminative_power, min_expected_cosine, max_expected_cosine
         )
 
     @staticmethod
@@ -85,6 +119,9 @@ class WalnutAdvancedComparisonDomainService:
         right_weight: float,
         top_weight: float,
         down_weight: float,
+        discriminative_power: float = 2.0,
+        min_expected_cosine: float = 0.3,
+        max_expected_cosine: float = 0.9,
     ) -> tuple[Dict[WalnutSideEnum, float], float]:
         """
         Calculate advanced similarity between two walnuts using embeddings.
@@ -119,7 +156,7 @@ class WalnutAdvancedComparisonDomainService:
             image2 = walnut2_images.get(side_enum)
             
             side_similarities[side_enum] = WalnutAdvancedComparisonDomainService.compare_side_embeddings(
-                image1, image2
+                image1, image2, discriminative_power, min_expected_cosine, max_expected_cosine
             )
         
         # Calculate weighted final similarity score
