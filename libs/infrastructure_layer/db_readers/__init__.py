@@ -11,6 +11,10 @@ from .walnut_image_embedding__db_reader import (
     IWalnutImageEmbeddingDBReader,
     WalnutImageEmbeddingDBReader,
 )
+from .walnut_comparison__db_reader import (
+    IWalnutComparisonDBReader,
+    WalnutComparisonDBReader,
+)
 
 __all__ = [
     "IWalnutDBReader",
@@ -19,4 +23,6 @@ __all__ = [
     "WalnutImageDBReader",
     "IWalnutImageEmbeddingDBReader",
     "WalnutImageEmbeddingDBReader",
+    "IWalnutComparisonDBReader",
+    "WalnutComparisonDBReader",
 ]

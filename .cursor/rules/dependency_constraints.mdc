@@ -1,0 +1,86 @@
+---
+description: Dependency constraint rules and compile-time checking for layer boundaries
+globs: **/*.py
+alwaysApply: true
+---
+
+# Dependency Constraints
+
+## Layer Dependency Rules
+
+The following dependency constraints MUST be enforced:
+
+### Allowed Dependencies
+
+1. **Domain Layer**:
+   - ✅ Can depend on: `common/` only
+   - ❌ Cannot depend on: `application_layer/`, `infrastructure_layer/`, `app__webapi/`, `app__batch/`
+
+2. **Application Layer**:
+   - ✅ Can depend on: `domain_layer/`, `common/`, `infrastructure_layer/` (via interfaces only)
+   - ❌ Cannot depend on: `app__webapi/`, `app__batch/`
+
+3. **Infrastructure Layer**:
+   - ✅ Can depend on: `common/` (interfaces, enums, constants)
+   - ❌ Cannot depend on: `domain_layer/`, `application_layer/`, `app__webapi/`, `app__batch/`
+
+4. **WebAPI/Batch Applications**:
+   - ✅ Can depend on: `application_layer/` (DTOs, queries, commands, mappers), `common/`
+   - ❌ Cannot depend on: `domain_layer/`, `infrastructure_layer/` (directly)
+
+5. **Common Layer**:
+   - ✅ Can depend on: `common/` only (itself)
+   - ❌ Cannot depend on: Any other layer
+
+## Compile-Time Checking
+
+Use mypy with import checking to enforce these constraints:
+
+```bash
+# Check for forbidden imports
+mypy --strict --show-error-codes libs/ app__webapi/ app__batch/
+```
+
+## Import Patterns to Check
+
+### Domain Layer Violations
+- ❌ `from application_layer import ...`
+- ❌ `from infrastructure_layer import ...`
+- ❌ `from app__webapi import ...`
+- ❌ `from app__batch import ...`
+
+### Application Layer Violations
+- ❌ `from app__webapi import ...`
+- ❌ `from app__batch import ...`
+- ❌ `from infrastructure_layer.data_access_objects import ...` (should use interfaces)
+
+### Infrastructure Layer Violations
+- ❌ `from domain_layer import ...`
+- ❌ `from application_layer import ...` (except interfaces)
+- ❌ `from app__webapi import ...`
+- ❌ `from app__batch import ...`
+
+### WebAPI/Batch Violations
+- ❌ `from domain_layer import ...` (should use DTOs from application layer)
+- ❌ `from infrastructure_layer import ...` (should use application layer interfaces)
+
+## DTO Flow Rule
+
+**CRITICAL**: WebAPI and Batch applications MUST ONLY work with DTOs:
+
+1. **Query Services**: Return DTOs, not DAOs or Domain objects
+2. **Controllers**: Receive DTOs from query services
+3. **Data Flow**: DAO → Domain (via mapper, optional) → DTO (via mapper) → Controller
+4. **Never expose**: DAOs or Domain objects to application boundaries
+
+Example:
+```python
+# ✅ Good: Query returns DTO
+async def get_all_pairings_async(self) -> List[WalnutComparisonDTO]:
+    daos = await self.comparison_reader.get_all_async()
+    return self.comparison_mapper.daos_to_dtos(daos)
+
+# ❌ Bad: Query returns DAO
+async def get_all_pairings_async(self) -> List[WalnutComparisonDBDAO]:
+    return await self.comparison_reader.get_all_async()
+```

@@ -5,6 +5,7 @@ from typing import List
 from common.constants import SYSTEM_USER
 from domain_layer.value_objects.walnut_comparison__value_object import WalnutComparisonValueObject
 from infrastructure_layer.data_access_objects.walnut_comparison__db_dao import WalnutComparisonDBDAO
+from application_layer.dtos.walnut_comparison__dto import WalnutComparisonDTO
 
 
 class IWalnutComparisonMapper(ABC):
@@ -28,6 +29,16 @@ class IWalnutComparisonMapper(ABC):
         updated_by: str,
     ) -> List[WalnutComparisonDBDAO]:
         """Convert a list of WalnutComparisonValueObject to a list of WalnutComparisonDBDAO."""
+        pass
+
+    @abstractmethod
+    def dao_to_dto(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDTO:
+        """Convert WalnutComparisonDBDAO to WalnutComparisonDTO."""
+        pass
+
+    @abstractmethod
+    def daos_to_dtos(self, comparison_daos: List[WalnutComparisonDBDAO]) -> List[WalnutComparisonDTO]:
+        """Convert a list of WalnutComparisonDBDAO to a list of WalnutComparisonDTO."""
         pass
 
 
@@ -75,3 +86,22 @@ class WalnutComparisonMapper(IWalnutComparisonMapper):
             for comparison_vo in comparison_vos
         ]
 
+    def dao_to_dto(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDTO:
+        """Convert WalnutComparisonDBDAO to WalnutComparisonDTO."""
+        return WalnutComparisonDTO(
+            id=comparison_dao.id,
+            walnut_id=comparison_dao.walnut_id,
+            compared_walnut_id=comparison_dao.compared_walnut_id,
+            width_diff_mm=comparison_dao.width_diff_mm,
+            height_diff_mm=comparison_dao.height_diff_mm,
+            thickness_diff_mm=comparison_dao.thickness_diff_mm,
+            basic_similarity=comparison_dao.basic_similarity,
+            advanced_similarity=comparison_dao.advanced_similarity,
+            final_similarity=comparison_dao.final_similarity,
+            created_at=comparison_dao.created_at,
+            updated_at=comparison_dao.updated_at,
+        )
+
+    def daos_to_dtos(self, comparison_daos: List[WalnutComparisonDBDAO]) -> List[WalnutComparisonDTO]:
+        """Convert a list of WalnutComparisonDBDAO to a list of WalnutComparisonDTO."""
+        return [self.dao_to_dto(dao) for dao in comparison_daos]

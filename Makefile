@@ -24,7 +24,10 @@ format: ## Auto-format code (black and isort)
 fix: format ## Auto-fix code issues (formatting and import order)
 	@echo "✓ Code formatting and import order fixed"
 
-check: type-check lint format-check ## Run all code quality checks
+check-deps: ## Check dependency constraints
+	python scripts/check_dependencies.py
+
+check: type-check lint format-check check-deps ## Run all code quality checks
 	@echo "✅ All checks passed!"
 
 test: ## Run tests (placeholder)

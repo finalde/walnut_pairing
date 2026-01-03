@@ -14,11 +14,15 @@ This document outlines the directory structure and key files in the walnut pairi
 walnut_pairing/
 ├── .cursor/
 │   └── rules/              # Cursor IDE rules (this directory)
-├── batch/                  # Batch processing application
+├── app__batch/             # Batch processing application
+├── app__webapi/            # Web API application
+│   ├── controllers/        # API controllers (endpoints)
+│   ├── routes.py          # Route constants
+│   └── di_container.py    # WebAPI DI container
 ├── business_docs/          # Business documentation (Excel, Word docs)
 ├── libs/                   # Shared library code (core business logic)
 ├── sql_scripts/            # Database schema and migration scripts
-├── webapi/                 # Web API application
+├── scripts/                # Utility scripts (dependency checking, etc.)
 ├── ARCHITECTURE.md         # Architecture documentation (MUST READ)
 ├── CODE_QUALITY.md         # Code quality guidelines
 ├── CQRS_ARCHITECTURE.md    # CQRS pattern documentation
@@ -109,7 +113,7 @@ Infrastructure services:
 
 ## Application Directories
 
-### Batch Application (`batch/`)
+### Batch Application (`app__batch/`)
 
 Batch processing application for image processing and comparisons:
 
@@ -119,15 +123,25 @@ Batch processing application for image processing and comparisons:
 - **`config.yml`** - Configuration file (database, cameras, algorithm settings)
 - **`di_container.py`** - Dependency injection setup for batch app
 
-### Web API Application (`webapi/`)
+### Web API Application (`app__webapi/`)
 
 REST API application:
+
+- **`main.py`** - FastAPI application entry point
+- **`controllers/`** - API controllers (endpoints)
+  - **`xxx__controller.py`** - Controller files (e.g., `walnut_pairings__controller.py`)
+  - All async functions must have `_async` suffix
+- **`routes.py`** - Route constants (all route paths defined here)
+- **`dependencies.py`** - FastAPI dependency injection setup
+- **`di_container.py`** - WebAPI DI container with scope support
+- **`app_config.py`** - WebAPI configuration (minimal, DB only)
+- **`config.yml`** - WebAPI configuration file
 
 
 ## Configuration Files
 
-- **`batch/config.yml`** - Batch app configuration (database, cameras, algorithm)
-- **`webapi/config.yml`** - Web API configuration
+- **`app__batch/config.yml`** - Batch app configuration (database, cameras, algorithm)
+- **`app__webapi/config.yml`** - Web API configuration (database only)
 - **`pyproject.toml`** - Python tooling config (black, isort, mypy)
 - **`mypy.ini`** - Type checking configuration
 - **`requirements.txt`** - Python package dependencies
@@ -158,6 +172,7 @@ REST API application:
   - Mapper: `walnut__mapper.py`
   - Command: `walnut__command.py`
   - Handler: `walnut__command_handler.py`
+  - Controller: `walnut_pairings__controller.py` (in `app__webapi/controllers/`)
 
 ## Key Principles
 
@@ -166,9 +181,12 @@ REST API application:
 3. **No Application in Domain**: Domain layer must not import fro application
 4. **No Domain in Infrastructure**: Infrastructure layer must not import Domain
 5. **No Application in Infrastructure**: Infrastructure layer must not import Application
-6. **Interfaces in Common**: All interfaces defined in `libs/common/interfaces.py`
-7. **Either for Errors**: Domain operations return `Either[Success, DomainError]`
-8. **CQRS Pattern**: Commands modify, Queries read (separate paths)
+6. **No Domain/Infrastructure in WebAPI/Batch**: WebAPI and Batch applications can ONLY import from application layer (DTOs, queries, commands), never from domain or infrastructure directly
+7. **Common is Self-Contained**: Common layer can only depend on itself
+8. **Interfaces in Common**: All interfaces defined in `libs/common/interfaces.py`
+9. **Either for Errors**: Domain operations return `Either[Success, DomainError]`
+10. **CQRS Pattern**: Commands modify, Queries read (separate paths)
+11. **DTO Flow**: DAO → Domain (via mapper) → DTO (via mapper) → Controller. WebAPI/Batch only work with DTOs, never DAOs or Domain objects directly
 
 ## When Adding New Features
 
@@ -177,7 +195,9 @@ REST API application:
 3. **Infrastructure**: Add to `libs/infrastructure_layer/` (DAOs, readers, writers)
 4. **Interfaces**: Define in `libs/common/interfaces.py`
 5. **Enums**: Add to `libs/common/enums.py`
-6. **Configuration**: Update `batch/config.yml` or `webapi/config.yml`
+6. **Configuration**: Update `app__batch/config.yml` or `app__webapi/config.yml`
+7. **WebAPI Controllers**: Add to `app__webapi/controllers/` with `_async` suffix for functions
+8. **Route Constants**: Add route paths to `app__webapi/routes.py`
 
 ## References
 

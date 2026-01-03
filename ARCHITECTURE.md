@@ -28,8 +28,11 @@ libs/
     ├── data_access_objects/ # DAOs (SQLAlchemy ORM models)
     └── session_factory.py   # Database session management
 
-batch/                   # Batch job application
-webapi/                  # Web API application
+app__batch/              # Batch job application
+app__webapi/             # Web API application
+    ├── controllers/     # API controllers (endpoints)
+    ├── routes.py        # Route constants
+    └── di_container.py  # WebAPI-specific DI container
 ```
 
 ## Domain-Driven Design (DDD)
@@ -268,17 +271,22 @@ class WalnutQuery(IWalnutQuery):
 **What is a DTO:**
 - Simple data containers for transferring data between layers
 - Lives in `application_layer/dtos/`
-- File naming: `xxx__create_dto.py`, `xxx__read_dto.py`
-- Class naming: `XxxCreateDTO`, `XxxDTO`, `XxxImageCreateDTO`
+- File naming: `xxx__dto.py`, `xxx__create_dto.py`
+- Class naming: `XxxDTO`, `XxxCreateDTO`, `XxxImageDTO`
 - No business logic
 - Used in commands (CreateDTO) and queries (ReadDTO)
 
 **DTO Types:**
 - `CreateDTO`: For creating new entities (commands)
-- `ReadDTO`: For reading data (queries)
+- `DTO`: For reading data (queries, API responses)
 - `UpdateDTO`: For updating entities (commands)
 - `DeleteDTO`: For deleting entities (commands)
-- and more
+
+**DTO Flow Rule (CRITICAL):**
+- **WebAPI/Batch applications MUST ONLY know about DTOs, NOT DAOs or Domain objects**
+- **Data flow**: DAO → Domain (via mapper) → DTO (via mapper) → Controller/API
+- **Controllers receive DTOs, not DAOs**: Query services return DTOs, controllers convert DTOs to response models
+- **Never expose DAOs or Domain objects to application boundaries** (webapi, batch)
 
 ## Mappers
 
@@ -296,6 +304,8 @@ class WalnutQuery(IWalnutQuery):
 - Entity → DTO mapping is allowed
 - DAO → Entity mapping uses domain factories
 - DTO → Entity mapping uses domain factories
+- **DAO → DTO mapping**: Can map directly, or go through Domain (DAO → Entity → DTO) for business logic
+- **Query services MUST return DTOs**: Never return DAOs directly to application boundaries
 
 **Example:**
 ```python
@@ -348,6 +358,40 @@ class WalnutMapper(IWalnutMapper):
 - **Application Layer**: Commands, queries, mappers, application services
 - **Infrastructure Layer**: Readers, writers, file readers, services (image processing, etc.)
 - **NOT Domain Layer**: Domain services and factories are static
+
+## WebAPI Controllers
+
+**What is a Controller:**
+- Handles HTTP requests and responses
+- Lives in `app__webapi/controllers/`
+- File naming: `xxx__controller.py` (e.g., `walnut_pairings__controller.py`)
+- Function naming: All async functions MUST have `_async` suffix
+- Uses FastAPI router decorators
+
+**Controller Rules:**
+- **DTOs only**: Controllers receive DTOs from query services, never DAOs or Domain objects
+- **DTOs ARE response models**: DTOs are used directly as FastAPI response models (no separate response classes needed)
+- **Route constants**: All routes defined in `app__webapi/routes.py` as constants
+- **Async functions**: All endpoint functions must be `async` and have `_async` suffix
+- **Dependency injection**: Use FastAPI's `Depends()` for request-scoped dependencies
+
+**Example:**
+```python
+# app__webapi/routes.py
+WALNUT_PAIRINGS_LIST: Final[str] = "/"
+
+# app__webapi/controllers/walnut_pairings__controller.py
+@router.get(WALNUT_PAIRINGS_LIST, response_model=List[WalnutComparisonDTO])
+async def get_all_pairings_async(
+    query: IWalnutComparisonQuery = Depends(get_walnut_comparison_query),
+) -> List[WalnutComparisonDTO]:
+    return await query.get_all_pairings_async()  # Returns DTOs, used directly as response
+```
+
+**Route Constants:**
+- All route paths MUST be defined in `app__webapi/routes.py`
+- Use constants in router decorators: `@router.get(ROUTE_CONSTANT)`
+- Format: `WALNUT_PAIRINGS_BASE`, `WALNUT_PAIRINGS_LIST`, etc.
 
 ## Infrastructure Services
 
@@ -405,6 +449,17 @@ All files follow the pattern: `xxx__file_type.py`
    - **Domain layer**: No imports from application or infrastructure (pure business logic)
    - **Application layer**: Can import from domain (entities, value objects, domain services). Can import from infrastructure via interfaces only (IWalnutDBReader, IWalnutDBWriter, etc.)
    - **Infrastructure layer**: Implements interfaces defined in common/application layers. Does NOT import domain entities or value objects directly (only via interfaces)
+   - **WebAPI/Batch applications**: Can ONLY import from application layer (DTOs, queries, commands). MUST NOT import from domain or infrastructure directly
+   - **Common layer**: Can only depend on itself, no dependencies on other layers
+
+**Dependency Constraint Rules (MUST BE ENFORCED):**
+- ✅ Domain cannot depend on application
+- ✅ Domain cannot depend on infrastructure
+- ✅ WebAPI/Batch cannot depend on domain (only via application layer DTOs)
+- ✅ WebAPI/Batch cannot depend on infrastructure (only via application layer interfaces)
+- ✅ Infrastructure cannot depend on domain
+- ✅ Infrastructure cannot depend on application
+- ✅ Common cannot depend on anything but itself
 
 2. **Entity Creation**: Always use factory methods or domain factories, never direct instantiation
 
