@@ -3,36 +3,36 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 from infrastructure_layer.data_access_objects import WalnutImageEmbeddingDBDAO
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class IWalnutImageEmbeddingDBWriter(ABC):
     """Interface for writing walnut image embedding data to the database."""
 
     @abstractmethod
-    def save(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
+    async def save_async(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save an embedding to the database. Returns embedding with generated ID."""
         pass
 
     @abstractmethod
-    def save_or_update(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
+    async def save_or_update_async(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save or update an embedding. Returns embedding with ID."""
         pass
 
 
 class WalnutImageEmbeddingDBWriter(IWalnutImageEmbeddingDBWriter):
-    """Implementation for writing walnut image embedding data using SQLAlchemy ORM."""
+    """Implementation for writing walnut image embedding data using SQLAlchemy async ORM."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         """
-        Initialize the writer with a SQLAlchemy session.
+        Initialize the writer with an async SQLAlchemy session.
 
         Args:
-            session: SQLAlchemy Session instance (injected via DI container)
+            session: AsyncSession instance (injected via DI container)
         """
-        self.session: Session = session
+        self.session: AsyncSession = session
 
-    def save(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
+    async def save_async(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save an embedding to the database. Returns embedding with generated ID."""
         if embedding.embedding is None:
             raise ValueError("Embedding cannot be None")
@@ -44,18 +44,18 @@ class WalnutImageEmbeddingDBWriter(IWalnutImageEmbeddingDBWriter):
 
             # Add to session and flush to get generated ID
             self.session.add(embedding)
-            self.session.flush()  # Flush to get the generated ID without committing
+            await self.session.flush()  # Flush to get the generated ID without committing
             return embedding
         except Exception:
-            self.session.rollback()
+            await self.session.rollback()
             raise
 
-    def save_or_update(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
+    async def save_or_update_async(self, embedding: WalnutImageEmbeddingDBDAO) -> WalnutImageEmbeddingDBDAO:
         """Save or update an embedding. Returns embedding with ID."""
         try:
             if embedding.id is not None:
                 # Update existing - fetch from database
-                existing = self.session.get(WalnutImageEmbeddingDBDAO, embedding.id)
+                existing = await self.session.get(WalnutImageEmbeddingDBDAO, embedding.id)
                 if existing is None:
                     raise ValueError(f"Embedding with id {embedding.id} not found")
 
@@ -69,11 +69,11 @@ class WalnutImageEmbeddingDBWriter(IWalnutImageEmbeddingDBWriter):
                 existing.updated_by = embedding.updated_by
                 # updated_at is set by database default
 
-                self.session.flush()
+                await self.session.flush()
                 return existing
             else:
                 # Insert new
-                return self.save(embedding)
+                return await self.save_async(embedding)
         except Exception:
-            self.session.rollback()
+            await self.session.rollback()
             raise

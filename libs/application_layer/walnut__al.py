@@ -7,7 +7,7 @@ import numpy as np
 from application_layer.mappers.walnut__mapper import IWalnutMapper
 from common.constants import DEFAULT_EMBEDDING_MODEL, SYSTEM_USER
 from common.enums import WalnutSideEnum
-from common.interfaces import IAppConfig, IDatabaseConnection
+from common.interfaces import IAppConfig
 from common.logger import get_logger
 from domain_layer.domain_services.embedding__domain_service import ImageEmbeddingDomainService
 from infrastructure_layer.data_access_objects import (
@@ -22,16 +22,16 @@ from infrastructure_layer.file_readers.walnut_image__file_reader import IWalnutI
 
 class IWalnutAL(ABC):
     @abstractmethod
-    def generate_embeddings(self) -> None:
+    async def generate_embeddings_async(self) -> None:
         pass
 
     @abstractmethod
-    def create_and_save_fake_walnut(self, walnut_id: str) -> WalnutDBDAO:
+    async def create_and_save_fake_walnut_async(self, walnut_id: str) -> WalnutDBDAO:
         """Create a fake walnut with images and embeddings and save it to the database."""
         pass
 
     @abstractmethod
-    def load_and_save_walnut_from_filesystem(self, walnut_id: str) -> WalnutDBDAO:
+    async def load_and_save_walnut_from_filesystem_async(self, walnut_id: str) -> WalnutDBDAO:
         """
         Load walnut images from filesystem, convert to domain objects,
         process and validate, then save to database.
@@ -53,7 +53,6 @@ class WalnutAL(IWalnutAL):
     def __init__(
         self,
         app_config: IAppConfig,
-        db_connection: IDatabaseConnection,
         walnut_image_embedding_reader: IWalnutImageEmbeddingDBReader,
         walnut_reader: IWalnutDBReader,
         walnut_writer: IWalnutDBWriter,
@@ -61,7 +60,6 @@ class WalnutAL(IWalnutAL):
         walnut_image_file_reader: IWalnutImageFileReader,
     ) -> None:
         self.app_config: IAppConfig = app_config
-        self.db_connection: IDatabaseConnection = db_connection
         self.walnut_image_embedding_reader: IWalnutImageEmbeddingDBReader = walnut_image_embedding_reader
         self.walnut_reader: IWalnutDBReader = walnut_reader
         self.walnut_writer: IWalnutDBWriter = walnut_writer
@@ -69,7 +67,7 @@ class WalnutAL(IWalnutAL):
         self.walnut_image_file_reader: IWalnutImageFileReader = walnut_image_file_reader
         self.logger = get_logger(__name__)
 
-    def generate_embeddings(self) -> None:
+    async def generate_embeddings_async(self) -> None:
         """Generate embeddings for testing purposes."""
         self.logger.info(
             "embedding_generation_start",
@@ -85,13 +83,13 @@ class WalnutAL(IWalnutAL):
         else:
             self.logger.warning("test_image_not_found", path=str(test_image_path))
 
-        test = self.walnut_image_embedding_reader.get_by_model_name(DEFAULT_EMBEDDING_MODEL)
+        test = await self.walnut_image_embedding_reader.get_by_model_name_async(DEFAULT_EMBEDDING_MODEL)
         self.logger.info("embeddings_found", count=len(test))
 
-        walnuts = self.walnut_reader.get_all()
+        walnuts = await self.walnut_reader.get_all_async()
         self.logger.info("walnuts_found", count=len(walnuts))
 
-    def create_and_save_fake_walnut(self, walnut_id: str) -> WalnutDBDAO:
+    async def create_and_save_fake_walnut_async(self, walnut_id: str) -> WalnutDBDAO:
         """
         Create a fake walnut with images and embeddings and save it to the database.
         This demonstrates the ORM-like save functionality where walnut, images, and embeddings
@@ -134,7 +132,7 @@ class WalnutAL(IWalnutAL):
 
             walnut.images.append(image)
 
-        saved_walnut = self.walnut_writer.save_with_images(walnut)
+        saved_walnut = await self.walnut_writer.save_with_images_async(walnut)
         self.logger.info(
             "walnut_saved",
             walnut_id=walnut_id,
@@ -142,7 +140,7 @@ class WalnutAL(IWalnutAL):
         )
         return saved_walnut
 
-    def load_and_save_walnut_from_filesystem(self, walnut_id: str) -> WalnutDBDAO:
+    async def load_and_save_walnut_from_filesystem_async(self, walnut_id: str) -> WalnutDBDAO:
         """
         Load walnut images from filesystem, convert to domain objects,
         process and validate, then save to database.
@@ -194,7 +192,7 @@ class WalnutAL(IWalnutAL):
         )
         self.logger.debug("entity_to_dao_converted", walnut_id=walnut_id)
 
-        saved_walnut = self.walnut_writer.save_with_images(walnut_dao)
+        saved_walnut = await self.walnut_writer.save_with_images_async(walnut_dao)
         self.logger.info(
             "walnut_saved",
             walnut_id=walnut_entity.id,

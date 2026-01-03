@@ -20,7 +20,7 @@ from .command_objects.walnut__command import (
 
 class ICommandDispatcher(ABC):
     @abstractmethod
-    def dispatch(self, command: ICommand) -> None:
+    async def dispatch_async(self, command: ICommand) -> None:
         pass
 
     @abstractmethod
@@ -32,10 +32,7 @@ class CommandDispatcher(ICommandDispatcher):
     def __init__(self) -> None:
         self._handlers: Dict[Type[ICommand], ICommandHandler] = {}
 
-
-    # For simplicity, we use a simple synchronous dispatch patter for now.
-    # In future, we could switch the implementation to an asynchronous dispatch pattern.
-    def dispatch(self, command: ICommand) -> None:
+    async def dispatch_async(self, command: ICommand) -> None:
         if command.timestamp is None:
             command.timestamp = datetime.now()
 
@@ -44,7 +41,7 @@ class CommandDispatcher(ICommandDispatcher):
         if handler is None:
             raise ValueError(f"No handler registered for command type: {command_type.__name__}")
 
-        handler.handle(command)
+        await handler.handle_async(command)
 
     def register_handler(self, command_type: Type[ICommand], handler: ICommandHandler) -> None:
         self._handlers[command_type] = handler

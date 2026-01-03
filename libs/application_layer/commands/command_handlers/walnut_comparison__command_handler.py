@@ -25,7 +25,7 @@ class CompareWalnutsHandler(ICommandHandler[CompareWalnutsCommand]):
         self.walnut_comparison_mapper: IWalnutComparisonMapper = walnut_comparison_mapper
         self.logger = get_logger(__name__)
 
-    def handle(self, command: CompareWalnutsCommand) -> None:
+    async def handle_async(self, command: CompareWalnutsCommand) -> None:
         """
         Compare walnuts and calculate similarity scores.
         
@@ -38,9 +38,9 @@ class CompareWalnutsHandler(ICommandHandler[CompareWalnutsCommand]):
         """
         # Get walnut entities
         if command.walnut_ids:
-            walnut_entities = self.walnut_query.get_entities_by_ids(command.walnut_ids)
+            walnut_entities = await self.walnut_query.get_entities_by_ids_async(command.walnut_ids)
         else:
-            walnut_entities = self.walnut_query.get_all_entities()
+            walnut_entities = await self.walnut_query.get_all_entities_async()
 
         self.logger.info(
             "starting_walnut_comparison",
@@ -91,7 +91,7 @@ class CompareWalnutsHandler(ICommandHandler[CompareWalnutsCommand]):
 
         # Bulk save to database
         try:
-            saved_comparisons = self.walnut_comparison_writer.bulk_save_or_update(comparison_daos)
+            saved_comparisons = await self.walnut_comparison_writer.bulk_save_or_update_async(comparison_daos)
 
             self.logger.info(
                 "walnut_comparison_complete",

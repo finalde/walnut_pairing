@@ -2,7 +2,9 @@
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Optional
 
-from common.interfaces import IDatabaseConnection
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..data_access_objects import WalnutDBDAO
 
@@ -14,20 +16,20 @@ class IWalnutDBReader(ABC):
     """Interface for reading walnut data from the database."""
 
     @abstractmethod
-    def get_by_id(self, walnut_id: str) -> Optional[WalnutDBDAO]:
+    async def get_by_id_async(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by its ID with related images and embeddings loaded."""
         pass
 
     @abstractmethod
-    def get_all(self) -> List[WalnutDBDAO]:
+    async def get_all_async(self) -> List[WalnutDBDAO]:
         """Get all walnuts from the database with related images and embeddings loaded."""
         pass
 
     @abstractmethod
-    def get_by_id_with_images(self, walnut_id: str) -> Optional[WalnutDBDAO]:
+    async def get_by_id_with_images_async(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by ID with its related images and embeddings loaded.
 
-        Note: This method now delegates to get_by_id() which already loads
+        Note: This method now delegates to get_by_id_async() which already loads
         images and embeddings. Kept for backward compatibility.
         """
         pass
@@ -38,87 +40,65 @@ class WalnutDBReader(IWalnutDBReader):
 
     def __init__(
         self,
-        db_connection: IDatabaseConnection,
+        session: AsyncSession,
         image_reader: "IWalnutImageDBReader",
     ) -> None:
         """
-        Initialize the reader with a database connection and image reader.
+        Initialize the reader with an async session and image reader.
 
         Args:
-            db_connection: IDatabaseConnection instance (injected via DI container)
+            session: AsyncSession instance (injected via DI container)
             image_reader: IWalnutImageDBReader instance (injected via DI container).
         """
-        self.db_connection: IDatabaseConnection = db_connection
+        self.session: AsyncSession = session
         self.image_reader: "IWalnutImageDBReader" = image_reader
 
-    def get_by_id(self, walnut_id: str) -> Optional[WalnutDBDAO]:
+    async def get_by_id_async(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by its ID with related images and embeddings loaded."""
-        with self.db_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, description, width_mm, height_mm, thickness_mm, created_at, created_by, updated_at, updated_by
-                FROM walnut
-                WHERE id = %s
-                """,
-                (walnut_id,),
+        from ..data_access_objects.walnut_image__db_dao import WalnutImageDBDAO
+        
+        result = await self.session.execute(
+            select(WalnutDBDAO)
+            .options(
+                selectinload(WalnutDBDAO.images).selectinload(WalnutImageDBDAO.embedding)
             )
-            row = cursor.fetchone()
-            if row is None:
-                return None
+            .where(WalnutDBDAO.id == walnut_id)
+        )
+        walnut = result.scalar_one_or_none()
+        
+        if walnut is not None:
+            # Explicitly access relationships to ensure they're loaded while in async context
+            _ = walnut.images
+            for image in walnut.images:
+                _ = image.embedding
+        
+        return walnut
 
-            walnut = WalnutDBDAO(
-                id=row[0],
-                description=row[1],
-                width_mm=row[2],
-                height_mm=row[3],
-                thickness_mm=row[4],
-                created_at=row[5],
-                created_by=row[6],
-                updated_at=row[7],
-                updated_by=row[8],
-            )
-
-            # Load related images with embeddings
-            walnut.images = self.image_reader.get_by_walnut_id_with_embeddings(walnut_id)
-
-            return walnut
-
-    def get_all(self) -> List[WalnutDBDAO]:
+    async def get_all_async(self) -> List[WalnutDBDAO]:
         """Get all walnuts from the database with related images and embeddings loaded."""
-        with self.db_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, description, width_mm, height_mm, thickness_mm, created_at, created_by, updated_at, updated_by
-                FROM walnut
-                ORDER BY created_at DESC
-                """
+        from ..data_access_objects.walnut_image__db_dao import WalnutImageDBDAO
+        
+        result = await self.session.execute(
+            select(WalnutDBDAO)
+            .options(
+                selectinload(WalnutDBDAO.images).selectinload(WalnutImageDBDAO.embedding)
             )
-            rows = cursor.fetchall()
-            walnuts = [
-                WalnutDBDAO(
-                    id=row[0],
-                    description=row[1],
-                    width_mm=row[2],
-                    height_mm=row[3],
-                    thickness_mm=row[4],
-                    created_at=row[5],
-                    created_by=row[6],
-                    updated_at=row[7],
-                    updated_by=row[8],
-                )
-                for row in rows
-            ]
+            .order_by(WalnutDBDAO.created_at.desc())
+        )
+        walnuts = result.scalars().all()
 
-            # Load related images with embeddings for each walnut
-            for walnut in walnuts:
-                walnut.images = self.image_reader.get_by_walnut_id_with_embeddings(walnut.id)
+        # Explicitly access relationships to ensure they're loaded while in async context
+        for walnut in walnuts:
+            _ = walnut.images
+            for image in walnut.images:
+                _ = image.embedding
 
-            return walnuts
+        return list(walnuts)
 
-    def get_by_id_with_images(self, walnut_id: str) -> Optional[WalnutDBDAO]:
+    async def get_by_id_with_images_async(self, walnut_id: str) -> Optional[WalnutDBDAO]:
         """Get a walnut by ID with its related images and embeddings loaded.
 
-        Note: This method now delegates to get_by_id() which already loads
+        Note: This method now delegates to get_by_id_async() which already loads
         images and embeddings. Kept for backward compatibility.
         """
-        return self.get_by_id(walnut_id)
+        return await self.get_by_id_async(walnut_id)

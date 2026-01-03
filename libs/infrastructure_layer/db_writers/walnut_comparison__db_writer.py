@@ -2,25 +2,27 @@
 from abc import ABC, abstractmethod
 from typing import List
 
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from infrastructure_layer.data_access_objects.walnut_comparison__db_dao import WalnutComparisonDBDAO
-from sqlalchemy.orm import Session
 
 
 class IWalnutComparisonDBWriter(ABC):
     """Interface for writing walnut comparisons to database."""
 
     @abstractmethod
-    def save(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
+    async def save_async(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
         """Save a new walnut comparison to the database."""
         pass
 
     @abstractmethod
-    def save_or_update(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
+    async def save_or_update_async(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
         """Save or update a walnut comparison (upsert operation)."""
         pass
 
     @abstractmethod
-    def bulk_save_or_update(self, comparison_daos: List[WalnutComparisonDBDAO]) -> List[WalnutComparisonDBDAO]:
+    async def bulk_save_or_update_async(self, comparison_daos: List[WalnutComparisonDBDAO]) -> List[WalnutComparisonDBDAO]:
         """Bulk save or update walnut comparisons (upsert operation)."""
         pass
 
@@ -28,33 +30,33 @@ class IWalnutComparisonDBWriter(ABC):
 class WalnutComparisonDBWriter(IWalnutComparisonDBWriter):
     """Implementation for writing walnut comparisons to database."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         """
-        Initialize with a SQLAlchemy session.
+        Initialize with an async SQLAlchemy session.
         
         Args:
-            session: SQLAlchemy Session instance (injected via DI container)
+            session: AsyncSession instance (injected via DI container)
         """
-        self.session: Session = session
+        self.session: AsyncSession = session
 
-    def save(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
+    async def save_async(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
         """Save a new walnut comparison to the database."""
         self.session.add(comparison_dao)
-        self.session.commit()
-        self.session.refresh(comparison_dao)
+        await self.session.commit()
+        await self.session.refresh(comparison_dao)
         return comparison_dao
 
-    def save_or_update(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
+    async def save_or_update_async(self, comparison_dao: WalnutComparisonDBDAO) -> WalnutComparisonDBDAO:
         """Save or update a walnut comparison (upsert operation)."""
         # Try to find existing comparison
-        existing = (
-            self.session.query(WalnutComparisonDBDAO)
-            .filter_by(
-                walnut_id=comparison_dao.walnut_id,
-                compared_walnut_id=comparison_dao.compared_walnut_id,
+        result = await self.session.execute(
+            select(WalnutComparisonDBDAO)
+            .where(
+                WalnutComparisonDBDAO.walnut_id == comparison_dao.walnut_id,
+                WalnutComparisonDBDAO.compared_walnut_id == comparison_dao.compared_walnut_id,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
 
         if existing:
             # Update existing
@@ -74,30 +76,30 @@ class WalnutComparisonDBWriter(IWalnutComparisonDBWriter):
             existing.advanced_similarity = comparison_dao.advanced_similarity
             existing.final_similarity = comparison_dao.final_similarity
             existing.updated_by = comparison_dao.updated_by
-            self.session.commit()
-            self.session.refresh(existing)
+            await self.session.commit()
+            await self.session.refresh(existing)
             return existing
         else:
             # Insert new
             self.session.add(comparison_dao)
-            self.session.commit()
-            self.session.refresh(comparison_dao)
+            await self.session.commit()
+            await self.session.refresh(comparison_dao)
             return comparison_dao
 
-    def bulk_save_or_update(self, comparison_daos: List[WalnutComparisonDBDAO]) -> List[WalnutComparisonDBDAO]:
+    async def bulk_save_or_update_async(self, comparison_daos: List[WalnutComparisonDBDAO]) -> List[WalnutComparisonDBDAO]:
         """Bulk save or update walnut comparisons (upsert operation)."""
         saved_comparisons: List[WalnutComparisonDBDAO] = []
 
         for comparison_dao in comparison_daos:
             # Try to find existing comparison
-            existing = (
-                self.session.query(WalnutComparisonDBDAO)
-                .filter_by(
-                    walnut_id=comparison_dao.walnut_id,
-                    compared_walnut_id=comparison_dao.compared_walnut_id,
+            result = await self.session.execute(
+                select(WalnutComparisonDBDAO)
+                .where(
+                    WalnutComparisonDBDAO.walnut_id == comparison_dao.walnut_id,
+                    WalnutComparisonDBDAO.compared_walnut_id == comparison_dao.compared_walnut_id,
                 )
-                .first()
             )
+            existing = result.scalar_one_or_none()
 
             if existing:
                 # Update existing
@@ -124,11 +126,11 @@ class WalnutComparisonDBWriter(IWalnutComparisonDBWriter):
                 saved_comparisons.append(comparison_dao)
 
         # Commit all changes at once
-        self.session.commit()
+        await self.session.commit()
 
         # Refresh all saved comparisons
         for comparison in saved_comparisons:
-            self.session.refresh(comparison)
+            await self.session.refresh(comparison)
 
         return saved_comparisons
 

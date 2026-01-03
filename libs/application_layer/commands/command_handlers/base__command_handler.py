@@ -9,5 +9,5 @@ TCommand = TypeVar("TCommand", bound=ICommand)
 
 class ICommandHandler(ABC, Generic[TCommand]):
     @abstractmethod
-    def handle(self, command: TCommand) -> None:
+    async def handle_async(self, command: TCommand) -> None:
         pass

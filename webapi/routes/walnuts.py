@@ -70,13 +70,13 @@ def _dto_to_response(dto: WalnutDTO) -> WalnutResponse:
 
 @router.get("/", response_model=List[WalnutResponse])
 async def get_walnuts(query: IWalnutQuery = Depends(get_walnut_query)) -> List[WalnutResponse]:
-    walnuts = query.get_all()
+    walnuts = await query.get_all_async()
     return [_dto_to_response(w) for w in walnuts]
 
 
 @router.get("/{walnut_id}", response_model=WalnutResponse)
 async def get_walnut(walnut_id: str, query: IWalnutQuery = Depends(get_walnut_query)) -> WalnutResponse:
-    walnut = query.get_by_id(walnut_id)
+    walnut = await query.get_by_id_async(walnut_id)
     if walnut is None:
         raise HTTPException(status_code=404, detail=f"Walnut {walnut_id} not found")
     return _dto_to_response(walnut)
@@ -86,7 +86,7 @@ async def get_walnut(walnut_id: str, query: IWalnutQuery = Depends(get_walnut_qu
 async def load_walnut_from_filesystem(
     walnut_id: str, query: IWalnutQuery = Depends(get_walnut_query)
 ) -> WalnutResponse:
-    walnut = query.load_from_filesystem(walnut_id)
+    walnut = await query.load_from_filesystem_async(walnut_id)
     if walnut is None:
         raise HTTPException(status_code=404, detail=f"Walnut {walnut_id} not found in filesystem")
     return _dto_to_response(walnut)

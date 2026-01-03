@@ -15,19 +15,19 @@ if TYPE_CHECKING:
 
 class IWalnutQuery(ABC):
     @abstractmethod
-    def get_by_id(self, walnut_id: str) -> Optional[WalnutDTO]:
+    async def get_by_id_async(self, walnut_id: str) -> Optional[WalnutDTO]:
         pass
 
     @abstractmethod
-    def get_all(self) -> List[WalnutDTO]:
+    async def get_all_async(self) -> List[WalnutDTO]:
         pass
 
     @abstractmethod
-    def load_from_filesystem(self, walnut_id: str) -> Optional[WalnutDTO]:
+    async def load_from_filesystem_async(self, walnut_id: str) -> Optional[WalnutDTO]:
         pass
 
     @abstractmethod
-    def get_entities_by_ids(self, walnut_ids: List[str]) -> List["WalnutEntity"]:
+    async def get_entities_by_ids_async(self, walnut_ids: List[str]) -> List["WalnutEntity"]:
         """
         Get walnut entities by IDs.
         
@@ -37,7 +37,7 @@ class IWalnutQuery(ABC):
         pass
 
     @abstractmethod
-    def get_all_entities(self) -> List["WalnutEntity"]:
+    async def get_all_entities_async(self) -> List["WalnutEntity"]:
         """
         Get all walnut entities from the database.
         
@@ -60,17 +60,17 @@ class WalnutQuery(IWalnutQuery):
         self.app_config: IAppConfig = app_config
         self.walnut_image_file_reader: IWalnutImageFileReader = walnut_image_file_reader
 
-    def get_by_id(self, walnut_id: str) -> Optional[WalnutDTO]:
-        walnut_dao = self.walnut_reader.get_by_id(walnut_id)
+    async def get_by_id_async(self, walnut_id: str) -> Optional[WalnutDTO]:
+        walnut_dao = await self.walnut_reader.get_by_id_async(walnut_id)
         if walnut_dao is None:
             return None
         return self.walnut_mapper.dao_to_dto(walnut_dao)
 
-    def get_all(self) -> List[WalnutDTO]:
-        walnut_daos = self.walnut_reader.get_all()
+    async def get_all_async(self) -> List[WalnutDTO]:
+        walnut_daos = await self.walnut_reader.get_all_async()
         return [self.walnut_mapper.dao_to_dto(dao) for dao in walnut_daos]
 
-    def load_from_filesystem(self, walnut_id: str) -> Optional[WalnutDTO]:
+    async def load_from_filesystem_async(self, walnut_id: str) -> Optional[WalnutDTO]:
         image_root = Path(self.app_config.image_root)
         image_directory = image_root / walnut_id
 
@@ -83,7 +83,7 @@ class WalnutQuery(IWalnutQuery):
 
         return self.walnut_mapper.file_dao_to_dto(walnut_file_dao, walnut_id)
 
-    def get_entities_by_ids(self, walnut_ids: List[str]) -> List["WalnutEntity"]:
+    async def get_entities_by_ids_async(self, walnut_ids: List[str]) -> List["WalnutEntity"]:
         """
         Get walnut entities by IDs.
         
@@ -93,7 +93,7 @@ class WalnutQuery(IWalnutQuery):
         entities: List["WalnutEntity"] = []
         
         for walnut_id in walnut_ids:
-            walnut_dao = self.walnut_reader.get_by_id(walnut_id)
+            walnut_dao = await self.walnut_reader.get_by_id_async(walnut_id)
             if walnut_dao is None:
                 continue
             
@@ -107,14 +107,14 @@ class WalnutQuery(IWalnutQuery):
         
         return entities
 
-    def get_all_entities(self) -> List["WalnutEntity"]:
+    async def get_all_entities_async(self) -> List["WalnutEntity"]:
         """
         Get all walnut entities from the database.
         
         Returns list of WalnutEntity objects.
         Only returns entities that have valid dimensions.
         """
-        walnut_daos = self.walnut_reader.get_all()
+        walnut_daos = await self.walnut_reader.get_all_async()
         entities: List["WalnutEntity"] = []
         
         for walnut_dao in walnut_daos:

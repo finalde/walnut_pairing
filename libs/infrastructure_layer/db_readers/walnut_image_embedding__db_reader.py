@@ -3,7 +3,9 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 
 import numpy as np
-from common.interfaces import IDatabaseConnection
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from infrastructure_layer.data_access_objects.walnut_image_embedding__db_dao import (
     WalnutImageEmbeddingDBDAO,
 )
@@ -13,17 +15,17 @@ class IWalnutImageEmbeddingDBReader(ABC):
     """Interface for reading walnut image embedding data from the database."""
 
     @abstractmethod
-    def get_by_id(self, embedding_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
+    async def get_by_id_async(self, embedding_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by its ID."""
         pass
 
     @abstractmethod
-    def get_by_image_id(self, image_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
+    async def get_by_image_id_async(self, image_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by image ID (one-to-one relationship)."""
         pass
 
     @abstractmethod
-    def get_by_model_name(self, model_name: str) -> List[WalnutImageEmbeddingDBDAO]:
+    async def get_by_model_name_async(self, model_name: str) -> List[WalnutImageEmbeddingDBDAO]:
         """Get all embeddings for a specific model."""
         pass
 
@@ -31,14 +33,14 @@ class IWalnutImageEmbeddingDBReader(ABC):
 class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
     """Implementation of IWalnutImageEmbeddingDBReader for reading embedding data from PostgreSQL."""
 
-    def __init__(self, db_connection: IDatabaseConnection) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         """
-        Initialize the reader with a database connection.
+        Initialize the reader with an async session.
 
         Args:
-            db_connection: IDatabaseConnection instance (injected via DI container)
+            session: AsyncSession instance (injected via DI container)
         """
-        self.db_connection: IDatabaseConnection = db_connection
+        self.session: AsyncSession = session
 
     def _vector_to_numpy(self, vector_data) -> np.ndarray:
         """
@@ -64,89 +66,52 @@ class WalnutImageEmbeddingDBReader(IWalnutImageEmbeddingDBReader):
             # Try to convert directly
             return np.array(vector_data, dtype=np.float32)
 
-    def get_by_id(self, embedding_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
+    async def get_by_id_async(self, embedding_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by its ID."""
-        with self.db_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, image_id, model_name, embedding, created_at, created_by,
-                       updated_at, updated_by
-                FROM walnut_image_embedding
-                WHERE id = %s
-                """,
-                (embedding_id,),
-            )
-            row = cursor.fetchone()
-            if row is None:
-                return None
+        result = await self.session.execute(
+            select(WalnutImageEmbeddingDBDAO).where(WalnutImageEmbeddingDBDAO.id == embedding_id)
+        )
+        embedding = result.scalar_one_or_none()
+        
+        if embedding is None:
+            return None
 
-            embedding_vector = self._vector_to_numpy(row[3])
+        # Convert embedding vector to numpy if needed
+        if embedding.embedding is not None and not isinstance(embedding.embedding, np.ndarray):
+            embedding.embedding = self._vector_to_numpy(embedding.embedding)
 
-            return WalnutImageEmbeddingDBDAO(
-                id=row[0],
-                image_id=row[1],
-                model_name=row[2],
-                embedding=embedding_vector,
-                created_at=row[4],
-                created_by=row[5],
-                updated_at=row[6],
-                updated_by=row[7],
-            )
+        return embedding
 
-    def get_by_image_id(self, image_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
+    async def get_by_image_id_async(self, image_id: int) -> Optional[WalnutImageEmbeddingDBDAO]:
         """Get an embedding by image ID (one-to-one relationship)."""
-        with self.db_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, image_id, model_name, embedding, created_at, created_by,
-                       updated_at, updated_by
-                FROM walnut_image_embedding
-                WHERE image_id = %s
-                LIMIT 1
-                """,
-                (image_id,),
-            )
-            row = cursor.fetchone()
-            if row is None:
-                return None
+        result = await self.session.execute(
+            select(WalnutImageEmbeddingDBDAO)
+            .where(WalnutImageEmbeddingDBDAO.image_id == image_id)
+            .limit(1)
+        )
+        embedding = result.scalar_one_or_none()
+        
+        if embedding is None:
+            return None
 
-            embedding_vector = self._vector_to_numpy(row[3])
+        # Convert embedding vector to numpy if needed
+        if embedding.embedding is not None and not isinstance(embedding.embedding, np.ndarray):
+            embedding.embedding = self._vector_to_numpy(embedding.embedding)
 
-            return WalnutImageEmbeddingDBDAO(
-                id=row[0],
-                image_id=row[1],
-                model_name=row[2],
-                embedding=embedding_vector,
-                created_at=row[4],
-                created_by=row[5],
-                updated_at=row[6],
-                updated_by=row[7],
-            )
+        return embedding
 
-    def get_by_model_name(self, model_name: str) -> List[WalnutImageEmbeddingDBDAO]:
+    async def get_by_model_name_async(self, model_name: str) -> List[WalnutImageEmbeddingDBDAO]:
         """Get all embeddings for a specific model."""
-        with self.db_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT id, image_id, model_name, embedding, created_at, created_by,
-                       updated_at, updated_by
-                FROM walnut_image_embedding
-                WHERE model_name = %s
-                ORDER BY created_at DESC
-                """,
-                (model_name,),
-            )
-            rows = cursor.fetchall()
-            return [
-                WalnutImageEmbeddingDBDAO(
-                    id=row[0],
-                    image_id=row[1],
-                    model_name=row[2],
-                    embedding=self._vector_to_numpy(row[3]),
-                    created_at=row[4],
-                    created_by=row[5],
-                    updated_at=row[6],
-                    updated_by=row[7],
-                )
-                for row in rows
-            ]
+        result = await self.session.execute(
+            select(WalnutImageEmbeddingDBDAO)
+            .where(WalnutImageEmbeddingDBDAO.model_name == model_name)
+            .order_by(WalnutImageEmbeddingDBDAO.created_at.desc())
+        )
+        embeddings = result.scalars().all()
+        
+        # Convert embedding vectors to numpy if needed
+        for embedding in embeddings:
+            if embedding.embedding is not None and not isinstance(embedding.embedding, np.ndarray):
+                embedding.embedding = self._vector_to_numpy(embedding.embedding)
+
+        return list(embeddings)

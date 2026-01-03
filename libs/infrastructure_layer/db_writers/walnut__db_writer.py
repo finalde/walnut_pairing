@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 from infrastructure_layer.data_access_objects import WalnutDBDAO
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 if TYPE_CHECKING:
     from .walnut_image__db_writer import IWalnutImageDBWriter
@@ -13,49 +13,49 @@ class IWalnutDBWriter(ABC):
     """Interface for writing walnut data to the database."""
 
     @abstractmethod
-    def save(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
+    async def save_async(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save a walnut to the database. Returns walnut with timestamps."""
         pass
 
     @abstractmethod
-    def save_with_images(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
+    async def save_with_images_async(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save a walnut with all its images and embeddings. Returns walnut with IDs."""
         pass
 
     @abstractmethod
-    def save_or_update(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
+    async def save_or_update_async(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save or update a walnut. Returns walnut with timestamps."""
         pass
 
 
 class WalnutDBWriter(IWalnutDBWriter):
-    """Implementation for writing walnut data using SQLAlchemy ORM."""
+    """Implementation for writing walnut data using SQLAlchemy async ORM."""
 
     def __init__(
         self,
-        session: Session,
+        session: AsyncSession,
         image_writer: "IWalnutImageDBWriter",
     ) -> None:
         """
-        Initialize the writer with a SQLAlchemy session and image writer.
+        Initialize the writer with an async SQLAlchemy session and image writer.
 
         Args:
-            session: SQLAlchemy Session instance (injected via DI container)
+            session: AsyncSession instance (injected via DI container)
             image_writer: IWalnutImageDBWriter instance (injected via DI container)
         """
-        self.session: Session = session
+        self.session: AsyncSession = session
         self.image_writer: "IWalnutImageDBWriter" = image_writer
 
-    def save(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
+    async def save_async(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save a walnut to the database. Returns walnut with timestamps."""
         # Use merge for upsert (handles ON CONFLICT logic)
-        walnut = self.session.merge(walnut)
-        self.session.flush()  # Flush to get timestamps without committing
+        walnut = await self.session.merge(walnut)
+        await self.session.flush()  # Flush to get timestamps without committing
         return walnut
 
-    def save_with_images(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
+    async def save_with_images_async(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """
-        Save or update a walnut with all its images and embeddings using SQLAlchemy ORM.
+        Save or update a walnut with all its images and embeddings using SQLAlchemy async ORM.
         This is the ORM-like save that cascades to images and embeddings.
         Returns walnut with all IDs populated.
 
@@ -69,7 +69,7 @@ class WalnutDBWriter(IWalnutDBWriter):
                 self.session.add(walnut)
             else:
                 # Check if walnut exists
-                existing = self.session.get(WalnutDBDAO, walnut_id)
+                existing = await self.session.get(WalnutDBDAO, walnut_id)
                 if existing is not None:
                     # Update existing walnut - merge will update the walnut and handle related objects
                     # First, delete existing images and embeddings (they will be recreated)
@@ -77,20 +77,20 @@ class WalnutDBWriter(IWalnutDBWriter):
                         if hasattr(image, "embedding") and image.embedding:
                             self.session.delete(image.embedding)
                         self.session.delete(image)
-                    self.session.flush()  # Flush the deletes
+                    await self.session.flush()  # Flush the deletes
 
                 # Merge the walnut (will update if exists, insert if new)
                 # This will also add/update the images and embeddings
-                walnut = self.session.merge(walnut)
+                walnut = await self.session.merge(walnut)
 
-            self.session.flush()  # Flush to get all generated IDs without committing
-            self.session.commit()  # Commit the transaction
+            await self.session.flush()  # Flush to get all generated IDs without committing
+            await self.session.commit()  # Commit the transaction
             return walnut
         except Exception:
-            self.session.rollback()
+            await self.session.rollback()
             raise
 
-    def save_or_update(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
+    async def save_or_update_async(self, walnut: WalnutDBDAO) -> WalnutDBDAO:
         """Save or update a walnut. Returns walnut with timestamps."""
-        # The save method already handles upsert with merge
-        return self.save(walnut)
+        # The save_async method already handles upsert with merge
+        return await self.save_async(walnut)

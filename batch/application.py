@@ -26,12 +26,12 @@ class Application:
         self.app_config: IAppConfig = app_config
         self.logger = get_logger(__name__)
 
-    def run(self) -> None:
+    async def run_async(self) -> None:
         image_root = Path(self.app_config.image_root)
         self.logger.info("scanning_images_directory", image_root=str(image_root))
 
         walnut_directories = sorted([d for d in image_root.iterdir() if d.is_dir()])
-        existing_walnut_ids: List[str] = [walnut.id for walnut in self.walnut_query.get_all_entities()]
+        existing_walnut_ids: List[str] = [walnut.id for walnut in await self.walnut_query.get_all_entities_async()]
 
         for walnut_dir in walnut_directories:
             walnut_id: str = walnut_dir.name
@@ -45,11 +45,11 @@ class Application:
                 description=f"Walnut {walnut_id} loaded from images directory",
                 save_intermediate_results=True,
             )
-            self.command_dispatcher.dispatch(command)
+            await self.command_dispatcher.dispatch_async(command)
 
         self.logger.info("starting_walnut_comparison", note="Checking and creating comparisons for all walnuts")
    
-        walnut_ids : List[str] = [walnut.id for walnut in self.walnut_query.get_all_entities()]
+        walnut_ids : List[str] = [walnut.id for walnut in await self.walnut_query.get_all_entities_async()]
         
         algorithm = self.app_config.algorithm
         compare_command = CompareWalnutsCommand(
@@ -76,4 +76,4 @@ class Application:
             min_expected_cosine=algorithm.advanced.min_expected_cosine,
             max_expected_cosine=algorithm.advanced.max_expected_cosine,
         )
-        self.command_dispatcher.dispatch(compare_command)
+        await self.command_dispatcher.dispatch_async(compare_command)

@@ -10,9 +10,8 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Type
 
-import psycopg2
 from dependency_injector import containers, providers
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from application_layer.commands.command_dispatcher import ICommandDispatcher, CommandDispatcher
 from application_layer.mappers.walnut__mapper import IWalnutMapper, WalnutMapper
@@ -26,7 +25,7 @@ from common.di_container import (
     _normalize_attr_name,
 )
 from common.di_registry import DIRegistry
-from common.interfaces import DatabaseConfig, IAppConfig, IDatabaseConnection
+from common.interfaces import DatabaseConfig, IAppConfig
 from infrastructure_layer.db_readers import (
     IWalnutDBReader,
     IWalnutImageDBReader,
@@ -109,23 +108,12 @@ class Container(containers.DeclarativeContainer):
         app_config=app_config,
     )
 
-    db_connection = providers.Singleton(
-        lambda database_config: psycopg2.connect(
-            host=database_config.host,
-            port=database_config.port,
-            database=database_config.database,
-            user=database_config.user,
-            password=database_config.password,
-        ),
-        database_config=database_config,
-    )
-
     session_factory = providers.Singleton(
         SessionFactory,
         database_config=database_config,
     )
 
-    session = providers.Factory(
+    session = providers.Singleton(
         lambda session_factory: session_factory.create_session(),
         session_factory=session_factory,
     )
@@ -156,9 +144,8 @@ def bootstrap_container() -> Container:
     # Start with core providers
     providers_map: Dict[Type[Any], providers.Provider] = {
         IAppConfig: Container.app_config,
-        IDatabaseConnection: Container.db_connection,
         SessionFactory: Container.session_factory,
-        Session: Container.session,
+        AsyncSession: Container.session,
     }
 
     # Register all DIRegistry interfaces

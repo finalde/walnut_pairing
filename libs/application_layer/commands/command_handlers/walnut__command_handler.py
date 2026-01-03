@@ -43,7 +43,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
         self.image_object_finder: IImageObjectFinder = image_object_finder
         self.logger = get_logger(__name__)
 
-    def handle(self, command: CreateWalnutFromImagesCommand) -> None:
+    async def handle_async(self, command: CreateWalnutFromImagesCommand) -> None:
         image_root = Path(self.app_config.image_root)
         image_directory = image_root / command.walnut_id
         image_intermediate_dir = str(image_root.parent / "_intermediate" / command.walnut_id)
@@ -113,7 +113,7 @@ class CreateWalnutFromImagesHandler(ICommandHandler[CreateWalnutFromImagesComman
         )
         self.logger.debug("entity_to_dao_converted", walnut_id=command.walnut_id)
 
-        saved_walnut = self.walnut_writer.save_with_images(walnut_dao)
+        saved_walnut = await self.walnut_writer.save_with_images_async(walnut_dao)
         self.logger.info(
             "walnut_saved",
             walnut_id=walnut_entity.id,
